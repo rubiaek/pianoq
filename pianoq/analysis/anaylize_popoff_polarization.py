@@ -1,6 +1,6 @@
-from PianoQ.Results.PopoffPolarizationRotationResult import PopoffPolarizationRotationResult
+from pianoq.results.PopoffPolarizationRotationResult import PopoffPolarizationRotationResult
 
-PATH = "../Data/popoff_polarization_data.npz"
+PATH = "../data/popoff_polarization_data.npz"
 
 
 def main():

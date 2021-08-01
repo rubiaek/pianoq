@@ -1,8 +1,11 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 from colorsys import hls_to_rgb
 import traceback
+
+cur_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 class PopoffPolarizationRotationResult(object):
@@ -10,6 +13,7 @@ class PopoffPolarizationRotationResult(object):
     Built with data from github.com/wavefrontshaping/article_MMF_disorder
     And this PRX article https://arxiv.org/abs/2010.14813
     """
+    DEFAULT_PATH = os.path.join(cur_dir, "../data/popoff_polarization_data.npz")
 
     def __init__(self, TM_modes=None, dxs=None, index_dx0=None, modes_out=None, L=None, M=None, path=None):
         self.TM_modes = TM_modes  # Transmission matrices in the mode basis for different dx values
@@ -122,6 +126,12 @@ class PopoffPolarizationRotationResult(object):
         fig.show()
         return fig
 
+    def show_mixing_of_mode(self, TM, mode_num):
+        fig, ax = plt.subplots()
+        ax.bar(range(1, TM.shape[0]+1), np.abs(TM[mode_num, :])**2)
+        fig.show()
+        return fig
+
     def propagate(self, in_modes, TM):
         '''
         in_modes is a vector of length Nmodes, with weights of incoming modes.
@@ -193,8 +203,9 @@ class PopoffPolarizationRotationResult(object):
             print(e)
             traceback.print_exc()
 
-    def loadfrom(self, path):
+    def loadfrom(self, path=None):
         # data = np.load(path, allow_pickle=True)
+        path = path or self.DEFAULT_PATH
         f = open(path, 'rb')
         data = np.load(f, allow_pickle=True)
         self.TM_modes = data['TM_modes']
