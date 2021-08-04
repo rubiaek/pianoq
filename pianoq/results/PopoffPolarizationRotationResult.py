@@ -27,12 +27,12 @@ class PopoffPolarizationRotationResult(object):
         if self.path:
             self.loadfrom(path)
 
-    def _initialize(self):
+    def _initialize(self, method='TM'):
         # The modes of the fiber, converts from mode basis to pixel basis
         self.modes_out_full = np.kron(np.array([[1, 0], [0, 1]]), self.modes_out)
         self.n = int(np.sqrt(self.modes_out.shape[1]))
         self.Nmodes = self.modes_out.shape[0] * 2  # 110
-        self.all_polarization_ratios = self.get_all_polarization_ratios()
+        self.all_polarization_ratios = self.get_all_polarization_ratios(method=method)
 
     def _E_to_I(self, x):
         return np.abs(x) ** 2
@@ -152,6 +152,7 @@ class PopoffPolarizationRotationResult(object):
         """
 
         if method == 'TM':
+            TM = TM.transpose()
             p1, p2 = np.hsplit(TM, 2)
 
             # To real numbers
