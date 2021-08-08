@@ -68,7 +68,7 @@ def main():
     
     sequenceID = 1
     sequenceRepeatCount = 0
-    frameTime_ms = 1e4
+    frameTime_ms = 1e3  # 1 sec - compromise between fast script ending, and not putting a million images on DMD
     project = get_project(sequenceID, sequenceRepeatCount, frameTime_ms=frameTime_ms, components=hs.GetProject().Components())
     
     sequence, wasFound = project.FindSequence(sequenceID)
