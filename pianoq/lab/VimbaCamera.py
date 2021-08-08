@@ -5,19 +5,16 @@ try:
     from vimba import Vimba
 except ImportError:
     print("can't use vimba camera")
-try:
-    import pco
-except ImportError:
-    print("can't use pco camera")
+
 import matplotlib.pyplot as plt
 
 
 class VimbaCamera(object):
     def __init__(self, camera_num, exposure_time=None, borders: Borders = None):
-        '''
+        """
             You can check camera_num using vimb.get_all_cameras()[0].get_model()
             exposure_time in us (micro seconds)
-        '''
+        """
         self.camera_num = camera_num
         self.borders = None
 
@@ -32,9 +29,6 @@ class VimbaCamera(object):
             self.set_borders(borders)
         else:
             pass
-            # TODO: Check why this is doing problems...
-            # b = Borders(0, 0, 800, 600)
-            # self.set_borders(b)
 
     def __enter__(self):
         return self

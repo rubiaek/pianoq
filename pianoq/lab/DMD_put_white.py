@@ -2,7 +2,10 @@
 import os 
 import sys 
 import numpy as np
-import ajiledriver as aj
+try:
+    import ajiledriver as aj
+except ImportError:
+    print("Can't load ajiledriver for DMD")
 
 sys.path.insert(0, os.path.split(os.path.realpath(__file__))[0])
 cur_dir = os.path.dirname(os.path.abspath(__file__))
