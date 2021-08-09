@@ -14,7 +14,7 @@ class PianoOptimization(object):
         self.cam = VimbaCamera(2, exposure_time=500)
         borders = Borders(0, 0, 1280, 1024)
         self.cam.set_borders(borders)
-        self.window_size = 5
+        self.window_size = 3
         self.roi = np.index_exp[600 - self.window_size: 600 + self.window_size,
                                 400 - self.window_size: 400 + self.window_size]
 
@@ -23,6 +23,8 @@ class PianoOptimization(object):
         self.best_pos = None
 
         self.good_piezo_indexes = [2, 3, 4, 5, 6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+        # self.good_piezo_indexes = [2, 3, 4, 5, 6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+        #                            20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37]
         self.num_good_piezos = len(self.good_piezo_indexes)
 
     def optimize_pso(self):
@@ -31,7 +33,7 @@ class PianoOptimization(object):
         upper_bound = np.ones(self.num_good_piezos)
         bounds = (lower_bound, upper_bound)
 
-        self.optimizer = ps.single.GlobalBestPSO(n_particles=8, dimensions=self.num_good_piezos,
+        self.optimizer = ps.single.GlobalBestPSO(n_particles=10, dimensions=self.num_good_piezos,
                                                  options=options, bounds=bounds)
         # Perform optimization
         self.best_cost, self.best_pos = self.optimizer.optimize(self.vectorial_cost_function, iters=20)
@@ -43,7 +45,7 @@ class PianoOptimization(object):
             r = self.cost_function(amps)
             res.append(r)
 
-        return np.array(res).transpose()
+        return np.array(res)
 
     def cost_function(self, amps):
         """
@@ -57,4 +59,10 @@ class PianoOptimization(object):
 
         # TODO: change exposure time dynamically like in optimize.py
         im = self.cam.get_image()[self.roi]
-        return -sum(im)
+        cost = -int(im.sum())
+        print(f"cost: {cost}")
+        return cost
+
+    def close(self):
+        self.cam.close()
+        self.dac.close()
