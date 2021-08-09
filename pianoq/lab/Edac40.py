@@ -1,26 +1,38 @@
-import numpy as np
-import socket
+import os
+import re
+import time
 import struct
+import socket
+import subprocess
+import numpy as np
 
 """
 TODO: show zohar: 
     1) the [g1, g1] bug in set_gain 
     2) the 95 instead of 80 amp gain
-    3) the [128, 128] wierd thing? 
-    4) how her usage of 30 and [0:100] ruins the point of max_dac_voltage
-    *) verify in wireshark what happens with setting gain (assure endiannes) 
-    **) Check voltages on actual piano with scope
-    ***) Change 95 to 80  
+    3) the [128, 128] weird thing? 
+    4) how her usage of 30 and [0:100] ruins the point of max_dac_voltage  
 """
+
+cur_dir = os.path.dirname(os.path.abspath(__file__))
+EDAC_LIST_PATH = os.path.join(cur_dir, 'edac40list.exe')
 
 
 class Edac40(object):
     NUM_OF_PIEZOS = 40
     PORT = 1234
     DISCOVER_PORT = 30303
-    AMP_GAIN = 95  # TODO: Shouldn't this be 80?
+    AMP_GAIN = 80
+    SLEEP_AFTER_SEND = 0.3
 
-    EDAC_PHYS_CHANNELS = np.array([6, 7, 4, 5, 2, 3, 0, 1, 22, 23, 20, 21, 18, 19, 16, 17, 14, 15, 12, 13,
+    # This is from .c code
+    _EDAC_PHYS_CHANNELS = np.array([6, 7, 4, 5, 2, 3, 0, 1, 22, 23, 20, 21, 18, 19, 16, 17, 14, 15, 12, 13,
+                                   # Analog outputs 1-20 (right connector)
+                                   10, 11, 8, 9, 38, 39, 36, 37, 34, 35, 32, 33, 30, 31, 28, 29, 26, 27, 24,
+                                   25])  # Analog outputs 21-40 (left connector)
+
+    # Fixes empirically: 0<->1
+    EDAC_PHYS_CHANNELS = np.array([6, 7, 4, 5, 2, 3, 1, 0, 22, 23, 20, 21, 18, 19, 16, 17, 14, 15, 12, 13,
                                    # Analog outputs 1-20 (right connector)
                                    10, 11, 8, 9, 38, 39, 36, 37, 34, 35, 32, 33, 30, 31, 28, 29, 26, 27, 24,
                                    25])  # Analog outputs 21-40 (left connector)
@@ -30,6 +42,8 @@ class Edac40(object):
     SET_GAIN_CMDID = 2
     SET_GLOBAL_OFFSET_CMDID = 3
     SET_SAVE_TO_NVRAM_CMDID = 4
+
+    DEFAULT_IP = '169.254.124.204'
 
     def __init__(self, max_piezo_voltage=30, ip=None):
         self.max_piezo_voltage = max_piezo_voltage
@@ -49,13 +63,21 @@ class Edac40(object):
 
         self.set_gain()
         self.set_global_offset(0)
-        self.set_offset(128 * 256 + 128)  # TODO: this seems to be bug in original matlab - change? (zeroOffset.m)
+        self.set_offset(0x8000)
         self.save_to_nvram()
         self.set_amplitudes(0.5 * np.ones(self.NUM_OF_PIEZOS))
 
     def find_ip(self):
-        # TODO: use the edac40list.exe utility
-        return '169.254.124.204'
+        print('searching for ip...')
+        process = subprocess.Popen([EDAC_LIST_PATH], stdout=subprocess.PIPE)
+        stdout = process.communicate()[0].decode()
+        ip = re.findall('.*IP Address: (.*), MAC.*', stdout)[0]
+        print(f'found IP! {ip}')
+        return ip
+
+    def _send_buff(self, buff):
+        self.sock.send(buff)
+        time.sleep(self.SLEEP_AFTER_SEND)
 
     def _reorder_to_phys(self, volts):
         # this reorders the volts, so instead of being by the software numbering, they go to the physical numbering
@@ -76,7 +98,7 @@ class Edac40(object):
         """
         amps should be between 0 and 1, and amplitudes to DAC will be relative to self.max_dac_voltage
         """
-        # TODO: Add "gradual change" option? and "alpha" option? is this important?
+        # Should I add "gradual change" option? and "alpha" option? is this important?
 
         if type(amps) in [int, float]:
             amps = np.ones(self.NUM_OF_PIEZOS) * amps
@@ -88,17 +110,16 @@ class Edac40(object):
         # 255s for all channels. Theretically you can decide to update only some of the channels,
         # but i didn't implement it. see edac40_prepare_packet in edac40.c
         arr = np.ones(5, dtype=int) * 255
-        channel_mask = struct.pack('>5B', *arr)
-        command = struct.pack('>B', self.SET_DAC_VALUE_CMDID)
-        # TODO: in matlab this has two bytes instead of one (0 0), seems to be a mistake...? so how did it work till now?
+        channel_mask = struct.pack('<5B', *arr)
+        command = struct.pack('<B', self.SET_DAC_VALUE_CMDID)
 
-        values = struct.pack(f'>{self.NUM_OF_PIEZOS}H', *amps)
+        values = struct.pack(f'<{self.NUM_OF_PIEZOS}H', *amps)
         buff = channel_mask + command + values
-        self.sock.send(buff)
+        self._send_buff(buff)
 
     def set_gain(self, gain=None):
         # max_dac_voltage in units between 1 - 65535
-        # TODO: This calc is not clear to me, probably should change... (setGain.m)
+        # This calc is not really clear to me, but it gives reasonable range at the end...
         if not gain:
             gain = (self.max_dac_voltage / 12) * (2 ** 16 - 1)
         self.set_globally(self.SET_GAIN_CMDID, int(gain))
@@ -126,16 +147,16 @@ class Edac40(object):
          """
         # 255s for all channels
         arr = np.ones(5, dtype=int) * 255
-        channel_mask = struct.pack('>5B', *arr)
-        command = struct.pack('>B', command_code)
+        channel_mask = struct.pack('<5B', *arr)
+        command = struct.pack('<B', command_code)
         if command_code in [self.SET_SAVE_TO_NVRAM_CMDID, self.SET_GLOBAL_OFFSET_CMDID]:
             values = b'\x00\x00'
         else:
             arr = np.ones(self.NUM_OF_PIEZOS, dtype=int) * int(value)
-            values = struct.pack(f'>{self.NUM_OF_PIEZOS}H', *arr)
+            values = struct.pack(f'<{self.NUM_OF_PIEZOS}H', *arr)
         buff = channel_mask + command + values
 
-        self.sock.send(buff)
+        self._send_buff(buff)
 
     def _code_to_V(self, code):
         dacCode = code * (self.gain_all + 1) / 65535.0 + self.offset_all - 32768.0
