@@ -24,6 +24,7 @@ class Edac40(object):
     DISCOVER_PORT = 30303
     AMP_GAIN = 80
     SLEEP_AFTER_SEND = 0.3
+    REST_AMP = 0.5
 
     # This is from .c code
     _EDAC_PHYS_CHANNELS = np.array([6, 7, 4, 5, 2, 3, 0, 1, 22, 23, 20, 21, 18, 19, 16, 17, 14, 15, 12, 13,
@@ -65,7 +66,7 @@ class Edac40(object):
         self.set_global_offset(0)
         self.set_offset(0x8000)
         self.save_to_nvram()
-        self.set_amplitudes(0.5 * np.ones(self.NUM_OF_PIEZOS))
+        self.set_amplitudes(self.REST_AMP * np.ones(self.NUM_OF_PIEZOS))
 
     def find_ip(self):
         print('searching for ip...')

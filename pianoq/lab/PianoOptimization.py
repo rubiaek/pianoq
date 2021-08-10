@@ -69,7 +69,7 @@ class PianoOptimization(object):
         :param amps:
         :return:
         """
-        real_amps = np.zeros(40)
+        real_amps = np.ones(40) * self.dac.REST_AMP
         real_amps[self.good_piezo_indexes] = amps
         self.dac.set_amplitudes(real_amps)
 
