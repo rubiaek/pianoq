@@ -44,6 +44,17 @@ class VimbaCamera(object):
         im = frame.as_numpy_ndarray()[:, :, 0]
         return im
 
+    def get_averaged_image(self, amount=30):
+        """ return average on $amount$ pictures.
+        This is like a longer exposure time, but without getting to saturation """
+        im = self.get_image()
+        for i in range(1, amount):
+            im += self.get_image()
+
+        im = im / amount
+
+        return im
+
     def show_image(self, im=None, title=None):
         if im is None:
             im = self.get_image()
