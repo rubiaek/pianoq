@@ -46,7 +46,7 @@ class Swarm(object):
         self.w = self.w * self.wdamp
 
         restart_occurred = False
-        particles_to_mutate = np.random.choice(self.n_pop, 0)  # TODO: is this mutation good?
+        particles_to_mutate = np.random.choice(self.n_pop, 2)  # TODO: is this mutation good?
 
         # At end of iteration we will have a new global_best_positions and global_best_cost
         for i, particle in enumerate(self.particles):
@@ -165,6 +165,8 @@ class MyPSOOptimizer(object):
         self.swarm = Swarm(cost_func=cost_function, n_pop=n_pop, n_var=n_var,
                            w=w, wdamp=wdamp, c1=c1, c2=c2)
 
+        self.random_average_cost = self.get_random_average_cost()
+
     def optimize(self):
 
         # Do it first at the beginning with the initial guess, then again after initial population
@@ -200,7 +202,16 @@ class MyPSOOptimizer(object):
                 print("## TIMED OUT! ##")
                 break
 
-    def actual_amount_of_iterations(self):
+    def get_random_average_cost(self):
+        cost = 0
+        n = 20
+        for i in range(n):
+            amps = self.swarm.sample_func(self.swarm.n_var)
+            cost += self.swarm.cost_func(amps)
+
+        return cost / n
+
+    def amount_of_micro_iterations(self):
         if len(self.reduce_at_iterations) == 0:
             return self.n_iterations
 
@@ -212,6 +223,9 @@ class MyPSOOptimizer(object):
         for amount in amounts:
             cur_n_pop = cur_n_pop // 2
             tot_iters += cur_n_pop * amount
+
+        cur_n_pop = cur_n_pop // 2
+        tot_iters += (self.n_iterations - self.reduce_at_iterations[-1]) * cur_n_pop
 
         return tot_iters
 

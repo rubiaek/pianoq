@@ -83,8 +83,10 @@ class PianoOptimization(object):
                                 stop_early=True, stop_after_n_const_iter=stop_after_n_const_iters,
                                 vary_popuation=True, reduce_at_iterations=reduce_at_iterations)
 
-        print(f"Actual amount of iterations is: {self.o.actual_amount_of_iterations()}.\n"
-              f"It should take {self.o.actual_amount_of_iterations() * self.dac.SLEEP_AFTER_SEND / 60} minutes")
+        self.res.random_average_cost = self.o.random_average_cost
+
+        print(f"Actual amount of iterations is: {self.o.amount_of_micro_iterations()}.\n"
+              f"It should take {self.o.amount_of_micro_iterations() * self.dac.SLEEP_AFTER_SEND / 60} minutes")
         self.o.optimize()
 
     def vectorial_cost_function(self, amps_times_n_particles):

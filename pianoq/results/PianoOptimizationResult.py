@@ -16,6 +16,7 @@ class PianoPSOOptimizationResult(object):
 
         self.normalized_images = []
         self.normaloztion_to_one = None
+        self.random_average_cost = None
 
         self.best_cost = None
         self.best_amps = None
@@ -58,6 +59,7 @@ class PianoPSOOptimizationResult(object):
                      images=self.images,
                      exposure_times=self.exposure_times,
                      timestamps=self.timestamps,
+                     random_average_cost=self.random_average_cost,
                      best_cost=self.best_cost,
                      best_amps=self.best_amps,
                      best_image=self.best_image
@@ -77,6 +79,7 @@ class PianoPSOOptimizationResult(object):
         self.images = data['images']
         self.exposure_times = data['exposure_times']
         self.timestamps = data['timestamps']
+        self.random_average_cost = data.get('random_average_cost', None)
 
         self.normaloztion_to_one = self.images[0].max() / self.exposure_times[0]
         self.normalized_images = self._get_normalized_images()
