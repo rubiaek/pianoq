@@ -29,13 +29,15 @@ class PianoOptimization(object):
 
         self.start_time = datetime.datetime.now()
 
-        # TODO: this is kinf of silly... it will rather be better to communicate less bits with the camera...
+        # TODO: this is kind of silly... it will rather be better to communicate less bits with the camera...
         # Should probably get as parameter the (x, y) and then define the borders around that part
-        borders = Borders(0, 0, 1280, 1024)
+        # borders = Borders(0, 0, 1280, 1024)
+        borders = Borders(300, 420, 900, 780)
+
         self.cam.set_borders(borders)
-        self.window_size = 1
-        self.roi = np.index_exp[600 - self.window_size: 600 + self.window_size,
-                                400 - self.window_size: 400 + self.window_size]
+        self.window_size = 2
+        self.roi = np.index_exp[180 - self.window_size: 180 + self.window_size,
+                                180 - self.window_size: 180 + self.window_size]
 
         self.optimizer = None
         self.best_cost = None
@@ -80,6 +82,9 @@ class PianoOptimization(object):
                                 timeout=60*60*2,
                                 stop_early=True, stop_after_n_const_iter=stop_after_n_const_iters,
                                 vary_popuation=True, reduce_at_iterations=reduce_at_iterations)
+
+        print(f"Actual amount of iterations is: {self.o.actual_amount_of_iterations()}.\n"
+              f"It should take {self.o.actual_amount_of_iterations() * self.dac.SLEEP_AFTER_SEND / 60} minutes")
         self.o.optimize()
 
     def vectorial_cost_function(self, amps_times_n_particles):
@@ -137,6 +142,7 @@ class PianoOptimization(object):
 
         im = self.cam.get_averaged_image(amount=10)
         self.res.images.append(im)
+        self.res.exposure_times.append(self.cam.get_exposure_time())
 
         # self.o.default_post_iteration(global_best_cost, global_best_positions)
         self.current_macro_iter += 1

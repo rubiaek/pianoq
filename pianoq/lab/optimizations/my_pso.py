@@ -192,11 +192,28 @@ class MyPSOOptimizer(object):
                     curr_best_cost = self.swarm.global_best_cost
 
                 if n_const_iter >= self.stop_after_n_const_iter:
+                    print(f"Stopping because I am stuck at cost = {self.best_cost} for {n_const_iter} "
+                          f"iterations already!")
                     break
 
             if (time.time() - self.start_time) > self.timeout:
                 print("## TIMED OUT! ##")
                 break
+
+    def actual_amount_of_iterations(self):
+        if len(self.reduce_at_iterations) == 0:
+            return self.n_iterations
+
+        cur_n_pop = self.swarm.n_pop
+        tot_iters = cur_n_pop * self.reduce_at_iterations[0]
+
+        amounts = np.diff(self.reduce_at_iterations)  # amount of iterations for each meta-generation
+
+        for amount in amounts:
+            cur_n_pop = cur_n_pop // 2
+            tot_iters += cur_n_pop * amount
+
+        return tot_iters
 
     @property
     def best_cost(self):
