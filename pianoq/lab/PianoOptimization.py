@@ -23,16 +23,14 @@ class PianoOptimization(object):
         self.cam = VimbaCamera(2, exposure_time=initial_exposure_time)
         self.initial_exposure_time = initial_exposure_time
         self.scaling_exposure_factor = 1
+        # Should probably get as parameter the (x, y) and then define the borders around that part
+        borders = DEFAULT_BORDERS
+        self.cam.set_borders(borders)
 
         self.saveto_path = saveto_path
         self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
 
         self.start_time = datetime.datetime.now()
-
-        # Should probably get as parameter the (x, y) and then define the borders around that part
-        borders = DEFAULT_BORDERS
-
-        self.cam.set_borders(borders)
         self.window_size = 2
         self.roi = np.index_exp[180 - self.window_size: 180 + self.window_size,
                                 180 - self.window_size: 180 + self.window_size]
