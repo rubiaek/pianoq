@@ -2,23 +2,19 @@ import numpy as np
 
 from pianoq.lab.Edac40 import Edac40
 from pianoq.lab.VimbaCamera import VimbaCamera
-from pianoq.misc.borders import Borders
-
-
-def get_correlation(im1, im2):
-    # distance normalized cross correlation. 1 in perfect. 0 is bad.
-    dist_ncc = np.sum((im1 - np.mean(im1)) * (im2 - np.mean(im2))) / ((im1.size - 1) * np.std(im1) * np.std(im2))
-    return dist_ncc
+from pianoq.misc.calc_correlation import get_correlation
+from pianoq.misc.consts import DEFAULT_BORDERS
 
 
 def check_rest_time():
     e = Edac40(max_piezo_voltage=30, ip=Edac40.DEFAULT_IP)
     cam = VimbaCamera(2, exposure_time=800)
-    borders = Borders(300, 420, 900, 780)
+    borders = DEFAULT_BORDERS
     cam.set_borders(borders)
     e.SLEEP_AFTER_SEND = 0.0001
 
     times = []
+    ims = []
     correlations = []
     print('times\t\tcorrelations')
     print('---------------------------------')
@@ -28,18 +24,21 @@ def check_rest_time():
 
     import time
     start = time.time()
-    old_im = cam.get_image()
+    times.append(0)
+    im = cam.get_image()
+    ims.append(im)
 
-    for i in range(20):
+    for i in range(10):
         im = cam.get_image()
+        ims.append(im)
         now = time.time()
         times.append(now-start)
-        corr = get_correlation(old_im, im)  # Doing this later will probably give me better resollution
-        correlations.append(corr)
-        old_im = im
 
-    for time, corr in zip(times, correlations):
-        print(f'{time:.3f}\t\t{corr}')
+    for i in range(10):
+        corr = get_correlation(ims[i+1], ims[i])
+        correlations.append(corr)
+
+        print(f'{times[i+1]:.3f}\t\t{corr}')
 
     cam.close()
     e.close()

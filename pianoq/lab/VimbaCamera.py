@@ -42,7 +42,7 @@ class VimbaCamera(object):
         # Make sure pixel format if mono8 (can be set through the VimbaViewer->all->ImageFormatControl.
         # Probably can also from python, but see no reason to change it from here :P
         im = frame.as_numpy_ndarray()[:, :, 0]
-        return im
+        return im.astype(float)
 
     def get_averaged_image(self, amount=30):
         """ return average on $amount$ pictures.

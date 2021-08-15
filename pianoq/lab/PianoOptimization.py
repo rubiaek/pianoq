@@ -5,7 +5,7 @@ import numpy as np
 from pianoq.lab.Edac40 import Edac40
 from pianoq.lab.VimbaCamera import VimbaCamera
 from pianoq.lab.optimizations.my_pso import MyPSOOptimizer
-from pianoq.misc.borders import Borders
+from pianoq.misc.consts import DEFAULT_BORDERS
 
 from pianoq.results.PianoOptimizationResult import PianoPSOOptimizationResult
 
@@ -29,10 +29,8 @@ class PianoOptimization(object):
 
         self.start_time = datetime.datetime.now()
 
-        # TODO: this is kind of silly... it will rather be better to communicate less bits with the camera...
         # Should probably get as parameter the (x, y) and then define the borders around that part
-        # borders = Borders(0, 0, 1280, 1024)
-        borders = Borders(300, 420, 900, 780)
+        borders = DEFAULT_BORDERS
 
         self.cam.set_borders(borders)
         self.window_size = 2

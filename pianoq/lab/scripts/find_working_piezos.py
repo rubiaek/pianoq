@@ -1,25 +1,20 @@
 import numpy as np
 import time
-from pianoq.misc.borders import Borders
 from pianoq.lab.Edac40 import Edac40
 from pianoq.lab.VimbaCamera import VimbaCamera
-
-
-def get_correlation(im1, im2):
-    # distance normalized cross correlation. 1 in perfect. 0 is bad.
-    dist_ncc = np.sum((im1 - np.mean(im1)) * (im2 - np.mean(im2))) / ((im1.size - 1) * np.std(im1) * np.std(im2))
-    return dist_ncc
+from pianoq.misc.calc_correlation import get_correlation
+from pianoq.misc.consts import DEFAULT_BORDERS
 
 
 def check_piezo(e: Edac40, cam: VimbaCamera, piezo_num):
     amps = np.zeros(e.NUM_OF_PIEZOS)
 
     e.set_amplitudes(amps)
-    im1 = cam.get_image()[470:720, 350:600]
+    im1 = cam.get_image()
 
     amps[piezo_num] = 1
     e.set_amplitudes(amps)
-    im2 = cam.get_image()[470:720, 350:600]
+    im2 = cam.get_image()
 
     correlation = get_correlation(im1, im2)
     print(f'{piezo_num} \t\t {correlation:.3f}')
@@ -41,8 +36,7 @@ def check_all_piezos():
     """
     e = Edac40(max_piezo_voltage=30, ip=Edac40.DEFAULT_IP)
     cam = VimbaCamera(2, exposure_time=800)
-    borders = Borders(0, 0, 1280, 1024)
-    cam.set_borders(borders)
+    cam.set_borders(DEFAULT_BORDERS)
 
     print("Piezo num\t correlation")
     print("----------------------")
