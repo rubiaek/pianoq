@@ -13,8 +13,8 @@ CORR_MASK_PATH = os.path.join(cur_dir, "correlations_mask.npz")
 def get_correlation(im1, im2, use_mask=True):
     if use_mask:
         mask = get_correlations_mask()
-        im1 = im1 * mask
-        im2 = im2 * mask
+        im1 = im1[mask]
+        im2 = im2[mask]
 
     numerator = np.sum((im1 - np.mean(im1)) * (im2 - np.mean(im2)))
 
