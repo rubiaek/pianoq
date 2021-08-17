@@ -6,21 +6,27 @@ import traceback
 
 class PianoPSOOptimizationResult(object):
     def __init__(self):
-        # TODO: add active piezos, active piezo amounts, piezo range, etc...
-
+        # Results of experiment
         self.costs = []
         self.amplitudes = []
         self.images = []
         self.exposure_times = []
         self.timestamps = []
 
+        # Dac params
+        self.good_piezo_indexes = None
+        self.max_piezo_voltage = None
+
+        # Optimization params
+        self.roi = None
+        self.n_pop = None
+        self.n_iterations = None
+        self.stop_after_n_const_iters = None
+        self.reduce_at_iterations = None
+
         self.normalized_images = []
         self.normaloztion_to_one = None
         self.random_average_cost = None
-
-        self.best_cost = None
-        self.best_amps = None
-        self.best_image = None
 
     def _get_normalized_images(self):
         norm_ims = []
@@ -60,9 +66,13 @@ class PianoPSOOptimizationResult(object):
                      exposure_times=self.exposure_times,
                      timestamps=self.timestamps,
                      random_average_cost=self.random_average_cost,
-                     best_cost=self.best_cost,
-                     best_amps=self.best_amps,
-                     best_image=self.best_image
+                     good_piezo_indexes=self.good_piezo_indexes,
+                     max_piezo_voltage=self.max_piezo_voltage,
+                     roi=self.roi,
+                     n_pop=self.n_pop,
+                     n_iterations=self.n_iterations,
+                     stop_after_n_const_iters=self.stop_after_n_const_iters,
+                     reduce_at_iterations=self.reduce_at_iterations
                      )
             f.close()
         except Exception as e:
@@ -86,7 +96,11 @@ class PianoPSOOptimizationResult(object):
         self.normaloztion_to_one = self.images[0].max() / self.exposure_times[0]
         self.normalized_images = self._get_normalized_images()
 
-        self.best_cost = data['best_cost']
-        self.best_amps = data['best_amps']
-        self.best_image = data['best_image']
+        self.good_piezo_indexes = data.get('good_piezo_indexes', None)
+        self.max_piezo_voltage = data.get('max_piezo_voltage', None)
 
+        self.roi = data.get('roi', None)
+        self.n_pop = data.get('n_pop', None)
+        self.n_iterations = data.get('n_iterations', None)
+        self.stop_after_n_const_iters = data.get('stop_after_n_const_iters', None)
+        self.reduce_at_iterations = data.get('reduce_at_iterations', None)

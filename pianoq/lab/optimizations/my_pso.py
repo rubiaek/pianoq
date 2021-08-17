@@ -203,6 +203,7 @@ class MyPSOOptimizer(object):
                 break
 
     def get_random_average_cost(self):
+        print(f'Initializing random average cost')
         cost = 0
         n = 40
         for i in range(n):

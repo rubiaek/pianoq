@@ -46,7 +46,11 @@ class PianoOptimization(object):
 
         self.current_micro_iter = 0
         self.current_macro_iter = 0
-        self.res = PianoPSOOptimizationResult()  # TODO: add here good_piezos, and other general experimental parameters
+
+        self.res = PianoPSOOptimizationResult()
+        self.res.good_piezo_indexes = np.array(self.good_piezo_indexes)
+        self.res.max_piezo_voltage = self.dac.max_piezo_voltage
+        self.res.roi = self.roi
 
     def optimize_pso(self):
         options = {'c1': 1.5, 'c2': 2, 'w': 0.99}
@@ -80,6 +84,10 @@ class PianoOptimization(object):
                                 vary_popuation=True, reduce_at_iterations=reduce_at_iterations)
 
         self.res.random_average_cost = self.o.random_average_cost
+        self.res.n_pop = n_pop
+        self.res.n_iterations = n_iterations
+        self.res.stop_after_n_const_iters = stop_after_n_const_iters
+        self.res.reduce_at_iterations = reduce_at_iterations
 
         print(f"Actual amount of iterations is: {self.o.amount_of_micro_iterations()}.\n"
               f"It should take {self.o.amount_of_micro_iterations() * self.dac.SLEEP_AFTER_SEND / 60} minutes")
