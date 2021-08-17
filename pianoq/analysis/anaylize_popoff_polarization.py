@@ -46,18 +46,19 @@ def get_all_2by2s(TM):
 
 def is_diag(A, threshold):
     """ Check that sum of abs of off diagonals is lower than some threshold """
-    return np.abs(np.fliplr(A)).trace() / 2 < threshold
+    off_diagonal = np.abs(np.fliplr(A)).trace()
+    diagonal = np.abs(A.trace())
+
+    return off_diagonal / diagonal < threshold
 
 
-def find_P_amount(As):
+def find_P_amount(As, threshold):
     """
     find amount of transformations P needed to diagonalize all the 2X2 matrices.
     This is similar to the schmidt number, or the amount of entanglement, or amount of
     mode-dependant polarization rotation.
     """
 
-    # TODO: Threshold per matrix and not global
-    threshold = np.abs(As).mean() * 0.5
     n = 0
     while len(As) > 0:
         A0 = As[0]
@@ -65,7 +66,7 @@ def find_P_amount(As):
         Bs = [la.inv(P) @ A @ P for A in As]
         Cs = []
         for i, B in enumerate(Bs):
-            if not is_diag(B, threshold):
+            if not is_diag(B, threshold=threshold):
                Cs.append(As[i])
 
         As = Cs
@@ -74,17 +75,33 @@ def find_P_amount(As):
     return n
 
 
-def schmidt(TM_index):
+def schmidt(TM_index, threshold):
     pop = PopoffPolarizationRotationResult(path=PATH)
     pop._initialize(method='TM')
     TM = pop.TM_modes[TM_index]
     As = get_all_2by2s(TM)
-    schmidt_num = find_P_amount(As)
-    print(f'Schmidt number for dx={pop.dxs[TM_index]} is: {schmidt_num}')
+    schmidt_num = find_P_amount(As, threshold=threshold)
+    return pop.dxs[TM_index], schmidt_num
+    # print(f'Schmidt number for dx={pop.dxs[TM_index]:.3f} is: {schmidt_num}')
+
+
+def plot_schmidt(threshold=0.5):
+    schmidt_nums = []
+    dxs = []
+    for i in range(40):
+        dx, sn = schmidt(i, threshold)
+        dxs.append(dx)
+        schmidt_nums.append(sn)
+
+    fig, ax = plt.subplots()
+    ax.plot(dxs, schmidt_nums)
+    ax.set_xlabel(r'dx ($ \mu m $)')
+    ax.set_ylabel(r'Polarization "Schmidt number"')
+    ax.set_title(f'Shmidt approx. with threshold={threshold}')
+    fig.show()
 
 
 if __name__ == "__main__":
     # TM_ratios_figures()
-    for i in range(40):
-        schmidt(i)
+    plot_schmidt(0.3)
     plt.show()
