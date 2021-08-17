@@ -56,6 +56,13 @@ class PianoPSOOptimizationResult(object):
 
         fig.show()
 
+    @property
+    def enhancement(self):
+        if self.random_average_cost:
+            return np.min(self.costs) / self.random_average_cost
+        else:
+            return -1
+
     def saveto(self, path):
         try:
             f = open(path, 'wb')

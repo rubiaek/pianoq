@@ -18,7 +18,7 @@ LOGS_DIR = 'C:\\temp'
 
 
 class PianoOptimization(object):
-    def __init__(self, initial_exposure_time=900, saveto_path=None):
+    def __init__(self, initial_exposure_time=900, saveto_path=None, roi=None):
         self.dac = Edac40(max_piezo_voltage=30, ip=Edac40.DEFAULT_IP)
         self.cam = VimbaCamera(2, exposure_time=initial_exposure_time)
         self.initial_exposure_time = initial_exposure_time
@@ -32,8 +32,8 @@ class PianoOptimization(object):
 
         self.start_time = datetime.datetime.now()
         self.window_size = 2
-        self.roi = np.index_exp[180 - self.window_size: 180 + self.window_size,
-                                180 - self.window_size: 180 + self.window_size]
+        self.roi = roi or np.index_exp[150 - self.window_size: 150 + self.window_size,
+                                       150 - self.window_size: 150 + self.window_size]
 
         self.optimizer = None
         self.best_cost = None
@@ -58,10 +58,10 @@ class PianoOptimization(object):
         upper_bound = np.ones(self.num_good_piezos)
         bounds = (lower_bound, upper_bound)
 
-        self.optimizer = ps.single.GlobalBestPSO(n_particles=10, dimensions=self.num_good_piezos,
-                                                 options=options, bounds=bounds)
+        self.o = ps.single.GlobalBestPSO(n_particles=10, dimensions=self.num_good_piezos,
+                                         options=options, bounds=bounds)
         # Perform optimization
-        self.best_cost, self.best_pos = self.optimizer.optimize(self.vectorial_cost_function, iters=10)
+        self.best_cost, self.best_pos = self.o.optimize(self.vectorial_cost_function, iters=10)
 
     def optimize_differential_evollution(self):
         bounds = [[0, 1]] * self.num_good_piezos
@@ -76,22 +76,23 @@ class PianoOptimization(object):
         self.pso.run()
 
     def optimize_my_pso(self, n_pop, n_iterations, stop_after_n_const_iters, reduce_at_iterations=()):
-        self.o = MyPSOOptimizer(self.cost_function, n_pop=n_pop, n_var=self.num_good_piezos, n_iterations=n_iterations,
-                                post_iteration_callback=self.post_iteration_callback,
-                                w=1, wdamp=0.99, c1=1.5, c2=2,
-                                timeout=60*60*2,
-                                stop_early=True, stop_after_n_const_iter=stop_after_n_const_iters,
-                                vary_popuation=True, reduce_at_iterations=reduce_at_iterations)
+        self.optimizer = MyPSOOptimizer(self.cost_function, n_pop=n_pop, n_var=self.num_good_piezos,
+                                        n_iterations=n_iterations,
+                                        post_iteration_callback=self.post_iteration_callback,
+                                        w=1, wdamp=0.99, c1=1.5, c2=2,
+                                        timeout=60*60*2,
+                                        stop_early=True, stop_after_n_const_iter=stop_after_n_const_iters,
+                                        vary_popuation=True, reduce_at_iterations=reduce_at_iterations)
 
-        self.res.random_average_cost = self.o.random_average_cost
+        self.res.random_average_cost = self.optimizer.random_average_cost
         self.res.n_pop = n_pop
         self.res.n_iterations = n_iterations
         self.res.stop_after_n_const_iters = stop_after_n_const_iters
         self.res.reduce_at_iterations = reduce_at_iterations
 
-        print(f"Actual amount of iterations is: {self.o.amount_of_micro_iterations()}.\n"
-              f"It should take {self.o.amount_of_micro_iterations() * self.dac.SLEEP_AFTER_SEND / 60} minutes")
-        self.o.optimize()
+        print(f"Actual amount of iterations is: {self.optimizer.amount_of_micro_iterations()}.\n"
+              f"It should take {self.optimizer.amount_of_micro_iterations() * self.dac.SLEEP_AFTER_SEND / 60} minutes")
+        self.optimizer.optimize()
 
     def vectorial_cost_function(self, amps_times_n_particles):
         # Was needed for optimize_pso from the pyswarms package

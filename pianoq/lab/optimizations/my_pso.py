@@ -65,7 +65,7 @@ class Swarm(object):
             self.iterations_since_restart_occured = 0
 
     def is_stuck(self):
-        return self.iterations_since_restart_occured > 15 and self.particles_are_clustered()
+        return self.iterations_since_restart_occured > 10 and self.particles_are_clustered()
 
     def particles_are_clustered(self):
         pop_mat = np.zeros((self.n_pop, self.n_var))  # Every row is a particle
@@ -73,7 +73,8 @@ class Swarm(object):
             pop_mat[i, :] = particle.positions
         std_for_different_piezos = pop_mat.std(axis=0)
         mean_std = std_for_different_piezos.mean()
-        return mean_std > 0.03 * (self.upper_bound - self.lower_bound)
+        # print(f'mean_std: {mean_std::.3f}')
+        return mean_std < 0.1 * (self.upper_bound - self.lower_bound)
 
     def rand_sample(self, size):
         return np.random.uniform(self.lower_bound, self.upper_bound, size=size)
