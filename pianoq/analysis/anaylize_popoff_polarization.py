@@ -59,20 +59,30 @@ def find_P_amount(As, threshold):
     mode-dependant polarization rotation.
     """
 
+    all_steps = []
+    curr_step = np.ones(len(As))
+    all_steps.append(curr_step.copy())
+
     n = 0
-    while len(As) > 0:
-        A0 = As[0]
+    while any(curr_step == 1.0):
+        n += 1
+        A0_index = np.random.choice(np.where(curr_step == 1.0)[0])
+        A0 = As[A0_index]
         P = get_P(A0)
         Bs = [la.inv(P) @ A @ P for A in As]
-        Cs = []
+
         for i, B in enumerate(Bs):
-            if not is_diag(B, threshold=threshold):
-               Cs.append(As[i])
+            # The 0.5 game is to visualize that this mode changed in this iteration
+            if curr_step[i] in [0.3, 0.7]:
+                curr_step[i] = 0
+            if is_diag(B, threshold=threshold):
+                curr_step[i] = 0.3
 
-        As = Cs
-        n += 1
+        curr_step[A0_index] = 0.7
 
-    return n
+        all_steps.append(curr_step.copy())
+
+    return n, np.array(all_steps)
 
 
 def schmidt(TM_index, threshold):
@@ -80,16 +90,16 @@ def schmidt(TM_index, threshold):
     pop._initialize(method='TM')
     TM = pop.TM_modes[TM_index]
     As = get_all_2by2s(TM)
-    schmidt_num = find_P_amount(As, threshold=threshold)
-    return pop.dxs[TM_index], schmidt_num
-    # print(f'Schmidt number for dx={pop.dxs[TM_index]:.3f} is: {schmidt_num}')
+    schmidt_num, all_steps = find_P_amount(As, threshold=threshold)
+    print(f'Schmidt number for dx={pop.dxs[TM_index]:.3f} is: {schmidt_num}')
+    return pop.dxs[TM_index], schmidt_num, all_steps
 
 
-def plot_schmidt(threshold=0.5):
+def plot_schmidt_per_dxs(threshold=0.5):
     schmidt_nums = []
     dxs = []
     for i in range(40):
-        dx, sn = schmidt(i, threshold)
+        dx, sn, _ = schmidt(i, threshold)
         dxs.append(dx)
         schmidt_nums.append(sn)
 
@@ -101,7 +111,18 @@ def plot_schmidt(threshold=0.5):
     fig.show()
 
 
+def plot_schmidt_process(TM_index, threshold=0.3):
+    dx, sn, all_steps = schmidt(TM_index, threshold)
+    fig, ax = plt.subplots()
+    ax.imshow(all_steps, cmap='Greys', origin='lower')
+    ax.set_xlabel(r'different modes')
+    ax.set_ylabel(r'iterations')
+    ax.set_title(f'Shmidt approx. with threshold={threshold}, dx={dx}')
+    fig.show()
+
+
 if __name__ == "__main__":
     # TM_ratios_figures()
-    plot_schmidt(0.3)
+    # plot_schmidt_per_dxs(0.3)
+    plot_schmidt_process(5, 0.3)
     plt.show()
