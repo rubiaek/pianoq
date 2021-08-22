@@ -14,9 +14,9 @@ def TM_ratios_figures():
 
     # pop.show_mode(10)
     pop.show_TM(pop.TM_modes[pop.index_dx0])
-    # pop.show_all_polarizations_ratios()
-    # pop.show_polarizations_ratios_per_mode(range(0, 55, 2), logscale=True, legend=True)
-    # pop.show_polarizations_ratios_bar_plots([0, 20, 30, 40])
+    pop.show_all_polarizations_ratios()
+    pop.show_polarizations_ratios_per_mode(range(0, 55, 2), logscale=True, legend=True)
+    pop.show_polarizations_ratios_bar_plots([0, 20, 30, 40])
     # pop.show_mixing_of_mode(pop.TM_modes[5], 10)
 
 
@@ -46,8 +46,8 @@ def get_all_2by2s(TM):
 
 def is_diag(A, threshold):
     """ Check that sum of abs of off diagonals is lower than some threshold """
-    off_diagonal = np.abs(np.fliplr(A)).trace()
-    diagonal = np.abs(A.trace())
+    off_diagonal = (np.abs(np.fliplr(A)) ** 2).trace()
+    diagonal = (np.abs(A) ** 2).trace()
 
     return off_diagonal / diagonal < threshold
 
@@ -123,6 +123,6 @@ def plot_schmidt_process(TM_index, threshold=0.3):
 
 if __name__ == "__main__":
     # TM_ratios_figures()
-    # plot_schmidt_per_dxs(0.3)
-    plot_schmidt_process(5, 0.3)
+    # plot_schmidt_per_dxs(0.1)
+    plot_schmidt_process(5, 0.2)
     plt.show()
