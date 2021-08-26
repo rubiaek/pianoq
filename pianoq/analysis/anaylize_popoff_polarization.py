@@ -46,10 +46,37 @@ def get_all_2by2s(TM):
 
 def is_diag(A, threshold):
     """ Check that sum of abs of off diagonals is lower than some threshold """
-    off_diagonal = (np.abs(np.fliplr(A)) ** 2).trace()
-    diagonal = (np.abs(A) ** 2).trace()
+    B = np.abs(A) ** 2
+    off_diagonal = np.fliplr(B).trace()
+    diagonal = B.trace()
 
     return off_diagonal / diagonal < threshold
+
+
+def find_P_amount2(As, threshold):
+    # More accurate finding of amount
+    rotation_strengths = np.zeros(As.shape[0])
+    rotates_who = np.zeros((As.shape[0], As.shape[0]), dtype=int)
+
+    for i, A in enumerate(As):
+        P = get_P(A)
+        Bs = [la.inv(P) @ A @ P for A in As]
+        are_diag = np.array([is_diag(B, threshold) for B in Bs])
+        rotates_who[i] = are_diag
+
+    n = 0
+    relevant_indexes = np.ones(len(As), dtype=int)
+    best_choices = []
+    while np.any(relevant_indexes):
+        n += 1
+        best_choice = sorted(rotates_who, key=lambda x: np.sum(x[np.where(relevant_indexes)]), reverse=True)[0]
+        best_choices.append(best_choice)
+        relevant_indexes[np.where(best_choice)] = 0
+        # print(n) # BUG
+
+
+    return rotates_who, n, best_choices
+    # return n, best_choices
 
 
 def find_P_amount(As, threshold):
@@ -90,7 +117,7 @@ def schmidt(TM_index, threshold):
     pop._initialize(method='TM')
     TM = pop.TM_modes[TM_index]
     As = get_all_2by2s(TM)
-    schmidt_num, all_steps = find_P_amount(As, threshold=threshold)
+    _, schmidt_num, all_steps = find_P_amount2(As, threshold=threshold)
     print(f'Schmidt number for dx={pop.dxs[TM_index]:.3f} is: {schmidt_num}')
     return pop.dxs[TM_index], schmidt_num, all_steps
 
@@ -123,6 +150,6 @@ def plot_schmidt_process(TM_index, threshold=0.3):
 
 if __name__ == "__main__":
     # TM_ratios_figures()
-    # plot_schmidt_per_dxs(0.1)
-    plot_schmidt_process(5, 0.2)
+    plot_schmidt_per_dxs(0.05)
+    plot_schmidt_process(20, 0.2)
     plt.show()
