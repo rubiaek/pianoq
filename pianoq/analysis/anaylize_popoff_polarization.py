@@ -48,8 +48,8 @@ def plot_poincare(TM_index, col_num=0):
         S2 = 2 * (Ax.conj() * Ay).real
         S3 = 2 * (Ax.conj() * Ay).imag
 
-        # points[i, :] = np.array([S1 / S0, S2 / S0, S3 / S0])
-        points[i, :] = np.array([S1, S2, S3])
+        points[i, :] = np.array([S1 / S0, S2 / S0, S3 / S0])
+        # points[i, :] = np.array([S1, S2, S3])
 
     b.add_points(points.transpose())
     b.show()
