@@ -59,5 +59,7 @@ def generate_correlations_mask():
 
     return mask
 
-generate_correlations_mask()
-plt.show()
+
+if __name__ == "__main__":
+    generate_correlations_mask()
+    plt.show()
