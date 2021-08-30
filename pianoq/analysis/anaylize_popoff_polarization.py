@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.linalg as la
+import qutip
 
 from pianoq.results.PopoffPolarizationRotationResult import PopoffPolarizationRotationResult
 
@@ -25,6 +26,34 @@ def get_P(A):
     eig_vals, eig_vecs = la.eig(A)
     return eig_vecs
 
+
+def plot_poincare(TM_index, col_num=0):
+    """ col_num could be also 1 for input vectors of 01 instead of 10 """
+
+    pop = PopoffPolarizationRotationResult(path=PATH)
+    pop._initialize(method='TM')
+    TM = pop.TM_modes[TM_index]
+    As = get_all_2by2s(TM)
+
+    b = qutip.Bloch()
+    b.add_annotation([1,1,1], f'dx={pop.dxs[TM_index]:.3f}')
+    points = np.zeros((len(As), 3))
+    for i, A in enumerate(As):
+        v = A[:, col_num]
+        Ax = v[0]
+        Ay = v[1]
+
+        S0 = (np.abs(Ax) ** 2) + (np.abs(Ay) ** 2)
+        S1 = (np.abs(Ax) ** 2) - (np.abs(Ay) ** 2)
+        S2 = 2 * (Ax.conj() * Ay).real
+        S3 = 2 * (Ax.conj() * Ay).imag
+
+        points[i, :] = np.array([S1 / S0, S2 / S0, S3 / S0])
+        # points[i, :] = np.array([S1, S2, S3])
+
+    b.add_points(points.transpose())
+    b.show()
+    plt.show(block=False)
 
 def get_all_2by2s(TM):
     """ return [55X2X2]"""
@@ -147,9 +176,17 @@ def plot_schmidt_process(TM_index, threshold=0.3):
     ax.set_title(f'Shmidt approx. with threshold={threshold}, dx={dx}')
     fig.show()
 
+def plot_poincares():
+    plot_poincare(5, 0)
+    plot_poincare(20, 0)
+    plot_poincare(30, 0)
+    plot_poincare(40, 0)
 
 if __name__ == "__main__":
     # TM_ratios_figures()
-    plot_schmidt_per_dxs(0.05)
-    plot_schmidt_process(20, 0.2)
+    # plot_schmidt_per_dxs(0.1)
+    # plot_schmidt_process(20, 0.1)
+    # plot_poincare(5, 0)
+    plot_poincares()
     plt.show()
+    pass
