@@ -41,6 +41,27 @@ class PolarizationMeasResult(object):
         axes[1].set_title('theta angle')
         fig.show()
 
+    def plot_stokes_params(self):
+        S0, S1, S2, S3 = self.get_stokes()
+        fig, axes = plt.subplots(2, 2)
+        im = axes[0, 0].imshow(S0)
+        axes[0, 0].set_title('S0')
+        fig.colorbar(im, ax=axes[0, 0])
+
+        im = axes[0, 1].imshow(S1)
+        axes[0, 1].set_title('S1')
+        fig.colorbar(im, ax=axes[0, 1])
+
+        im = axes[1, 0].imshow(S2)
+        axes[1, 0].set_title('S2')
+        fig.colorbar(im, ax=axes[1, 0])
+
+        im = axes[1, 1].imshow(S3)
+        axes[1, 1].set_title('S3')
+        fig.colorbar(im, ax=axes[1, 1])
+
+        fig.show()
+
     def plot_poincare(self):
 
         S0, S1, S2, S3 = self.get_stokes()
@@ -149,7 +170,10 @@ if __name__ == "__main__":
     path = r"C:\temp\2021_08_30_10_50_47.polm"
     path = r"D:\Google Drive\Projects\Quantum Piano\Results\PolarizationMeasurements\2021_08_30_14_37_21.polm"
     path = r"D:\Google Drive\Projects\Quantum Piano\Results\PolarizationMeasurements\2021_08_30_14_49_48.polm"
+    path = r"G:\My Drive\Projects\Quantum Piano\Results\PolarizationMeasurements\2021_08_30_14_49_48.polm"
+    path = r"G:\My Drive\Projects\Quantum Piano\Results\PolarizationMeasurements\2021_08_30_14_37_21.polm"
     pom.loadfrom(path)
+    pom.plot_stokes_params()
     pom.plot_poincare()
     pom.plot_polarization_speckle()
     plt.show()
