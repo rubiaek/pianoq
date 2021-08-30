@@ -176,17 +176,18 @@ def plot_schmidt_process(TM_index, threshold=0.3):
     ax.set_title(f'Shmidt approx. with threshold={threshold}, dx={dx}')
     fig.show()
 
+
 def plot_poincares():
     plot_poincare(5, 0)
     plot_poincare(20, 0)
     plot_poincare(30, 0)
     plot_poincare(40, 0)
 
+
 if __name__ == "__main__":
     # TM_ratios_figures()
-    # plot_schmidt_per_dxs(0.1)
-    # plot_schmidt_process(20, 0.1)
+    plot_schmidt_per_dxs(0.1)
+    plot_schmidt_process(20, 0.1)
     # plot_poincare(5, 0)
     plot_poincares()
     plt.show()
-    pass
