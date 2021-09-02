@@ -144,7 +144,7 @@ class MyPSOOptimizer(object):
     def __init__(self, cost_function, n_pop, n_var, n_iterations, post_iteration_callback=None,
                  w=1, wdamp=0.99, c1=1.5, c2=2,
                  timeout=np.inf, stop_early=True, stop_after_n_const_iter=8,
-                 vary_popuation=True, reduce_at_iterations=None):
+                 vary_popuation=True, reduce_at_iterations=None, sample_func=None):
 
         self.cost_function = cost_function
         self.n_iterations = n_iterations
@@ -164,7 +164,8 @@ class MyPSOOptimizer(object):
         self.start_time = time.time()
 
         self.swarm = Swarm(cost_func=cost_function, n_pop=n_pop, n_var=n_var,
-                           w=w, wdamp=wdamp, c1=c1, c2=c2)
+                           w=w, wdamp=wdamp, c1=c1, c2=c2,
+                           sample_func=sample_func)
 
         self.random_average_cost = self.get_random_average_cost()
 
