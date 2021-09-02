@@ -27,7 +27,7 @@ def get_P(A):
     return eig_vecs
 
 
-def plot_poincare(TM_index, col_num=0):
+def plot_poincare(TM_index, col_num=1):
     """ col_num could be also 1 for input vectors of 01 instead of 10 """
 
     pop = PopoffPolarizationRotationResult(path=PATH)
@@ -51,7 +51,11 @@ def plot_poincare(TM_index, col_num=0):
         points[i, :] = np.array([S1 / S0, S2 / S0, S3 / S0])
         # points[i, :] = np.array([S1, S2, S3])
 
-    b.add_points(points.transpose())
+    b.add_points(points.transpose(), meth='s')
+
+    for i, p in enumerate(points):
+        b.add_annotation(p + 0.05, f'{i}', fontsize=12)
+
     b.show()
     plt.show(block=False)
 
@@ -186,8 +190,8 @@ def plot_poincares():
 
 if __name__ == "__main__":
     # TM_ratios_figures()
-    plot_schmidt_per_dxs(0.1)
-    plot_schmidt_process(20, 0.1)
-    # plot_poincare(5, 0)
+    # plot_schmidt_per_dxs(0.1)
+    # plot_schmidt_process(20, 0.1)
+    # plot_poincare(40, 0)
     plot_poincares()
     plt.show()

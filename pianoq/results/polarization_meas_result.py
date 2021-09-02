@@ -1,4 +1,5 @@
 import cv2
+import random
 import numpy as np
 import matplotlib.pyplot as plt
 import astropy.coordinates.funcs as coord
@@ -62,21 +63,18 @@ class PolarizationMeasResult(object):
 
         fig.show()
 
-    def plot_poincare(self):
+    def plot_poincare(self, points=50000):
 
         S0, S1, S2, S3 = self.get_stokes()
         S1, S2, S3 = S1 / S0, S2 / S0, S3 / S0
-        cl = 4
-        S1, S2, S3 = np.clip(S1, -cl, cl), np.clip(S2, -cl, cl), np.clip(S3, -cl, cl)
 
-        N = 35
-        S1 = cv2.resize(S1, (N, N), interpolation=cv2.INTER_AREA)
-        S2 = cv2.resize(S2, (N, N), interpolation=cv2.INTER_AREA)
-        S3 = cv2.resize(S3, (N, N), interpolation=cv2.INTER_AREA)
-        # area = np.index_exp[120:130, 100:110]
-        # S1, S2, S3 = S1[area], S2[area], S3[area]
+        good_S0_indexes = np.where(S0 > (S0.mean() + 2*S0.std()))
+        S1, S2, S3 = S1[good_S0_indexes], S2[good_S0_indexes], S3[good_S0_indexes]  # 2D to 1D
+        print(f'len(S1): {len(S1)}')
 
-        S1, S2, S3 = S1.flatten(), S2.flatten(), S3.flatten()
+        if points < len(S1):
+            chosen_indexes = random.sample(range(len(S1)), k=points)
+            S1, S2, S3 = S1[chosen_indexes], S2[chosen_indexes], S3[chosen_indexes]  # 1D to shorter 1D
 
         b = qutip.Bloch()
         b.add_points([S1, S2, S3])
