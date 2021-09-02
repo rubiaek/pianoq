@@ -3,13 +3,13 @@ import matplotlib.pyplot as plt
 import scipy.linalg as la
 import qutip
 
-from pianoq.results.PopoffPolarizationRotationResult import PopoffPolarizationRotationResult
+from pianoq.results.popoff_prx_result import PopoffPRXResult
 
 PATH = "../data/popoff_polarization_data.npz"
 
 
 def TM_ratios_figures():
-    pop = PopoffPolarizationRotationResult(path=PATH)
+    pop = PopoffPRXResult(path=PATH)
     pop._initialize(method='TM')
     # pop._initialize(method='pixel')
 
@@ -30,7 +30,7 @@ def get_P(A):
 def plot_poincare(TM_index, col_num=1):
     """ col_num could be also 1 for input vectors of 01 instead of 10 """
 
-    pop = PopoffPolarizationRotationResult(path=PATH)
+    pop = PopoffPRXResult(path=PATH)
     pop._initialize(method='TM')
     TM = pop.TM_modes[TM_index]
     As = get_all_2by2s(TM)
@@ -146,7 +146,7 @@ def find_P_amount(As, threshold):
 
 
 def schmidt(TM_index, threshold):
-    pop = PopoffPolarizationRotationResult(path=PATH)
+    pop = PopoffPRXResult(path=PATH)
     pop._initialize(method='TM')
     TM = pop.TM_modes[TM_index]
     As = get_all_2by2s(TM)

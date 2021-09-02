@@ -8,7 +8,7 @@ import traceback
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 
 
-class PopoffPolarizationRotationResult(object):
+class PopoffPRXResult(object):
     """
     Built with data from github.com/wavefrontshaping/article_MMF_disorder
     And this PRX article https://arxiv.org/abs/2010.14813

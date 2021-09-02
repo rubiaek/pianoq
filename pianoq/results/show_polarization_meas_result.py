@@ -12,4 +12,8 @@ pom.plot_polarization_speckle()
 pom.plot_poincare()
 pom.plot_stokes_params()
 
+print(f'Degree of Polarization: {pom.degree_of_polarization}')
+print(f'DAC amplitudes: {pom.dac_amplitudes}')
+
+
 plt.show()

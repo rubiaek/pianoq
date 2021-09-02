@@ -7,7 +7,7 @@ from pianoq.lab.VimbaCamera import VimbaCamera
 from pianoq.lab.optimizations.my_pso import MyPSOOptimizer
 from pianoq.misc.consts import DEFAULT_BORDERS
 
-from pianoq.results.PianoOptimizationResult import PianoPSOOptimizationResult
+from pianoq.results.piano_optimization_result import PianoPSOOptimizationResult
 
 import pyswarms as ps
 from pyswarms.utils.functions import single_obj as fx

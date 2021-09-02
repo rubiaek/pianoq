@@ -81,6 +81,11 @@ class PolarizationMeasResult(object):
         b.show()
         plt.show(block=False)
 
+    @property
+    def degree_of_polarization(self):
+        S0, S1, S2, S3 = self.get_stokes()
+        return np.sqrt(S1.sum() ** 2 + S2.sum() ** 2 + S3.sum() ** 2) / S0.sum()
+
     def get_stokes(self):
         # don't think about noise
         self.meas1[np.invert(self.mask_of_interest)] = 0

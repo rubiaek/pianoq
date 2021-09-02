@@ -1,7 +1,7 @@
 import os
 import sys
 import matplotlib.pyplot as plt
-from pianoq.results.PianoOptimizationResult import PianoPSOOptimizationResult
+from pianoq.results.piano_optimization_result import PianoPSOOptimizationResult
 
 path = sys.argv[1]
 name = os.path.basename(path)
