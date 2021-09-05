@@ -16,8 +16,8 @@ def TM_ratios_figures():
     # pop.show_mode(10)
     pop.show_TM(pop.TM_modes[pop.index_dx0])
     pop.show_all_polarizations_ratios()
-    pop.show_polarizations_ratios_per_mode(range(0, 55, 2), logscale=True, legend=True)
-    pop.show_polarizations_ratios_bar_plots([0, 20, 30, 40])
+    # pop.show_polarizations_ratios_per_mode(range(0, 55, 2), logscale=True, legend=True)
+    # pop.show_polarizations_ratios_bar_plots([0, 20, 30, 40])
     # pop.show_mixing_of_mode(pop.TM_modes[5], 10)
 
 
@@ -189,9 +189,9 @@ def plot_poincares():
 
 
 if __name__ == "__main__":
-    # TM_ratios_figures()
-    # plot_schmidt_per_dxs(0.1)
-    # plot_schmidt_process(20, 0.1)
-    # plot_poincare(40, 0)
+    TM_ratios_figures()
+    plot_schmidt_per_dxs(0.1)
+    plot_schmidt_process(20, 0.1)
+    plot_poincare(40, 0)
     plot_poincares()
     plt.show()
