@@ -118,7 +118,7 @@ class PianoPopoffSimulation(object):
 
 
 if __name__ == "__main__":
-    piano_sim = PianoPopoffSimulation(piezo_num=30)
+    piano_sim = PianoPopoffSimulation(piezo_num=30, normalize_cost_to_tot_power=False)
     piano_sim.run(n_pop=30, n_iterations=50)
     piano_sim.show_before_after()
     plt.show()
