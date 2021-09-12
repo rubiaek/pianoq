@@ -68,7 +68,7 @@ class MeasurePolarization(object):
         # So H and V get to wollaston prism, and WPs won't bother
         input("Make sure the fast axis of both QWP and HWP is on 0 degrees\n")
         for i, amps in enumerate(all_amplitudes):
-            print(f'{i}/{len(all_amplitudes)}')
+            print(f'{i+1}/{len(all_amplitudes)}')
             self.dac.set_amplitudes(amps)
             im = self.cam.get_image()
             self.res.meas1s.append(im)
@@ -76,7 +76,7 @@ class MeasurePolarization(object):
         # So +-45 will turb to H and V, and QWP won't bother
         input("Make sure the fast axis of QWP is on 45 degrees and HWP is on 22.5 degrees\n")
         for i, amps in enumerate(all_amplitudes):
-            print(f'{i}/{len(all_amplitudes)}')
+            print(f'{i+1}/{len(all_amplitudes)}')
             self.dac.set_amplitudes(amps)
             im = self.cam.get_image()
             self.res.meas2s.append(im)
@@ -84,7 +84,7 @@ class MeasurePolarization(object):
         # So QWP will change R,L to +-45m and then HWP will turn them to H, V
         input("Make sure the fast axis of QWP is on 0 degrees and HWP is on 22.5 degrees\n")
         for i, amps in enumerate(all_amplitudes):
-            print(f'{i}/{len(all_amplitudes)}')
+            print(f'{i+1}/{len(all_amplitudes)}')
             self.dac.set_amplitudes(amps)
             im = self.cam.get_image()
             self.res.meas3s.append(im)
