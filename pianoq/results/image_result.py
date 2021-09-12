@@ -33,9 +33,9 @@ class VimbaImage(object):
         f = open(path, 'rb')
         data = np.load(f, allow_pickle=True)
         self.image = data.get('image', None)
-        self.path = data.get('path', None)
-        self.exposure_time = data.get('exposure_time', None)
-        self.timestamp = data.get('timestamp', None)
+        self.path = data.get('path', None).item()
+        self.exposure_time = data.get('exposure_time', None).item()
+        self.timestamp = data.get('timestamp', None).item()
 
     def show_image(self, aspect=None):
         fig, axes = plt.subplots()

@@ -19,7 +19,7 @@ class PolarizationMeasResult(object):
         self.meas2 = None  # qwp.angle = 45, hwp.angle = 22.5
         self.meas3 = None  # qwp.angle = 0,  hwp.angle = 22.5
 
-        self.mask_of_interest = None
+        self.mask_of_interest = None  # Mask where speckles get, to zero all the around
 
         self.dac_amplitudes = None
 

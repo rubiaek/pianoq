@@ -12,6 +12,9 @@ except ImportError:
 
 SERIAL_1 = 27253522
 
+# Has to do with the screwing angle of the waveplate to the inside of the motor
+MY_HWP_ZERO = 3.5505
+
 def get_motor(serial=SERIAL_1):
     # TODO: make a class that inherits KCubeDCServo so you can have the .close() like you like, and always cast to float
     motor = KCubeDCServo(serial)

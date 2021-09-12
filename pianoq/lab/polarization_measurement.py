@@ -6,7 +6,7 @@ from pianoq.lab.VimbaCamera import VimbaCamera
 from pianoq.misc.calc_correlation import get_correlations_mask
 from pianoq.misc.consts import DEFAULT_BORDERS
 from pianoq.results.polarization_meas_result import PolarizationMeasResult
-from results.multi_polarization_meas_result import MultiPolarizationMeasResult
+from pianoq.results.multi_polarization_meas_result import MultiPolarizationMeasResult
 
 LOGS_DIR = 'C:\\temp'
 

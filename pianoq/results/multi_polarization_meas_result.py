@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import astropy.coordinates.funcs as coord
 from colorsys import hls_to_rgb
 
-from results.polarization_meas_result import PolarizationMeasResult
+from pianoq.results.polarization_meas_result import PolarizationMeasResult
 from scipy import ndimage
 import qutip
 
