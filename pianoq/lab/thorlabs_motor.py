@@ -5,7 +5,6 @@ try:
     _KINESIS_PATH = r'C:\Program Files\Thorlabs\Kinesis'
     py_thorlabs_ctrl.kinesis.init(_KINESIS_PATH)
     from py_thorlabs_ctrl.kinesis.motor import KCubeDCServo
-    from py_thorlabs_ctrl.kinesis.motor import KCubeStepper
 except ImportError:
     print('cant use py_thorlabs_ctrl.kinesis')
 
@@ -22,14 +21,14 @@ class ThorlabsRotatingServoMotor(KCubeDCServo):
     SERIAL_1 = 27253522
 
     # Has to do with the screwing angle of the waveplate to the inside of the motor
-    MY_HWP_ZERO = 3.5505
+    MY_HWP_ZERO = 2.75
 
     def __init__(self, serial_number=None, zero_angle=None):
         self.zero_angle = zero_angle or self.MY_HWP_ZERO
         serial_number = serial_number or self.SERIAL_1
         super().__init__(serial_number=serial_number)
-        motor.create()
-        motor.enable()
+        self.create()
+        self.enable()
 
     def move_relative(self, degrees):
         # movement units are typically in mm, but in our case they are in degrees (0-360)

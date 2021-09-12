@@ -12,6 +12,9 @@ LOGS_DIR = 'C:\\temp'
 
 
 class MeasurePolarization(object):
+
+    MY_QWP_ZERO = 2
+
     def __init__(self, exposure_time=900, saveto_path=None, roi=None, multi=False):
         self.cam = VimbaCamera(2, exposure_time=exposure_time)
         self.dac = Edac40(max_piezo_voltage=30, ip=Edac40.DEFAULT_IP)
@@ -37,6 +40,8 @@ class MeasurePolarization(object):
         amplitudes = np.random.uniform(0, 1, size=self.dac.NUM_OF_PIEZOS)
         self.res.dac_amplitudes = amplitudes
         self.dac.set_amplitudes(amplitudes)
+
+        print('for each number below add 2 degrees for HWP')
 
         # So H and V get to wollaston prism, and WPs won't bother
         print("Make sure the fast axis of both QWP and HWP is on 0 degrees")
@@ -64,6 +69,9 @@ class MeasurePolarization(object):
             all_amplitudes.append(amplitudes)
 
         self.res.dac_amplitudes = all_amplitudes
+
+
+        print('for each number below add 2 degrees for HWP')
 
         # So H and V get to wollaston prism, and WPs won't bother
         input("Make sure the fast axis of both QWP and HWP is on 0 degrees\n")
