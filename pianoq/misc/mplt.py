@@ -1,9 +1,9 @@
 import matplotlib.pyplot as plt
 
 
-def mimshow(im, title=None):
+def mimshow(im, title=None, aspect=None):
     fig, ax = plt.subplots()
-    imm = ax.imshow(im)
+    imm = ax.imshow(im, aspect=aspect)
     fig.colorbar(imm, ax=ax)
     if title:
         ax.set_title(title)

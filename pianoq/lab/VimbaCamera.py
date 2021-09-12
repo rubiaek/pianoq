@@ -1,5 +1,7 @@
 import numpy as np
+import time
 from pianoq.misc.borders import Borders
+from pianoq.results.image_result import VimbaImage
 
 try:
     from vimba import Vimba
@@ -68,15 +70,13 @@ class VimbaCamera(object):
 
     def save_image(self, path):
         im = self.get_image()
-        f = open(path, 'wb')
-        np.savez(f, image=im)
-        f.close()
-        return im
+        vim = VimbaImage()
+        vim.image = im
+        vim.path = path
+        vim.exposure_time = self.get_exposure_time()
+        vim.timestamp = time.time()
+        vim.saveto(path)
 
-    def load_image(self, path, show=True):
-        im = np.load(path)['image']
-        if show:
-            self.show_image(im)
         return im
 
     def get_exposure_time(self):
