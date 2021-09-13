@@ -3,6 +3,7 @@ from functools import reduce
 
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy.linalg import matrix_power
 
 from pianoq.lab.optimizations.my_pso import MyPSOOptimizer
 from pianoq.results import PopoffPRXResult
@@ -26,7 +27,11 @@ class PianoPopoffSimulation(object):
         # self.TMs = [TM / 2e-3 for TM in self.TMs]
         self.TMs = [T / np.sqrt(np.mean(np.sum(np.abs(T) ** 2, 0))) for T in self.TMs]
 
-        self.TM_fiber = self.TMs[20]
+        self.TM_fiber = matrix_power(self.TMs[20], 3) \
+                        @ matrix_power(self.TMs[15], 4) \
+                        @ matrix_power(self.TMs[25], 4) \
+                        @ matrix_power(self.TMs[30], 2) \
+                        @ matrix_power(self.TMs[35], 6)
 
         self.optimizer = None
         self.n_pop = None
@@ -118,7 +123,7 @@ class PianoPopoffSimulation(object):
 
 
 if __name__ == "__main__":
-    piano_sim = PianoPopoffSimulation(piezo_num=30, normalize_cost_to_tot_power=False)
+    piano_sim = PianoPopoffSimulation(piezo_num=5, normalize_cost_to_tot_power=True)
     piano_sim.run(n_pop=30, n_iterations=50)
     piano_sim.show_before_after()
     plt.show()
