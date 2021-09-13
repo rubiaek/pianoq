@@ -22,11 +22,12 @@ class PianoPopoffSimulation(object):
         self.TMs = self.pop.TM_modes[self.pop.index_dx0:]
 
 
+        # TODO: remove the last higher group of modes, since they are more noisy and lossy
+        # TODO: Make the TMs unitary using some kind of SVD
         # In original the elements are ~10^-6, so after 30 TMS we get to really small...
-        # self.TMs = [0.3*TM / np.abs(TM.diagonal()).mean() for TM in self.TMs]
-        # self.TMs = [TM / 2e-3 for TM in self.TMs]
         self.TMs = [T / np.sqrt(np.mean(np.sum(np.abs(T) ** 2, 0))) for T in self.TMs]
 
+        # TODO: add random phases between bends to simulate different propagation speeds
         self.TM_fiber = matrix_power(self.TMs[20], 3) \
                         @ matrix_power(self.TMs[15], 4) \
                         @ matrix_power(self.TMs[25], 4) \
@@ -127,3 +128,4 @@ if __name__ == "__main__":
     piano_sim.run(n_pop=30, n_iterations=50)
     piano_sim.show_before_after()
     plt.show()
+
