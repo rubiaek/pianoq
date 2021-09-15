@@ -5,8 +5,12 @@ from scipy import ndimage
 from pianoq.results.image_result import VimbaImage
 
 
-def main(x_dist=270, y_dist=2):
-    path = r"G:\My Drive\Projects\Quantum Piano\Results\Calibrations\Images of Equal in Both Pols\im2.cam"
+PATH_TEMPLATE = r"G:\My Drive\Projects\Quantum Piano\Results\Calibrations\Images of Equal in Both Pols\im%d.cam"
+
+
+def main(path_no=1, x_dist=268, y_dist=0):
+    assert path_no in [1, 2, 3, 4]
+    path = PATH_TEMPLATE % path_no
     im = VimbaImage(path)
 
     # understand where first spot starts
@@ -48,10 +52,12 @@ def main(x_dist=270, y_dist=2):
     im = axes[2].imshow(im1-im2)
     fig.colorbar(im, ax=axes[2])
 
+    grade = np.abs(im1 - im2).mean()
+    print(grade)
+    fig.suptitle(f'x={x_dist}, y={y_dist}, cost={grade}')
+
     fig.show()
 
-    grade = (im1 - im2).mean()
-    print(grade)
 
 
 # if __name__ == "__main__":
