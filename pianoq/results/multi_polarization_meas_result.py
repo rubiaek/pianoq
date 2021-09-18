@@ -76,3 +76,18 @@ class MultiPolarizationMeasResult(object):
             pol_meas.dac_amplitudes = self.dac_amplitudes[i]
 
             self.pol_meass.append(pol_meas)
+
+
+if __name__ == "__main__":
+    mp = MultiPolarizationMeasResult()
+    # mp.loadfrom(r"G:\My Drive\Projects\Quantum Piano\Results\PolarizationMeasurements\Second Set\polarized_2021_09_12_13_04_16.polms")
+    mp.loadfrom(r"G:\My Drive\Projects\Quantum Piano\Results\PolarizationMeasurements\Second Set\2021_09_12_12_47_45.polms")
+    q = mp.pol_meass[10]
+    assert isinstance(q, PolarizationMeasResult)
+    q.plot_poincare()
+    q.plot_stokes_params()
+    q.plot_polarization_speckle()
+    print(q.get_degree_of_polarization(True))
+    print(q.get_degree_of_polarization(False))
+
+    plt.show()

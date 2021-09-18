@@ -81,22 +81,26 @@ class PolarizationMeasResult(object):
         b.show()
         plt.show(block=False)
 
-    @property
-    def degree_of_polarization(self):
+    def get_degree_of_polarization(self, only_good_points=True):
         S0, S1, S2, S3 = self.get_stokes()
+
+        if only_good_points:
+            good_S0_indexes = np.where(S0 > (S0.mean() + 2*S0.std()))
+            S1, S2, S3 = S1[good_S0_indexes], S2[good_S0_indexes], S3[good_S0_indexes]  # 2D to 1D
+
         return np.sqrt(S1.sum() ** 2 + S2.sum() ** 2 + S3.sum() ** 2) / S0.sum()
 
     def get_stokes(self):
-        # don't think about noise
-        self.meas1[np.invert(self.mask_of_interest)] = 0
-        self.meas2[np.invert(self.mask_of_interest)] = 0
-        self.meas3[np.invert(self.mask_of_interest)] = 0
+        # # don't think about noise
+        # self.meas1[np.invert(self.mask_of_interest)] = 0
+        # self.meas2[np.invert(self.mask_of_interest)] = 0
+        # self.meas3[np.invert(self.mask_of_interest)] = 0
 
         # S0, S1
         part1, part2 = self._get_parts(self.meas1)
 
         # The physical camera does the abs(*)**2
-        # Adding 0.1 so we won't divide by zero...
+        # Adding 0.1 so we won't divide by zero by mistake...
         S0 = part1 + part2 + 0.1
         S1 = part1 - part2
 
@@ -117,7 +121,8 @@ class PolarizationMeasResult(object):
         start_first = np.where(self.mask_of_interest[cm_row, :cm_col])[0][0]
         start_second = np.where(self.mask_of_interest[cm_row, cm_col:])[0][0]
         start_second += cm_col
-        dist = start_second - start_first
+        # dist = start_second - start_first
+        dist = 268  # See misc\calibrate_two_pols_spots.py
 
         part1 = meas[:, start_first-5:cm_col]
         part2 = meas[:, start_first-5+dist:cm_col+dist]
