@@ -1,3 +1,4 @@
+import random
 import time
 from functools import reduce
 
@@ -10,9 +11,11 @@ from pianoq.results import PopoffPRXResult
 
 
 class PianoPopoffSimulation(object):
-    def __init__(self, piezo_num=30, normalize_cost_to_tot_power=True):
+    def __init__(self, piezo_num=30, N_bends=30, normalize_cost_to_tot_power=True, prop_random_phases=True):
         self.piezo_num = piezo_num
+        self.N_bends = N_bends
         self.normalize_cost_to_tot_power = normalize_cost_to_tot_power
+        self.prop_random_phases = prop_random_phases
 
         self.pop = PopoffPRXResult(path=PopoffPRXResult.DEFAULT_PATH)
 
@@ -21,18 +24,14 @@ class PianoPopoffSimulation(object):
         self.dxs = self.pop.TM_modes[self.pop.index_dx0:]
         self.TMs = self.pop.TM_modes[self.pop.index_dx0:]
 
+        # TODO: remove the last higher group of modes, since they are more noisy and lossy.
+        # use np.delete() on all TMs, and also on pop.modes_out
 
-        # TODO: remove the last higher group of modes, since they are more noisy and lossy
         # TODO: Make the TMs unitary using some kind of SVD
         # In original the elements are ~10^-6, so after 30 TMS we get to really small...
         self.TMs = [T / np.sqrt(np.mean(np.sum(np.abs(T) ** 2, 0))) for T in self.TMs]
 
-        # TODO: add random phases between bends to simulate different propagation speeds
-        self.TM_fiber = matrix_power(self.TMs[20], 3) \
-                        @ matrix_power(self.TMs[15], 4) \
-                        @ matrix_power(self.TMs[25], 4) \
-                        @ matrix_power(self.TMs[30], 2) \
-                        @ matrix_power(self.TMs[35], 6)
+        self.TM_fiber = self.generate_fiber_TM(self.N_bends)
 
         self.optimizer = None
         self.n_pop = None
@@ -40,6 +39,15 @@ class PianoPopoffSimulation(object):
 
         self.amps_history = []
 
+    def generate_fiber_TM(self, N_bends):
+        mat = np.eye(self.pop.Nmodes)
+
+        for _ in range(N_bends):
+            mat = mat @ random.choice(self.TMs)
+            if self.prop_random_phases:
+                mat = mat @ np.diag(np.exp(1j*np.random.uniform(0, 2*np.pi, self.pop.Nmodes)))
+
+        return mat
 
     def run(self, n_pop=30, n_iterations=50, cost_function=None,
             stop_after_n_const_iters=20, reduce_at_iterations=(2, 5)):
@@ -58,7 +66,7 @@ class PianoPopoffSimulation(object):
 
     def _amps_to_indexes(self, amps):
         # dx values are between 0 to 70 with jumps of 2: [0, 2, 4, ..., 68, 70]
-        amps = amps * 35 # now between [0, 35]
+        amps = amps * 35  # now between [0, 35]
         TM_indexes = np.around(amps).astype(int)
         return TM_indexes
 
@@ -79,6 +87,16 @@ class PianoPopoffSimulation(object):
 
         return pix1, pix2
 
+    def play_N_bends(self, N_bends):
+        in_modes = (1/np.sqrt(self.pop.Nmodes)) * np.ones(self.pop.Nmodes)
+        TM = self.generate_fiber_TM(N_bends)
+        pix1, pix2 = self.pop.propagate(in_modes, TM)
+        pixs = np.concatenate((pix1, pix2), axis=1)
+        fig, ax = plt.subplots()
+        im0 = ax.imshow(np.abs(pixs)**2)
+        fig.colorbar(im0, ax=ax)
+        fig.show()
+
     def _power_at_area(self, pix1):
         Nx, Ny = pix1.shape
         window_size = 2
@@ -91,7 +109,6 @@ class PianoPopoffSimulation(object):
         """ amps are between 0 and 1 """
 
         pix1, pix2 = self.get_pixels(amps)
-
 
         # (5) "measure" the intensity in some point
         if self.normalize_cost_to_tot_power:
@@ -124,8 +141,8 @@ class PianoPopoffSimulation(object):
 
 
 if __name__ == "__main__":
-    piano_sim = PianoPopoffSimulation(piezo_num=5, normalize_cost_to_tot_power=True)
+    piano_sim = PianoPopoffSimulation(piezo_num=30, N_bends=10, normalize_cost_to_tot_power=True,
+                                      prop_random_phases=True)
     piano_sim.run(n_pop=30, n_iterations=50)
     piano_sim.show_before_after()
     plt.show()
-
