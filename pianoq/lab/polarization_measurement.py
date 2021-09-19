@@ -1,10 +1,12 @@
 import numpy as np
 import datetime
 
+from pianoq.lab import ThorlabsRotatingServoMotor
 from pianoq.lab.Edac40 import Edac40
 from pianoq.lab.VimbaCamera import VimbaCamera
+from pianoq.lab.thorlabs_motor import ManualMotor
 from pianoq.misc.calc_correlation import get_correlations_mask
-from pianoq.misc.consts import DEFAULT_BORDERS
+from pianoq.misc.consts import DEFAULT_BORDERS, DEFAULT_CAM_NO
 from pianoq.results.polarization_meas_result import PolarizationMeasResult
 from pianoq.results.multi_polarization_meas_result import MultiPolarizationMeasResult
 
@@ -16,8 +18,11 @@ class MeasurePolarization(object):
     MY_QWP_ZERO = 2
 
     def __init__(self, exposure_time=900, saveto_path=None, roi=None, multi=False):
-        self.cam = VimbaCamera(2, exposure_time=exposure_time)
+        self.cam = VimbaCamera(DEFAULT_CAM_NO, exposure_time=exposure_time)
         self.dac = Edac40(max_piezo_voltage=30, ip=Edac40.DEFAULT_IP)
+        self.qwp_motor = ManualMotor()
+        self.hwp_motor = ThorlabsRotatingServoMotor()
+
         self.is_multi = multi
 
         roi = roi or DEFAULT_BORDERS
@@ -37,26 +42,25 @@ class MeasurePolarization(object):
 
     def run(self, amplitudes=None):
         amplitudes = amplitudes or np.ones(self.dac.NUM_OF_PIEZOS)
-        amplitudes = np.random.uniform(0, 1, size=self.dac.NUM_OF_PIEZOS)
+        # amplitudes = np.random.uniform(0, 1, size=self.dac.NUM_OF_PIEZOS)
         self.res.dac_amplitudes = amplitudes
         self.dac.set_amplitudes(amplitudes)
 
-        print('for each number below add 2 degrees for HWP')
-
         # So H and V get to wollaston prism, and WPs won't bother
-        print("Make sure the fast axis of both QWP and HWP is on 0 degrees")
-        input()
+        self.qwp_motor.move_absolute(0)
+        self.hwp_motor.move_absolute(0)
         self.res.meas1 = self.cam.get_image()
 
-        # So +-45 will turb to H and V, and QWP won't bother
-        print("Make sure the fast axis of QWP is on 45 degrees and HWP is on 22.5 degrees")
-        input()
+        # So +-45 will turn to H and V, and QWP won't bother
+        self.qwp_motor.move_absolute(45)
+        self.hwp_motor.move_absolute(22.5)
         self.res.meas2 = self.cam.get_image()
 
-        # So QWP will change R,L to +-45m and then HWP will turn them to H, V
-        print("Make sure the fast axis of QWP is on 0 degrees and HWP is on 22.5 degrees")
-        input()
+        # So QWP will change R,L to +-45 and then HWP will turn them to H, V
+        self.qwp_motor.move_absolute(0)
+        self.hwp_motor.move_absolute(22.5)
         self.res.meas3 = self.cam.get_image()
+
         self._save_result()
 
     def run_multi(self):
@@ -70,27 +74,30 @@ class MeasurePolarization(object):
 
         self.res.dac_amplitudes = all_amplitudes
 
-
-        print('for each number below add 2 degrees for HWP')
-
         # So H and V get to wollaston prism, and WPs won't bother
-        input("Make sure the fast axis of both QWP and HWP is on 0 degrees\n")
+        self.qwp_motor.move_absolute(0)
+        self.hwp_motor.move_absolute(0)
+
         for i, amps in enumerate(all_amplitudes):
             print(f'{i+1}/{len(all_amplitudes)}')
             self.dac.set_amplitudes(amps)
             im = self.cam.get_image()
             self.res.meas1s.append(im)
 
-        # So +-45 will turb to H and V, and QWP won't bother
-        input("Make sure the fast axis of QWP is on 45 degrees and HWP is on 22.5 degrees\n")
+        # So +-45 will turn to H and V, and QWP won't bother
+        self.qwp_motor.move_absolute(45)
+        self.hwp_motor.move_absolute(22.5)
+
         for i, amps in enumerate(all_amplitudes):
             print(f'{i+1}/{len(all_amplitudes)}')
             self.dac.set_amplitudes(amps)
             im = self.cam.get_image()
             self.res.meas2s.append(im)
 
-        # So QWP will change R,L to +-45m and then HWP will turn them to H, V
-        input("Make sure the fast axis of QWP is on 0 degrees and HWP is on 22.5 degrees\n")
+        # So QWP will change R,L to +-45 and then HWP will turn them to H, V
+        self.qwp_motor.move_absolute(0)
+        self.hwp_motor.move_absolute(22.5)
+
         for i, amps in enumerate(all_amplitudes):
             print(f'{i+1}/{len(all_amplitudes)}')
             self.dac.set_amplitudes(amps)
@@ -113,9 +120,9 @@ class MeasurePolarization(object):
 
 
 if __name__ == "__main__":
-    # mp = MeasurePolarization(multi=False)
-    # mp.run()
+    mp = MeasurePolarization(multi=False)
+    mp.run()
 
-    mp = MeasurePolarization(multi=True)
-    mp.run_multi()
+    # mp = MeasurePolarization(multi=True)
+    # mp.run_multi()
     mp.close()
