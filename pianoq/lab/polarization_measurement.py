@@ -114,6 +114,7 @@ class MeasurePolarization(object):
 
         saveto_path = self.saveto_path or f"{LOGS_DIR}\\{self.timestamp}.{suffix}"
         self.res.saveto(saveto_path)
+        print(f'Saved result to {saveto_path}')
 
     def close(self):
         self.cam.close()

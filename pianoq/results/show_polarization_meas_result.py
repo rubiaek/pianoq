@@ -8,7 +8,7 @@ name = os.path.basename(path)
 
 pom = PolarizationMeasResult()
 pom.loadfrom(path)
-pom.plot_polarization_speckle()
+# pom.plot_polarization_speckle()
 pom.plot_poincare()
 pom.plot_stokes_params()
 
