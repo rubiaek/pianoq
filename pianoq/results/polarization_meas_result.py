@@ -43,7 +43,7 @@ class PolarizationMeasResult(object):
         fig.show()
 
     def plot_stokes_params(self):
-        S0, S1, S2, S3 = self.get_stokes()
+        S0, S1, S2, S3 = self.get_stokes(normalized=False)
         fig, axes = plt.subplots(2, 2)
         im = axes[0, 0].imshow(S0)
         axes[0, 0].set_title('S0')
@@ -65,8 +65,7 @@ class PolarizationMeasResult(object):
 
     def plot_poincare(self, points=50000):
 
-        S0, S1, S2, S3 = self.get_stokes()
-        S1, S2, S3 = S1 / S0, S2 / S0, S3 / S0
+        S0, S1, S2, S3 = self.get_stokes(normalized=True)
 
         good_S0_indexes = np.where(S0 > (S0.mean() + 2*S0.std()))
         S1, S2, S3 = S1[good_S0_indexes], S2[good_S0_indexes], S3[good_S0_indexes]  # 2D to 1D
@@ -81,8 +80,8 @@ class PolarizationMeasResult(object):
         b.show()
         plt.show(block=False)
 
-    def get_degree_of_polarization(self, only_good_points=True):
-        S0, S1, S2, S3 = self.get_stokes()
+    def get_degree_of_polarization(self, only_good_points=False):
+        S0, S1, S2, S3 = self.get_stokes(normalized=False)
 
         if only_good_points:
             good_S0_indexes = np.where(S0 > (S0.mean() + 2*S0.std()))
@@ -90,7 +89,7 @@ class PolarizationMeasResult(object):
 
         return np.sqrt(S1.sum() ** 2 + S2.sum() ** 2 + S3.sum() ** 2) / S0.sum()
 
-    def get_stokes(self):
+    def get_stokes(self, normalized=True):
         # # don't think about noise
         # self.meas1[np.invert(self.mask_of_interest)] = 0
         # self.meas2[np.invert(self.mask_of_interest)] = 0
@@ -101,16 +100,26 @@ class PolarizationMeasResult(object):
 
         # The physical camera does the abs(*)**2
         # Adding 0.1 so we won't divide by zero by mistake...
-        S0 = part1 + part2 + 0.1
+        S01 = part1 + part2
         S1 = part1 - part2
+        if normalized:
+            S1 = (part1 - part2) / (part1 + part2 + 0.1)
 
         # S2
         part1, part2 = self._get_parts(self.meas2)
+        S02 = part1 + part2
         S2 = part1 - part2
+        if normalized:
+            S2 = (part1 - part2) / (part1 + part2 + 0.1)
 
         # S3
         part1, part2 = self._get_parts(self.meas3)
+        S03 = part1 + part2
         S3 = part1 - part2
+        if normalized:
+            S3 = (part1 - part2) / (part1 + part2 + 0.1)
+
+        S0 = ((S01 + S02 + S03) / 3) + 0.1
 
         return S0, S1, S2, S3
 
