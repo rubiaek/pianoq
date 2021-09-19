@@ -1,14 +1,7 @@
-import cv2
-import random
 import numpy as np
 import matplotlib.pyplot as plt
-import astropy.coordinates.funcs as coord
-from colorsys import hls_to_rgb
 
 from pianoq.results.polarization_meas_result import PolarizationMeasResult
-from scipy import ndimage
-import qutip
-
 import traceback
 
 
@@ -26,7 +19,6 @@ class MultiPolarizationMeasResult(object):
         self.dac_amplitudes = []
 
         self.pol_meass = []
-
 
     def saveto(self, path):
         try:
@@ -60,7 +52,6 @@ class MultiPolarizationMeasResult(object):
         self.mask_of_interest = data.get('mask_of_interest', None)
         self.dac_amplitudes = data.get('dac_amplitudes', None)
 
-
         for i in range(len(self.meas1s)):
             pol_meas = PolarizationMeasResult()
 
@@ -71,7 +62,6 @@ class MultiPolarizationMeasResult(object):
             pol_meas.meas1 = self.meas1s[i]
             pol_meas.meas2 = self.meas2s[i]
             pol_meas.meas3 = self.meas3s[i]
-
 
             pol_meas.dac_amplitudes = self.dac_amplitudes[i]
 

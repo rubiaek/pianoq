@@ -41,7 +41,7 @@ class MeasurePolarization(object):
         self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
 
     def run(self, amplitudes=None):
-        amplitudes = amplitudes or np.ones(self.dac.NUM_OF_PIEZOS)
+        amplitudes = amplitudes or 0.85 * np.ones(self.dac.NUM_OF_PIEZOS)
         # amplitudes = np.random.uniform(0, 1, size=self.dac.NUM_OF_PIEZOS)
         self.res.dac_amplitudes = amplitudes
         self.dac.set_amplitudes(amplitudes)
@@ -121,9 +121,9 @@ class MeasurePolarization(object):
 
 
 if __name__ == "__main__":
-    mp = MeasurePolarization(multi=False)
+    mp = MeasurePolarization(multi=False, exposure_time=900)
     mp.run()
 
-    # mp = MeasurePolarization(multi=True)
+    # mp = MeasurePolarization(multi=True, exposure_time=900)
     # mp.run_multi()
     mp.close()
