@@ -5,6 +5,7 @@ try:
     _KINESIS_PATH = r'C:\Program Files\Thorlabs\Kinesis'
     py_thorlabs_ctrl.kinesis.init(_KINESIS_PATH)
     from py_thorlabs_ctrl.kinesis.motor import KCubeDCServo
+    from System import Decimal
 except ImportError:
     print('cant use py_thorlabs_ctrl.kinesis')
 
@@ -30,16 +31,37 @@ class ThorlabsRotatingServoMotor(KCubeDCServo):
         self.create()
         self.enable()
 
-    def move_relative(self, degrees):
-        # movement units are typically in mm, but in our case they are in degrees (0-360)
-        # It is important to send float, and not some other np type...
-        super().move_relative(float(degrees))
+    def move_relative(self, degrees, timeout=10000):
+        """
+        :param degrees: typically in mm, but in our case they are in degrees (0-360)
+        :param timeout: in ms. send 0 for non-blocking
+        It is important to send float, and not some other np type...
+        """
+        device = self.get_device()
+        device.get_device().SetMoveRelativeDistance(Decimal(float(degrees)))
+        device.MoveRelative(timeout)
 
-    def move_absolute(self, degrees):
-        # movement units are typically in mm, but in our case they are in degrees (0-360)
-        # It is important to send float, and not some other np type...
-        super().move_absolute(float(degrees + self.zero_angle))
+    def move_absolute(self, degrees, timeout=10000):
+        """
+        :param degrees: typically in mm, but in our case they are in degrees (0-360)
+        :param timeout: in ms. send 0 for non-blocking
+        It is important to send float, and not some other np type...
+        """
+
+        device = self.get_device()
+        device.MoveTo(Decimal(float(degrees + self.zero_angle)), timeout)
 
     def close(self):
         self.disable()
         self.disconnect()
+
+
+class ManualMotor(object):
+    MY_QWP_ZERO = 2
+
+    def __init__(self, zero_angle=None):
+        self.zero_angle = zero_angle or self.MY_QWP_ZERO
+
+    def move_absolute(self, degrees):
+        qq = input(f"Make sure the fast axis of QWP is on {degrees + self.zero_angle} degrees, and then press enter")
+        print(f"Got it! {qq}")
