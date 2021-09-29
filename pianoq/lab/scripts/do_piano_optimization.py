@@ -1,4 +1,4 @@
-from pianoq.lab.PianoOptimization import PianoOptimization
+from pianoq.lab.piano_optimization import PianoOptimization
 
 
 def main():
