@@ -121,7 +121,7 @@ class MeasurePolarization(object):
 
 
 if __name__ == "__main__":
-    mp = MeasurePolarization(multi=False, exposure_time=900)
+    mp = MeasurePolarization(multi=False, exposure_time=1100)
     mp.run()
 
     # mp = MeasurePolarization(multi=True, exposure_time=900)

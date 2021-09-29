@@ -68,6 +68,8 @@ class Edac40(object):
         self.save_to_nvram()
         self.set_amplitudes(self.REST_AMP * np.ones(self.NUM_OF_PIEZOS))
 
+        self.print_voltage_range()
+
     def find_ip(self):
         print('searching for ip...')
         process = subprocess.Popen([EDAC_LIST_PATH], stdout=subprocess.PIPE)

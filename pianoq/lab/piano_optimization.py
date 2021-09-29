@@ -5,7 +5,7 @@ import numpy as np
 from pianoq.lab.Edac40 import Edac40
 from pianoq.lab.VimbaCamera import VimbaCamera
 from pianoq.lab.optimizations.my_pso import MyPSOOptimizer
-from pianoq.misc.consts import DEFAULT_BORDERS
+from pianoq.misc.consts import DEFAULT_BORDERS, DEFAULT_CAM_NO
 
 from pianoq.results.piano_optimization_result import PianoPSOOptimizationResult
 
@@ -18,9 +18,10 @@ LOGS_DIR = 'C:\\temp'
 
 
 class PianoOptimization(object):
+
     def __init__(self, initial_exposure_time=900, saveto_path=None, roi=None):
         self.dac = Edac40(max_piezo_voltage=30, ip=Edac40.DEFAULT_IP)
-        self.cam = VimbaCamera(2, exposure_time=initial_exposure_time)
+        self.cam = VimbaCamera(DEFAULT_CAM_NO, exposure_time=initial_exposure_time)
         self.initial_exposure_time = initial_exposure_time
         self.scaling_exposure_factor = 1
         # Should probably get as parameter the (x, y) and then define the borders around that part
