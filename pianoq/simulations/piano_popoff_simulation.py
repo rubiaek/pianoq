@@ -21,31 +21,52 @@ class PianoPopoffSimulation(object):
 
         # We will let the PSO algorithm live in a continuous [0,1] world, and translate it to one of the discreet set
         # of dxs, which will make us choose the relevant TM
-        self.dxs = self.pop.TM_modes[self.pop.index_dx0:]
-        self.TMs = self.pop.TM_modes[self.pop.index_dx0:]
-
-        # TODO: remove the last higher group of modes, since they are more noisy and lossy.
-        # use np.delete() on all TMs, and also on pop.modes_out
-
-        # TODO: Make the TMs unitary using some kind of SVD
-        # In original the elements are ~10^-6, so after 30 TMS we get to really small...
-        self.TMs = [T / np.sqrt(np.mean(np.sum(np.abs(T) ** 2, 0))) for T in self.TMs]
+        self.dxs = self.pop.dxs[self.pop.index_dx0:]
+        self.Nmodes = self.pop.Nmodes
+        self.TMs = self.get_TMs()
 
         self.TM_fiber = self.generate_fiber_TM(self.N_bends)
 
         self.optimizer = None
         self.n_pop = None
-        self.in_modes = (1/np.sqrt(self.pop.Nmodes)) * np.ones(self.pop.Nmodes)
+        self.in_modes = (1/np.sqrt(self.Nmodes)) * np.ones(self.Nmodes)
 
         self.amps_history = []
 
+    def get_TMs(self, remove_high_modes=True):
+        TMs = self.pop.TM_modes[self.pop.index_dx0:]
+
+        if remove_high_modes:
+            # remove 10 highest degenerate modes, since they are very lossy, and have pixelization effects
+            mask = np.ones(TMs[0].shape, dtype=bool)
+            mask[100:, :] = False
+            mask[:, 100:] = False
+            mask[:, 45:55] = False
+            mask[45:55:, :] = False
+
+            new_N = TMs[0].shape[0] - 10 - 10
+            self.Nmodes -= 20
+
+            TMs = [TM[mask].reshape(new_N, new_N) for TM in TMs]
+
+            # Shuold take care of this so pop.propagate() will work.
+            # Probably better that all this logic will be in the popoff object for robustness
+            # In [57]: pop.modes_out_full.shape
+            # Out[57]: (110, 3362)
+
+        # TODO: Make the TMs unitary using some kind of SVD
+        # In original the elements are ~10^-6, so after 30 TMS we get to really small...
+        TMs = [T / np.sqrt(np.mean(np.sum(np.abs(T) ** 2, 0))) for T in TMs]
+
+        return TMs
+
     def generate_fiber_TM(self, N_bends):
-        mat = np.eye(self.pop.Nmodes)
+        mat = np.eye(self.Nmodes)
 
         for _ in range(N_bends):
             mat = mat @ random.choice(self.TMs)
             if self.prop_random_phases:
-                mat = mat @ np.diag(np.exp(1j*np.random.uniform(0, 2*np.pi, self.pop.Nmodes)))
+                mat = mat @ np.diag(np.exp(1j*np.random.uniform(0, 2*np.pi, self.Nmodes)))
 
         return mat
 
@@ -88,7 +109,7 @@ class PianoPopoffSimulation(object):
         return pix1, pix2
 
     def play_N_bends(self, N_bends):
-        in_modes = (1/np.sqrt(self.pop.Nmodes)) * np.ones(self.pop.Nmodes)
+        in_modes = (1/np.sqrt(self.Nmodes)) * np.ones(self.Nmodes)
         TM = self.generate_fiber_TM(N_bends)
         pix1, pix2 = self.pop.propagate(in_modes, TM)
         pixs = np.concatenate((pix1, pix2), axis=1)
