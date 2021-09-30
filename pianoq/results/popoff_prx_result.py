@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy.linalg
 from matplotlib.colors import LogNorm
 from colorsys import hls_to_rgb
 import traceback
@@ -20,6 +21,7 @@ class PopoffPRXResult(object):
         self.dxs = dxs  # \mu m
         self.index_dx0 = index_dx0
         self.modes_out = modes_out
+        self.modes_out_full = None
         self.L = L  # L value of the i'th mode
         self.M = M  # M value of the i'th mode
         self.path = path
@@ -55,6 +57,36 @@ class PopoffPRXResult(object):
         ax.imshow(_colorize(TM, beta=1.8, max_threshold=0.8))
         fig.show()
         return fig
+
+    def remove_higher_modes(self):
+        # remove 10 highest degenerate modes, since they are very lossy, and have pixelization effects
+        mask = np.ones(self.TM_modes[0].shape, dtype=bool)
+        mask[100:, :] = False
+        mask[:, 100:] = False
+        mask[:, 45:55] = False
+        mask[45:55:, :] = False
+
+        new_N = self.TM_modes[0].shape[0] - 10 - 10
+        self.Nmodes -= 20
+
+        self.TM_modes = [TM[mask].reshape(new_N, new_N) for TM in self.TM_modes]
+
+        # Shuold take care of this so pop.propagate() will work.
+        self.modes_out = self.modes_out[:45, :]
+        self.modes_out_full = np.kron(np.array([[1, 0], [0, 1]]), self.modes_out)
+
+    def normalize_TMs(self, method='mean'):
+        # In original the elements are ~10^-6, so after 30 TMS we get to really small...
+        if method == 'mean':
+            self.TM_modes = [T / np.sqrt(np.mean(np.sum(np.abs(T) ** 2, 0))) for T in self.TM_modes]
+        elif method =='svd1':
+            new_TMS = []
+            for TM in self.TM_modes:
+                u, s, v = scipy.linalg.svd(TM)
+                new_TMS.append(u @ v)
+            self.TM_modes = new_TMS
+        else:
+            raise NotImplementedError
 
     def show_all_polarizations_ratios(self):
         fig, axes = plt.subplots(2, figsize=(8, 7))
