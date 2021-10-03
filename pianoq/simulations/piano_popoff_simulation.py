@@ -4,6 +4,7 @@ from functools import reduce
 
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy.linalg import matrix_power
 
 from pianoq.lab.optimizations.my_pso import MyPSOOptimizer
 from pianoq.results import PopoffPRXResult
@@ -41,12 +42,23 @@ class PianoPopoffSimulation(object):
         self.amps_history = []
 
     def generate_fiber_TM(self, N_bends):
-        mat = np.eye(self.Nmodes)
+        if isinstance(N_bends, int):
+            mat = np.eye(self.Nmodes)
 
-        for _ in range(N_bends):
-            mat = mat @ random.choice(self.TMs)
-            if self.prop_random_phases:
-                mat = mat @ np.diag(np.exp(1j*np.random.uniform(0, 2*np.pi, self.Nmodes)))
+            for _ in range(N_bends):
+                mat = mat @ random.choice(self.TMs)
+                if self.prop_random_phases:
+                    mat = mat @ np.diag(np.exp(1j*np.random.uniform(0, 2*np.pi, self.Nmodes)))
+
+        elif N_bends == 'fiber1':
+            mat = matrix_power(self.TMs[10], 6) @ np.diag(np.exp(1j*np.random.uniform(0, 2*np.pi, self.Nmodes))) \
+                  @ matrix_power(self.TMs[20], 5) @ np.diag(np.exp(1j*np.random.uniform(0, 2*np.pi, self.Nmodes))) \
+                  @ matrix_power(self.TMs[25], 4) @ np.diag(np.exp(1j*np.random.uniform(0, 2*np.pi, self.Nmodes))) \
+                  @ matrix_power(self.TMs[30], 7) @ np.diag(np.exp(1j*np.random.uniform(0, 2*np.pi, self.Nmodes))) \
+                  @ matrix_power(self.TMs[35], 3) @ np.diag(np.exp(1j*np.random.uniform(0, 2*np.pi, self.Nmodes)))
+
+        else:
+            raise NotImplementedError
 
         return mat
 

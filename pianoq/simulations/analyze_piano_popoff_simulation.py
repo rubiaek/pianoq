@@ -1,20 +1,17 @@
-import random
-import time
-from functools import reduce
-
-import matplotlib.pyplot as plt
 import numpy as np
 
 from pianoq.simulations import PianoPopoffSimulation
 
 
 def check_cost_functions_for_pol():
+    # TODO: check this in a more rigorous fashion (average over 20 PSO tries or something).
+    #  Meanwhile it seems like cost_func_pol2 is best
+    # TODO: set benchmark of 90%? and check the relation between piezo_num and Nmodes
 
     cost_funcs = ['cost_function_focus', 'cost_function_pol1', 'cost_function_pol2']
 
     for cost_func_name in cost_funcs:
-
-        piano_sim = PianoPopoffSimulation(piezo_num=30, N_bends=80,
+        piano_sim = PianoPopoffSimulation(piezo_num=15, N_bends='fiber1',
                                           normalize_cost_to_tot_power=True, prop_random_phases=True,
                                           Nmodes=30, normalize_TMs_method='mean',
                                           quiet=True)
