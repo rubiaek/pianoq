@@ -12,7 +12,8 @@ from pianoq.results import PopoffPRXResult
 class PianoPopoffSimulation(object):
     def __init__(self, piezo_num=30, N_bends=30,
                  normalize_cost_to_tot_power=True, prop_random_phases=True,
-                 Nmodes=None, normalize_TMs_method='mean'):
+                 Nmodes=None, normalize_TMs_method='mean',
+                 quiet=False):
 
         self.piezo_num = piezo_num
         self.N_bends = N_bends
@@ -23,6 +24,7 @@ class PianoPopoffSimulation(object):
 
         self.pop.set_Nmodes(Nmodes)
         self.pop.normalize_TMs(method=normalize_TMs_method)  # 'svd1'
+        self.quiet = quiet
 
         # We will let the PSO algorithm live in a continuous [0,1] world, and translate it to one of the discreet set
         # of dxs, which will make us choose the relevant TM
@@ -142,7 +144,8 @@ class PianoPopoffSimulation(object):
         return cost
 
     def post_iteration_callback(self, global_best_cost, global_best_positions):
-        print(f'{self.optimizer.curr_iteration}.\t cost: {global_best_cost:2f}\t time: {(time.time()-self.optimizer.start_time):2f} seconds')
+        if not self.quiet:
+            print(f'{self.optimizer.curr_iteration}.\t cost: {global_best_cost:2f}\t time: {(time.time()-self.optimizer.start_time):2f} seconds')
         self.amps_history.append(global_best_positions)
 
     def show_before_after(self):

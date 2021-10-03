@@ -31,13 +31,11 @@ class Swarm(object):
             self.particles.append(p)
 
     def reduce_population(self, reduction_factor):
-        print(f"population is {len(self.particles)}")
         sorted_particles = sorted(self.particles, key=lambda x: x.cost)
         new_len = len(self.particles) // reduction_factor
         self.particles = sorted_particles[:new_len]
         self.n_pop = new_len
         self.update_best_particle(sorted_particles[0])
-        print(f"population is {len(self.particles)} after reduction")
 
     def update_best_particle(self, particle):
         self.best_particle = particle
@@ -144,7 +142,8 @@ class MyPSOOptimizer(object):
     def __init__(self, cost_function, n_pop, n_var, n_iterations, post_iteration_callback=None,
                  w=1, wdamp=0.99, c1=1.5, c2=2,
                  timeout=np.inf, stop_early=True, stop_after_n_const_iter=8,
-                 vary_popuation=True, reduce_at_iterations=None, sample_func=None):
+                 vary_popuation=True, reduce_at_iterations=None, sample_func=None,
+                 quiet=False):
 
         self.cost_function = cost_function
         self.n_iterations = n_iterations
@@ -159,6 +158,8 @@ class MyPSOOptimizer(object):
         self.reduce_at_iterations = reduce_at_iterations or (4, 7)
         if vary_popuation:
             n_pop = n_pop * 2**len(self.reduce_at_iterations)
+
+        self.quiet = quiet
 
         self.curr_iteration = 0
         self.start_time = time.time()
@@ -187,6 +188,7 @@ class MyPSOOptimizer(object):
 
             if self.vary_popuation and self.curr_iteration in self.reduce_at_iterations:
                 self.swarm.reduce_population(reduction_factor=2)
+                self.log(f"population is {len(self.swarm.particles)} after reduction")
 
             if self.stop_early:
                 if self.swarm.global_best_cost == curr_best_cost:
@@ -196,16 +198,16 @@ class MyPSOOptimizer(object):
                     curr_best_cost = self.swarm.global_best_cost
 
                 if n_const_iter >= self.stop_after_n_const_iter:
-                    print(f"Stopping because I am stuck at cost = {self.best_cost} for {n_const_iter} "
-                          f"iterations already!")
+                    self.log(f"Stopping because I am stuck at cost = {self.best_cost} for {n_const_iter} "
+                             f"iterations already!")
                     break
 
             if (time.time() - self.start_time) > self.timeout:
-                print("## TIMED OUT! ##")
+                self.log("## TIMED OUT! ##")
                 break
 
     def get_random_average_cost(self):
-        print(f'Initializing random average cost')
+        self.log(f'Initializing random average cost')
         cost = 0
         n = 40
         for i in range(n):
@@ -241,7 +243,11 @@ class MyPSOOptimizer(object):
         return self.swarm.global_best_positions
 
     def default_post_iteration(self, global_best_cost, global_best_positions):
-        print(f'{self.curr_iteration}.\t cost: {global_best_cost}\t time: {(time.time()-self.start_time):2f} seconds')
+        self.log(f'{self.curr_iteration}.\t cost: {global_best_cost}\t time: {(time.time()-self.start_time):2f} seconds')
+
+    def log(self, msg):
+        if not self.quiet:
+            print(msg)
 
 
 def test():
