@@ -61,7 +61,8 @@ class PianoPopoffSimulation(object):
                                         w=1, wdamp=0.99, c1=1.5, c2=2,
                                         timeout=30*60,
                                         stop_early=True, stop_after_n_const_iter=stop_after_n_const_iters,
-                                        vary_popuation=True, reduce_at_iterations=reduce_at_iterations)
+                                        vary_popuation=True, reduce_at_iterations=reduce_at_iterations,
+                                        quiet=self.quiet)
 
         self.optimizer.optimize()
 
