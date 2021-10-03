@@ -58,21 +58,30 @@ class PopoffPRXResult(object):
         fig.show()
         return fig
 
-    def remove_higher_modes(self):
+    def set_Nmodes(self, Nmodes=None):
+
+        if Nmodes is None:
+            return
+
+        # measured TMs have 55 * 2 modes, but we might want to simulate fiber with less modes
+        # Also, the higher modes are lossier and have pixelization issues
+        # Degeneracy of modes goes like n so amount of modes should be for example 2*(1+2+3+4+5) etc.
+        assert Nmodes in np.array([1, 3, 6, 10, 15, 21, 28, 36, 45, 55]) * 2
+
+        hNmodes = Nmodes // 2  # Half Nmodes
+
         # remove 10 highest degenerate modes, since they are very lossy, and have pixelization effects
         mask = np.ones(self.TM_modes[0].shape, dtype=bool)
-        mask[100:, :] = False
-        mask[:, 100:] = False
-        mask[:, 45:55] = False
-        mask[45:55:, :] = False
+        mask[:, hNmodes:55] = False
+        mask[hNmodes:55:, :] = False
+        mask[hNmodes+55:, :] = False
+        mask[:, hNmodes+55:] = False
 
-        new_N = self.TM_modes[0].shape[0] - 10 - 10
-        self.Nmodes -= 20
-
-        self.TM_modes = [TM[mask].reshape(new_N, new_N) for TM in self.TM_modes]
+        self.Nmodes = Nmodes
+        self.TM_modes = [TM[mask].reshape(Nmodes, Nmodes) for TM in self.TM_modes]
 
         # Shuold take care of this so pop.propagate() will work.
-        self.modes_out = self.modes_out[:45, :]
+        self.modes_out = self.modes_out[:hNmodes, :]
         self.modes_out_full = np.kron(np.array([[1, 0], [0, 1]]), self.modes_out)
 
     def normalize_TMs(self, method='mean'):

@@ -4,7 +4,6 @@ from functools import reduce
 
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy.linalg import matrix_power
 
 from pianoq.lab.optimizations.my_pso import MyPSOOptimizer
 from pianoq.results import PopoffPRXResult
@@ -12,16 +11,18 @@ from pianoq.results import PopoffPRXResult
 
 class PianoPopoffSimulation(object):
     def __init__(self, piezo_num=30, N_bends=30,
-                 normalize_cost_to_tot_power=True, prop_random_phases=True, remove_higher_modes=True):
+                 normalize_cost_to_tot_power=True, prop_random_phases=True,
+                 Nmodes=None, normalize_TMs_method='mean'):
+
         self.piezo_num = piezo_num
         self.N_bends = N_bends
         self.normalize_cost_to_tot_power = normalize_cost_to_tot_power
         self.prop_random_phases = prop_random_phases
 
         self.pop = PopoffPRXResult(path=PopoffPRXResult.DEFAULT_PATH)
-        self.pop.normalize_TMs(method='svd1')
-        if remove_higher_modes:
-            self.pop.remove_higher_modes()
+
+        self.pop.set_Nmodes(Nmodes)
+        self.pop.normalize_TMs(method=normalize_TMs_method)  # 'svd1'
 
         # We will let the PSO algorithm live in a continuous [0,1] world, and translate it to one of the discreet set
         # of dxs, which will make us choose the relevant TM
@@ -116,6 +117,30 @@ class PianoPopoffSimulation(object):
             cost = -self._power_at_area(pix1)
         return cost
 
+    def cost_function_pol1(self, amps):
+        pix1, pix2 = self.get_pixels(amps)
+
+        pix1_power = (np.abs(pix1) ** 2).sum()
+        pix2_power = (np.abs(pix2) ** 2).sum()
+        tot_power = pix1_power + pix2_power
+
+        # We want all power in pix1, so we want pix2_power to be small
+        cost = pix2_power / tot_power
+
+        return cost
+
+    def cost_function_pol2(self, amps):
+        pix1, pix2 = self.get_pixels(amps)
+
+        pix1_power = (np.abs(pix1) ** 2).sum()
+        pix2_power = (np.abs(pix2) ** 2).sum()
+        tot_power = pix1_power + pix2_power
+
+        # We want all power in pix1, so we want pix2_power to be small
+        cost = -pix1_power / tot_power
+
+        return cost
+
     def post_iteration_callback(self, global_best_cost, global_best_positions):
         print(f'{self.optimizer.curr_iteration}.\t cost: {global_best_cost:2f}\t time: {(time.time()-self.optimizer.start_time):2f} seconds')
         self.amps_history.append(global_best_positions)
@@ -139,8 +164,10 @@ class PianoPopoffSimulation(object):
 
 
 if __name__ == "__main__":
-    piano_sim = PianoPopoffSimulation(piezo_num=30, N_bends=80, normalize_cost_to_tot_power=True,
-                                      prop_random_phases=True)
-    piano_sim.run(n_pop=30, n_iterations=50)
+    piano_sim = PianoPopoffSimulation(piezo_num=30, N_bends=80,
+                                      normalize_cost_to_tot_power=True, prop_random_phases=True,
+                                      Nmodes=30, normalize_TMs_method='mean')
+    # piano_sim.run(n_pop=30, n_iterations=50, cost_function=piano_sim.cost_function_pol)
+    piano_sim.run(n_pop=30, n_iterations=50, cost_function=piano_sim.cost_function_focus)
     piano_sim.show_before_after()
     plt.show()
