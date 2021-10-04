@@ -106,7 +106,7 @@ class Particle(object):
                                                                                         self.positions)
 
         # This "diff" seems a bit fishy... it does come out positive at the end...
-        diff = (self.swarm.global_best_cost - self.cost) / (self.swarm.global_best_cost - 0.003)
+        diff = (self.swarm.global_best_cost - self.cost) / (self.swarm.global_best_cost - np.finfo(float).eps)
         to_glob_best_contrib = self.swarm.c2 * diff * (self.swarm.global_best_positions - self.positions)
 
         self.velocities = curr_vel_contrib + to_self_best_contrib + to_glob_best_contrib

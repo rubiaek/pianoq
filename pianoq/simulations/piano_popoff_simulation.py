@@ -51,16 +51,19 @@ class PianoPopoffSimulation(object):
                     mat = mat @ np.diag(np.exp(1j*np.random.uniform(0, 2*np.pi, self.Nmodes)))
 
         elif N_bends == 'fiber1':
-            mat = matrix_power(self.TMs[10], 6) @ np.diag(np.exp(1j*np.random.uniform(0, 2*np.pi, self.Nmodes))) \
-                  @ matrix_power(self.TMs[20], 5) @ np.diag(np.exp(1j*np.random.uniform(0, 2*np.pi, self.Nmodes))) \
-                  @ matrix_power(self.TMs[25], 4) @ np.diag(np.exp(1j*np.random.uniform(0, 2*np.pi, self.Nmodes))) \
-                  @ matrix_power(self.TMs[30], 7) @ np.diag(np.exp(1j*np.random.uniform(0, 2*np.pi, self.Nmodes))) \
-                  @ matrix_power(self.TMs[35], 3) @ np.diag(np.exp(1j*np.random.uniform(0, 2*np.pi, self.Nmodes)))
+            mat = matrix_power(self.TMs[10], 6) @ self._get_random_phase_TM(self.Nmodes) \
+                  @ matrix_power(self.TMs[20], 5) @ self._get_random_phase_TM(self.Nmodes) \
+                  @ matrix_power(self.TMs[25], 4) @ self._get_random_phase_TM(self.Nmodes) \
+                  @ matrix_power(self.TMs[30], 7) @ self._get_random_phase_TM(self.Nmodes) \
+                  @ matrix_power(self.TMs[35], 3) @ self._get_random_phase_TM(self.Nmodes)
 
         else:
             raise NotImplementedError
 
         return mat
+
+    def _get_random_phase_TM(self, Nmodes):
+        return np.diag(np.exp(1j * np.random.uniform(0, 2 * np.pi, Nmodes)))
 
     def run(self, n_pop=30, n_iterations=50, cost_function=None,
             stop_after_n_const_iters=20, reduce_at_iterations=(2, 5)):
