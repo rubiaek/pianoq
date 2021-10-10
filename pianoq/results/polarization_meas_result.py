@@ -63,7 +63,7 @@ class PolarizationMeasResult(object):
 
         fig.show()
 
-    def plot_poincare(self, points=50000):
+    def plot_poincare(self, points=1000):
 
         S0, S1, S2, S3 = self.get_stokes(normalized=True)
 

@@ -54,7 +54,7 @@ def get_ratio(n, piezo_num, Nmodes):
         print(f'##### {i} ####')
         piano_sim = PianoPopoffSimulation(piezo_num=piezo_num, N_bends='fiber1',
                                           normalize_cost_to_tot_power=True, prop_random_phases=True,
-                                          Nmodes=Nmodes, normalize_TMs_method='mean',
+                                          Nmodes=Nmodes, normalize_TMs_method='svd1',
                                           quiet=True)
         cost_func = piano_sim.cost_function_pol2
         piano_sim.run(n_pop=40, n_iterations=500, cost_function=cost_func, stop_after_n_const_iters=30)
@@ -118,6 +118,6 @@ def Nmodes_to_piezo_num(n_mean=10):
 
 if __name__ == "__main__":
     # a, b, c = check_cost_functions_for_pol(50)
-    Nmodes_to_piezo_num()
+    Nmodes_to_piezo_num(n_mean=10)
 
     plt.show()

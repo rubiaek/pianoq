@@ -166,8 +166,8 @@ def plot_schmidt_per_dxs(threshold=0.5):
     fig, ax = plt.subplots()
     ax.plot(dxs, schmidt_nums)
     ax.set_xlabel(r'dx ($ \mu m $)')
-    ax.set_ylabel(r'Polarization "Schmidt number"')
-    ax.set_title(f'Shmidt approx. with threshold={threshold}')
+    ax.set_ylabel(r'Polarization "S number"')
+    ax.set_title(f'S number approx. with threshold={threshold}')
     fig.show()
 
 
@@ -189,7 +189,7 @@ def plot_poincares():
 
 
 if __name__ == "__main__":
-    TM_ratios_figures()
+    # TM_ratios_figures()
     plot_schmidt_per_dxs(0.1)
     plot_schmidt_process(20, 0.1)
     plot_poincare(40, 0)
