@@ -1,6 +1,7 @@
 import numpy as np
 import datetime
 
+from pianoq import Borders
 from pianoq.lab import ThorlabsRotatingServoMotor
 from pianoq.lab.Edac40 import Edac40
 from pianoq.lab.VimbaCamera import VimbaCamera
@@ -26,7 +27,7 @@ class MeasurePolarization(object):
         self.is_multi = multi
 
         roi = roi or DEFAULT_BORDERS
-        self.cam.set_borders(DEFAULT_BORDERS)
+        self.cam.set_borders(roi)
 
         if not self.is_multi:
             self.res = PolarizationMeasResult()
@@ -36,6 +37,10 @@ class MeasurePolarization(object):
         self.res.exposure_time = exposure_time
         self.res.roi = roi
         self.res.mask_of_interest = get_correlations_mask()
+        self.res.version = 2
+        self.res.start_first = 50
+        self.res.end_first = 130
+        self.res.dist = 269
 
         self.saveto_path = saveto_path
         self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
@@ -51,15 +56,15 @@ class MeasurePolarization(object):
         self.hwp_motor.move_absolute(0)
         self.res.meas1 = self.cam.get_image()
 
-        # So +-45 will turn to H and V, and QWP won't bother
-        self.qwp_motor.move_absolute(45)
-        self.hwp_motor.move_absolute(22.5)
-        self.res.meas2 = self.cam.get_image()
-
         # So QWP will change R,L to +-45 and then HWP will turn them to H, V
         self.qwp_motor.move_absolute(0)
         self.hwp_motor.move_absolute(22.5)
         self.res.meas3 = self.cam.get_image()
+
+        # So +-45 will turn to H and V, and QWP won't bother
+        self.qwp_motor.move_absolute(45)
+        self.hwp_motor.move_absolute(22.5)
+        self.res.meas2 = self.cam.get_image()
 
         self._save_result()
 
@@ -118,10 +123,12 @@ class MeasurePolarization(object):
 
     def close(self):
         self.cam.close()
+        self.qwp_motor.close()
+        self.hwp_motor.close()
 
 
 if __name__ == "__main__":
-    mp = MeasurePolarization(multi=False, exposure_time=1100)
+    mp = MeasurePolarization(multi=False, exposure_time=750, roi=Borders(330, 510, 800, 680))
     mp.run()
 
     # mp = MeasurePolarization(multi=True, exposure_time=900)

@@ -22,6 +22,10 @@ class PolarizationMeasResult(object):
         self.mask_of_interest = None  # Mask where speckles get, to zero all the around
 
         self.dac_amplitudes = None
+        self.version = 1
+        self.start_first = None
+        self.end_first = None
+        self.dist = None
 
     def plot_polarization_speckle(self):
         S0, S1, S2, S3 = self.get_stokes()
@@ -124,6 +128,12 @@ class PolarizationMeasResult(object):
         return S0, S1, S2, S3
 
     def _get_parts(self, meas):
+        if self.version == 1:
+            return self._get_parts_v1(meas)
+        elif self.version == 2:
+            return self._get_parts_v2(meas)
+
+    def _get_parts_v1(self, meas):
         cm_row, cm_col = ndimage.measurements.center_of_mass(self.mask_of_interest)
         cm_row, cm_col = int(cm_row), int(cm_col)
 
@@ -138,6 +148,12 @@ class PolarizationMeasResult(object):
 
         return part1, part2
 
+    def _get_parts_v2(self, meas):
+        part1 = meas[:, self.start_first:self.end_first]
+        part2 = meas[:, self.start_first + self.dist:self.end_first + self.dist]
+
+        return part1, part2
+
     def saveto(self, path):
         try:
             f = open(path, 'wb')
@@ -149,6 +165,10 @@ class PolarizationMeasResult(object):
                      meas3=self.meas3,
                      mask_of_interest=self.mask_of_interest,
                      dac_amplitudes=self.dac_amplitudes,
+                     version=self.version,
+                     start_first=self.start_first,
+                     end_first=self.end_first,
+                     dist=self.dist,
                      )
             f.close()
         except Exception as e:
@@ -169,6 +189,11 @@ class PolarizationMeasResult(object):
 
         self.mask_of_interest = data.get('mask_of_interest', None)
         self.dac_amplitudes = data.get('dac_amplitudes', None)
+
+        self.version = data.get('version', None)
+        self.start_first = data.get('start_first', None)
+        self.end_first = data.get('end_first', None)
+        self.dist = data.get('dist', None)
 
 
 def colorize(r, arg):
