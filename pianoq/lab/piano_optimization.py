@@ -2,6 +2,7 @@ import time
 import datetime
 import numpy as np
 
+from pianoq import Borders
 from pianoq.lab.Edac40 import Edac40
 from pianoq.lab.VimbaCamera import VimbaCamera
 from pianoq.lab.optimizations.my_pso import MyPSOOptimizer
@@ -25,7 +26,8 @@ class PianoOptimization(object):
         self.initial_exposure_time = initial_exposure_time
         self.scaling_exposure_factor = 1
         # Should probably get as parameter the (x, y) and then define the borders around that part
-        borders = DEFAULT_BORDERS
+        # borders = DEFAULT_BORDERS
+        borders = Borders(200, 350, 850, 750)
         self.cam.set_borders(borders)
 
         self.saveto_path = saveto_path

@@ -2,6 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
+from pianoq import Borders
 from pianoq.lab.Edac40 import Edac40
 from pianoq.lab.VimbaCamera import VimbaCamera
 from pianoq.misc.consts import DEFAULT_BORDERS
@@ -33,13 +34,13 @@ def get_correlations_mask():
 
 def generate_correlations_mask():
     # When changing defulat borders we need to rerun this
-    cam = VimbaCamera(2, exposure_time=900)
-    cam.set_borders(DEFAULT_BORDERS)
+    cam = VimbaCamera(1, exposure_time=4000)
+    cam.set_borders(Borders(200, 350, 850, 750))
 
-    edac = Edac40(max_piezo_voltage=30, ip=Edac40.DEFAULT_IP)
+    edac = Edac40(max_piezo_voltage=100, ip=Edac40.DEFAULT_IP)
 
     im = cam.get_image()
-    n = 100
+    n = 30
     for i in range(n):
         print(f'{i}/{n}')
         amps = np.random.uniform(0, 1, 40)
@@ -48,7 +49,7 @@ def generate_correlations_mask():
 
     im = im / n
 
-    mask = im > 2
+    mask = im > 8
 
     cam.close()
     edac.close()
