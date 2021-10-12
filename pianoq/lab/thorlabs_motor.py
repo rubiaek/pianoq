@@ -57,7 +57,7 @@ class ThorlabsRotatingServoMotor(KCubeDCServo):
 
 
 class ManualMotor(object):
-    MY_QWP_ZERO = 2
+    MY_QWP_ZERO = 2.5
 
     def __init__(self, zero_angle=None):
         self.zero_angle = zero_angle or self.MY_QWP_ZERO
@@ -65,3 +65,6 @@ class ManualMotor(object):
     def move_absolute(self, degrees):
         qq = input(f"Make sure the fast axis of QWP is on {degrees + self.zero_angle} degrees, and then press enter")
         print(f"Got it! {qq}")
+
+    def close(self):
+        pass

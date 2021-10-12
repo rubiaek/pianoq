@@ -22,6 +22,16 @@ class PolarizationMeasResult(object):
         self.mask_of_interest = None  # Mask where speckles get, to zero all the around
 
         self.dac_amplitudes = None
+        self.version = 1
+        self.start_first = None
+        self.end_first = None
+        self.dist_x = None
+        self.dist_y = None
+
+    def crop_up_down(self, remove_from_up=5, remove_from_down=5):
+        self.meas1 = self.meas1[remove_from_up:-remove_from_down, :]
+        self.meas2 = self.meas2[remove_from_up:-remove_from_down, :]
+        self.meas3 = self.meas3[remove_from_up:-remove_from_down, :]
 
     def plot_polarization_speckle(self):
         S0, S1, S2, S3 = self.get_stokes()
@@ -63,11 +73,11 @@ class PolarizationMeasResult(object):
 
         fig.show()
 
-    def plot_poincare(self, points=1000):
+    def plot_poincare(self, points=1000, stds=2):
 
         S0, S1, S2, S3 = self.get_stokes(normalized=True)
 
-        good_S0_indexes = np.where(S0 > (S0.mean() + 2*S0.std()))
+        good_S0_indexes = np.where(S0 > (S0.mean() + stds*S0.std()))
         S1, S2, S3 = S1[good_S0_indexes], S2[good_S0_indexes], S3[good_S0_indexes]  # 2D to 1D
         print(f'len(S1): {len(S1)}')
 
@@ -124,6 +134,12 @@ class PolarizationMeasResult(object):
         return S0, S1, S2, S3
 
     def _get_parts(self, meas):
+        if self.version == 1:
+            return self._get_parts_v1(meas)
+        elif self.version == 2:
+            return self._get_parts_v2(meas)
+
+    def _get_parts_v1(self, meas):
         cm_row, cm_col = ndimage.measurements.center_of_mass(self.mask_of_interest)
         cm_row, cm_col = int(cm_row), int(cm_col)
 
@@ -138,6 +154,20 @@ class PolarizationMeasResult(object):
 
         return part1, part2
 
+    def _get_parts_v2(self, meas):
+
+        if self.dist_y > 0:
+            part1 = meas[self.dist_y:, self.start_first:self.end_first]
+            part2 = meas[:-self.dist_y, self.start_first + self.dist_x:self.end_first + self.dist_x]
+        elif self.dist_y < 0:
+            part1 = meas[:self.dist_y, self.start_first:self.end_first]
+            part2 = meas[-self.dist_y:, self.start_first + self.dist_x:self.end_first + self.dist_x]
+        else:
+            part1 = meas[:, self.start_first:self.end_first]
+            part2 = meas[:, self.start_first + self.dist_x:self.end_first + self.dist_x]
+
+        return part1, part2
+
     def saveto(self, path):
         try:
             f = open(path, 'wb')
@@ -149,6 +179,11 @@ class PolarizationMeasResult(object):
                      meas3=self.meas3,
                      mask_of_interest=self.mask_of_interest,
                      dac_amplitudes=self.dac_amplitudes,
+                     version=self.version,
+                     start_first=self.start_first,
+                     end_first=self.end_first,
+                     dist_x=self.dist_x,
+                     dist_y=self.dist_y,
                      )
             f.close()
         except Exception as e:
@@ -169,6 +204,12 @@ class PolarizationMeasResult(object):
 
         self.mask_of_interest = data.get('mask_of_interest', None)
         self.dac_amplitudes = data.get('dac_amplitudes', None)
+
+        self.version = data.get('version', None)
+        self.start_first = data.get('start_first', None)
+        self.end_first = data.get('end_first', None)
+        self.dist_x = data.get('dist_x', None)
+        self.dist_y = data.get('dist_y', None)
 
 
 def colorize(r, arg):

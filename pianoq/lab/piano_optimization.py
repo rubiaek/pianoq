@@ -27,7 +27,7 @@ class PianoOptimization(object):
         self.scaling_exposure_factor = 1
         # Should probably get as parameter the (x, y) and then define the borders around that part
         # borders = DEFAULT_BORDERS
-        borders = Borders(200, 350, 850, 750)
+        borders = Borders(330, 520, 800, 615)
         self.cam.set_borders(borders)
 
         self.saveto_path = saveto_path
