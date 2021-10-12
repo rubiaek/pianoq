@@ -37,8 +37,8 @@ def check_all_piezos():
     so indexes with correlaction > 0.98 probably don't work
     """
     e = Edac40(max_piezo_voltage=30, ip=Edac40.DEFAULT_IP)
-    cam = VimbaCamera(DEFAULT_CAM_NO, exposure_time=800)
-    cam.set_borders(Borders(200, 350, 850, 750))
+    cam = VimbaCamera(DEFAULT_CAM_NO, exposure_time=350)
+    cam.set_borders(Borders(370, 520, 460, 615))
 
     print("Piezo num\t correlation")
     print("----------------------")
