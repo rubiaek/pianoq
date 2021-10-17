@@ -51,19 +51,21 @@ class PianoPopoffSimulation(object):
                     mat = mat @ np.diag(np.exp(1j*np.random.uniform(0, 2*np.pi, self.Nmodes)))
 
         elif N_bends == 'fiber1':
-            mat = matrix_power(self.TMs[10], 6) @ self._get_random_phase_TM(self.Nmodes) \
-                  @ matrix_power(self.TMs[20], 5) @ self._get_random_phase_TM(self.Nmodes) \
-                  @ matrix_power(self.TMs[25], 4) @ self._get_random_phase_TM(self.Nmodes) \
-                  @ matrix_power(self.TMs[30], 7) @ self._get_random_phase_TM(self.Nmodes) \
-                  @ matrix_power(self.TMs[35], 3) @ self._get_random_phase_TM(self.Nmodes)
+            indexes = [10, 15, 20, 25, 30, 35, 20, 10, 11, 14, 17, 19, 25, 29, 27, 13, 5]
+            rng = np.random.RandomState(2) # So fiber TM will be given deterministically
+            mat = np.eye(self.Nmodes)
+            for ind in indexes:
+                mat = mat @ self.TMs[ind]
+                mat = mat @ self._get_random_phase_TM(self.Nmodes, rng)
 
         else:
             raise NotImplementedError
 
         return mat
 
-    def _get_random_phase_TM(self, Nmodes):
-        return np.diag(np.exp(1j * np.random.uniform(0, 2 * np.pi, Nmodes)))
+    def _get_random_phase_TM(self, Nmodes, rng=None):
+        rng = rng or np.random  # rng is a random number generator
+        return np.diag(np.exp(1j * rng.uniform(0, 2 * np.pi, Nmodes)))
 
     def run(self, n_pop=30, n_iterations=50, cost_function=None,
             stop_after_n_const_iters=20, reduce_at_iterations=(2, 5)):
@@ -102,6 +104,11 @@ class PianoPopoffSimulation(object):
         # (4) translate the output in mode basis to pixel basis
         pix1, pix2 = self.pop.propagate(in_modes, tot_curr_TM)
 
+        return pix1, pix2
+
+    def get_initial_pixels(self):
+        in_modes = self.in_modes.copy()
+        pix1, pix2 = self.pop.propagate(in_modes, self.TM_fiber)
         return pix1, pix2
 
     def play_N_bends(self, N_bends):
@@ -183,10 +190,10 @@ class PianoPopoffSimulation(object):
 
 
 if __name__ == "__main__":
-    piano_sim = PianoPopoffSimulation(piezo_num=30, N_bends='fiber1',
+    piano_sim = PianoPopoffSimulation(piezo_num=40, N_bends='fiber1',
                                       normalize_cost_to_tot_power=True, prop_random_phases=True,
                                       Nmodes=42, normalize_TMs_method='svd1')
     # piano_sim.run(n_pop=30, n_iterations=50, cost_function=piano_sim.cost_function_pol)
-    piano_sim.run(n_pop=30, n_iterations=100, cost_function=piano_sim.cost_function_focus)
+    piano_sim.run(n_pop=60, n_iterations=500, cost_function=piano_sim.cost_function_focus, stop_after_n_const_iters=30)
     piano_sim.show_before_after()
     plt.show()

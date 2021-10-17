@@ -56,9 +56,14 @@ def get_ratio(n, piezo_num, Nmodes):
                                           normalize_cost_to_tot_power=True, prop_random_phases=True,
                                           Nmodes=Nmodes, normalize_TMs_method='svd1',
                                           quiet=True)
-        cost_func = piano_sim.cost_function_pol2
-        piano_sim.run(n_pop=40, n_iterations=500, cost_function=cost_func, stop_after_n_const_iters=30)
-        pix1, pix2 = piano_sim.get_pixels(piano_sim.amps_history[-1])
+        # cost_func = piano_sim.cost_function_pol2
+        cost_func = piano_sim.cost_function_focus
+
+        if piezo_num == 0:
+            pix1, pix2 = piano_sim.get_initial_pixels()
+        else:
+            piano_sim.run(n_pop=40, n_iterations=1000, cost_function=cost_func, stop_after_n_const_iters=50)
+            pix1, pix2 = piano_sim.get_pixels(piano_sim.amps_history[-1])
 
         tot_power = (np.abs(pix1)**2).sum() + (np.abs(pix2)**2).sum()
         power_percent_in_pol = (np.abs(pix1)**2).sum() / tot_power
@@ -84,22 +89,22 @@ def n_piezos_for_given_Nmodes(Nmodes, piezo_nums, n_mean=5):
 
 def Nmodes_to_piezo_num(n_mean=10):
     # [1, 3, 6, 10, 15, 21, 28, 36, 45, 55] * 2
-    modes6_piezo_nums = (2, 4, 6, 8, 10, 12, 14, 16, 18, 20)
+    modes6_piezo_nums = (0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 30, 40)
     modes6_means, modes6_errs = n_piezos_for_given_Nmodes(Nmodes=6, piezo_nums=modes6_piezo_nums, n_mean=n_mean)
 
-    modes12_piezo_nums = (2, 4, 6, 8, 10, 12, 14, 16, 18, 20)
+    modes12_piezo_nums = (0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 30, 40)
     modes12_means, modes12_errs = n_piezos_for_given_Nmodes(Nmodes=12, piezo_nums=modes12_piezo_nums, n_mean=n_mean)
 
-    modes20_piezo_nums = (2, 4, 6, 8, 10, 12, 14, 16, 18, 20)
+    modes20_piezo_nums = (0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 30, 40)
     modes20_means, modes20_errs = n_piezos_for_given_Nmodes(Nmodes=20, piezo_nums=modes20_piezo_nums, n_mean=n_mean)
 
-    modes30_piezo_nums = (2, 4, 6, 8, 10, 12, 14, 16, 18, 20)
+    modes30_piezo_nums = (0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 30, 40)
     modes30_means, modes30_errs = n_piezos_for_given_Nmodes(Nmodes=30, piezo_nums=modes30_piezo_nums, n_mean=n_mean)
 
-    modes42_piezo_nums = (2, 4, 6, 8, 10, 12, 14, 16, 18, 20)
+    modes42_piezo_nums = (0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 30, 40)
     modes42_means, modes42_errs = n_piezos_for_given_Nmodes(Nmodes=42, piezo_nums=modes42_piezo_nums, n_mean=n_mean)
 
-    modes56_piezo_nums = (2, 4, 6, 8, 10, 12, 14, 16, 18, 20)
+    modes56_piezo_nums = (2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 30, 40)
     modes56_means, modes56_errs = n_piezos_for_given_Nmodes(Nmodes=56, piezo_nums=modes56_piezo_nums, n_mean=n_mean)
 
     fig, ax = plt.subplots()
