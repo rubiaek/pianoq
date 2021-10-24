@@ -15,8 +15,16 @@ class PolarizationMeasResult(object):
         self.roi = None
         self.exposure_time = None
 
-        self.meas1 = None  # qwp.angle = 0,  hwp.angle = 0
+        # H and V come in. QWP nothing. HWP nothing.
+        # Hence we measure H/V.
+        self.meas1 = None  # qwp.angle = 0,  hwp.angle = 0;
+
+        # + and - come in. QWP nothing. HWP turns +/- to H/V. Wallaston prism separates H/V.
+        # # Hence we measure +/-.
         self.meas2 = None  # qwp.angle = 45, hwp.angle = 22.5
+
+        # R and L come in. QWP turns R/L to +/-. HWP turns +/- to H/V. Wallaston prism separates H/V.
+        # # Hence we measure R/L.
         self.meas3 = None  # qwp.angle = 0,  hwp.angle = 22.5
 
         self.mask_of_interest = None  # Mask where speckles get, to zero all the around

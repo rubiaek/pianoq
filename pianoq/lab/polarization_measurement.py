@@ -16,8 +16,6 @@ LOGS_DIR = 'C:\\temp'
 
 class MeasurePolarization(object):
 
-    MY_QWP_ZERO = 2
-
     def __init__(self, exposure_time=900, saveto_path=None, roi=None, multi=False):
         self.cam = VimbaCamera(DEFAULT_CAM_NO, exposure_time=exposure_time)
         self.dac = Edac40(max_piezo_voltage=30, ip=Edac40.DEFAULT_IP)

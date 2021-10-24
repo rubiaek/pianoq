@@ -57,7 +57,7 @@ class ThorlabsRotatingServoMotor(KCubeDCServo):
 
 
 class ManualMotor(object):
-    MY_QWP_ZERO = 2.5
+    MY_QWP_ZERO = 5
 
     def __init__(self, zero_angle=None):
         self.zero_angle = zero_angle or self.MY_QWP_ZERO
