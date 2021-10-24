@@ -54,7 +54,7 @@ class NmodesToPiezosResult(object):
             self.__dict__ = obj.__dict__
             self.__class__ = obj.__class__
 
-    def show_all(self):
+    def show_all_ratios(self):
         fig, ax = plt.subplots()
         ax.set_xlabel('piezo_num')
         ax.set_ylabel('percent in wanted polarization')
