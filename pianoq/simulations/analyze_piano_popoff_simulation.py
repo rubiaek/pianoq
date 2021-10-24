@@ -1,7 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import datetime
 
+from pianoq.misc.consts import LOGS_DIR
 from pianoq.simulations import PianoPopoffSimulation
+from pianoq.results.nmodes_to_piezos_result import NmodesToPiezosResult, PiezosForSpecificModeResult
 
 
 def check_cost_functions_for_pol(n):
@@ -48,81 +51,91 @@ def check_cost_functions_for_pol_once():
 
     return ratios
 
-def get_ratio(n, piezo_num, Nmodes):
-    ratios = np.zeros(n)
-    for i in range(n):
-        print(f'##### {i} ####')
-        piano_sim = PianoPopoffSimulation(piezo_num=piezo_num, N_bends='fiber1',
-                                          normalize_cost_to_tot_power=True, prop_random_phases=True,
-                                          Nmodes=Nmodes, normalize_TMs_method='svd1',
-                                          quiet=True)
-        # cost_func = piano_sim.cost_function_pol2
-        cost_func = piano_sim.cost_function_focus
 
-        if piezo_num == 0:
-            pix1, pix2 = piano_sim.get_initial_pixels()
-        else:
-            piano_sim.run(n_pop=40, n_iterations=1000, cost_function=cost_func, stop_after_n_const_iters=50)
-            pix1, pix2 = piano_sim.get_pixels(piano_sim.amps_history[-1])
+class NmodesToPiezosSimulation(object):
+    def __init__(self):
+        # [1, 3, 6, 10, 15, 21, 28, 36, 45, 55] * 2
+        self.generic_piezo_nums = (0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 30, 40)
+        self.less_piezo_nums = (0, 2, 4, 6, 8, 12, 16, 20)
 
-        tot_power = (np.abs(pix1)**2).sum() + (np.abs(pix2)**2).sum()
-        power_percent_in_pol = (np.abs(pix1)**2).sum() / tot_power
-        print(f'power_percent_in_pol with {Nmodes} Nmodes and {piezo_num} piezos: {power_percent_in_pol}')
-        ratios[i] = power_percent_in_pol
+        self.piezos_to_try = self.generic_piezo_nums
+        # self.modes_to_try = [6, 12, 20]
+        self.modes_to_try = [6, 12, 20, 30, 42, 56]
 
-    return ratios.mean(), ratios.std()
+        self.res = NmodesToPiezosResult()
+        self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+        self.res.timestamp = self.timestamp
+        self.res.cost_func = 'pol2'  # 'focus' , 'degree of polarization'
+        self.res.normalize_TMs_method = 'svd1'
 
+        self.saveto_path = None
 
-def n_piezos_for_given_Nmodes(Nmodes, piezo_nums, n_mean=5):
-    ratio_means = []
-    ratio_errs = []
-    for piezo_num in piezo_nums:
-        ratio_mean, ratio_err = get_ratio(n_mean, piezo_num, Nmodes)
-        ratio_means.append(ratio_mean)
-        ratio_errs.append(ratio_err)
+    def run(self, n_mean=5):
+        for Nmodes in self.modes_to_try:
+            self.populate_specific_n_modes(Nmodes, n_mean=n_mean)
 
-        print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-        print(f'Nmodes: {Nmodes}, piezo_num: {piezo_num}, ratio: {ratio_mean:.3f} +- {ratio_err:.3f}')
-        print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+    def populate_specific_n_modes(self, Nmodes, n_mean):
+        r = PiezosForSpecificModeResult()
+        r.Nmodes = Nmodes
+        r.piezo_nums = self.piezos_to_try
 
-    return ratio_means, ratio_errs
+        for piezo_num in self.piezos_to_try:
+            ratio_mean, ratio_err, sample_before, sample_after = self.get_ratio(n_mean, piezo_num, Nmodes)
+            r.ratios.append(ratio_mean)
+            r.ratio_stds.append(ratio_err)
+            r.example_befores.append(sample_before)
+            r.example_afters.append(sample_after)
 
-def Nmodes_to_piezo_num(n_mean=10):
-    # [1, 3, 6, 10, 15, 21, 28, 36, 45, 55] * 2
-    modes6_piezo_nums = (0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 30, 40)
-    modes6_means, modes6_errs = n_piezos_for_given_Nmodes(Nmodes=6, piezo_nums=modes6_piezo_nums, n_mean=n_mean)
+            print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+            print(f'Nmodes: {Nmodes}, piezo_num: {piezo_num}, ratio: {ratio_mean:.3f} +- {ratio_err:.3f}')
+            print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 
-    modes12_piezo_nums = (0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 30, 40)
-    modes12_means, modes12_errs = n_piezos_for_given_Nmodes(Nmodes=12, piezo_nums=modes12_piezo_nums, n_mean=n_mean)
+        self.res.different_modes.append(r)
+        self._save_result()
 
-    modes20_piezo_nums = (0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 30, 40)
-    modes20_means, modes20_errs = n_piezos_for_given_Nmodes(Nmodes=20, piezo_nums=modes20_piezo_nums, n_mean=n_mean)
+    def get_ratio(self, n_mean, piezo_num, Nmodes):
+        ratios = np.zeros(n_mean)
+        sample_before, sample_after = None, None
 
-    modes30_piezo_nums = (0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 30, 40)
-    modes30_means, modes30_errs = n_piezos_for_given_Nmodes(Nmodes=30, piezo_nums=modes30_piezo_nums, n_mean=n_mean)
+        for i in range(n_mean):
+            print(f'##### {i} ####')
+            piano_sim = PianoPopoffSimulation(piezo_num=piezo_num, N_bends='fiber1',
+                                              normalize_cost_to_tot_power=True, prop_random_phases=True,
+                                              Nmodes=Nmodes, normalize_TMs_method=self.res.normalize_TMs_method,
+                                              quiet=True)
 
-    modes42_piezo_nums = (0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 30, 40)
-    modes42_means, modes42_errs = n_piezos_for_given_Nmodes(Nmodes=42, piezo_nums=modes42_piezo_nums, n_mean=n_mean)
+            if self.res.cost_func == 'pol2':
+                cost_func = piano_sim.cost_function_pol2
+            elif self.res.cost_func == 'focus':
+                cost_func = piano_sim.cost_function_focus
+            else:
+                raise Exception()
 
-    modes56_piezo_nums = (2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 30, 40)
-    modes56_means, modes56_errs = n_piezos_for_given_Nmodes(Nmodes=56, piezo_nums=modes56_piezo_nums, n_mean=n_mean)
+            sample_before = piano_sim.get_initial_pixels()
 
-    fig, ax = plt.subplots()
-    ax.set_xlabel('piezo_num')
-    ax.set_ylabel('percent in wanted polarization')
+            if piezo_num == 0:
+                pix1, pix2 = piano_sim.get_initial_pixels()
+            else:
+                piano_sim.run(n_pop=40, n_iterations=1000, cost_function=cost_func, stop_after_n_const_iters=50)
+                pix1, pix2 = piano_sim.get_pixels(piano_sim.amps_history[-1])
 
-    ax.errorbar(modes6_piezo_nums, modes6_means, yerr=modes6_errs, fmt='.--', label='6 modes')
-    ax.errorbar(modes12_piezo_nums, modes12_means, yerr=modes12_errs, fmt='.--', label='12 modes')
-    ax.errorbar(modes20_piezo_nums, modes20_means, yerr=modes20_errs, fmt='.--', label='20 modes')
-    ax.errorbar(modes30_piezo_nums, modes30_means, yerr=modes30_errs, fmt='.--', label='30 modes')
-    ax.errorbar(modes42_piezo_nums, modes42_means, yerr=modes42_errs, fmt='.--', label='42 modes')
-    ax.errorbar(modes56_piezo_nums, modes56_means, yerr=modes56_errs, fmt='.--', label='56 modes')
-    ax.legend()
-    fig.show()
+            sample_after = (pix1, pix2)
+
+            tot_power = (np.abs(pix1)**2).sum() + (np.abs(pix2)**2).sum()
+            power_percent_in_pol = (np.abs(pix1)**2).sum() / tot_power
+            print(f'power_percent_in_pol with {Nmodes} Nmodes and {piezo_num} piezos: {power_percent_in_pol}')
+            ratios[i] = power_percent_in_pol
+
+        return ratios.mean(), ratios.std(), sample_before, sample_after
+
+    def _save_result(self):
+        saveto_path = self.saveto_path or f"{LOGS_DIR}\\{self.timestamp}.nmtnp"
+        self.res.saveto(saveto_path)
 
 
 if __name__ == "__main__":
     # a, b, c = check_cost_functions_for_pol(50)
-    Nmodes_to_piezo_num(n_mean=10)
+    n = NmodesToPiezosSimulation()
+    n.run(n_mean=10)
 
     plt.show()
