@@ -166,6 +166,18 @@ class PianoPopoffSimulation(object):
 
         return cost
 
+    def cost_function_degree_of_pol(self, amps):
+        Ax, Ay = self.get_pixels(amps)
+
+        S0 = (np.abs(Ax) ** 2) + (np.abs(Ay) ** 2)
+        S1 = (np.abs(Ax) ** 2) - (np.abs(Ay) ** 2)
+        S2 = 2 * (Ax.conj() * Ay).real
+        S3 = 2 * (Ax.conj() * Ay).imag
+
+        dop = np.sqrt(S1.sum() ** 2 + S2.sum() ** 2 + S3.sum() ** 2) / S0.sum()
+        return -dop
+
+
     def post_iteration_callback(self, global_best_cost, global_best_positions):
         if not self.quiet:
             print(f'{self.optimizer.curr_iteration}.\t cost: {global_best_cost:2f}\t time: {(time.time()-self.optimizer.start_time):2f} seconds')
