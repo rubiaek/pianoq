@@ -10,11 +10,6 @@ from pianoq.misc.consts import DEFAULT_BORDERS, DEFAULT_CAM_NO
 
 from pianoq.results.piano_optimization_result import PianoPSOOptimizationResult
 
-import pyswarms as ps
-from pyswarms.utils.functions import single_obj as fx
-from scipy.optimize import differential_evolution
-from sko.PSO import PSO
-
 LOGS_DIR = 'C:\\temp'
 
 
@@ -54,29 +49,6 @@ class PianoOptimization(object):
         self.res.good_piezo_indexes = np.array(self.good_piezo_indexes)
         self.res.max_piezo_voltage = self.dac.max_piezo_voltage
         self.res.roi = self.roi
-
-    def optimize_pso(self):
-        options = {'c1': 1.5, 'c2': 2, 'w': 0.99}
-        lower_bound = np.zeros(self.num_good_piezos)
-        upper_bound = np.ones(self.num_good_piezos)
-        bounds = (lower_bound, upper_bound)
-
-        self.o = ps.single.GlobalBestPSO(n_particles=10, dimensions=self.num_good_piezos,
-                                         options=options, bounds=bounds)
-        # Perform optimization
-        self.best_cost, self.best_pos = self.o.optimize(self.vectorial_cost_function, iters=10)
-
-    def optimize_differential_evollution(self):
-        bounds = [[0, 1]] * self.num_good_piezos
-
-        self.diff_res = differential_evolution(self.cost_function, bounds,
-                                               strategy='best1bin', maxiter=10,
-                                               popsize=10, recombination=0.5, mutation=(0.01, 0.1))
-
-    def optimize_pso_sko(self):
-        self.pso = PSO(func=self.cost_function, n_dim=self.num_good_piezos, pop=20, max_iter=20,
-                       lb=[0]*self.num_good_piezos, ub=[1]*self.num_good_piezos, w=0.9, c1=1.5, c2=2)
-        self.pso.run()
 
     def optimize_my_pso(self, n_pop, n_iterations, stop_after_n_const_iters, reduce_at_iterations=()):
         self.optimizer = MyPSOOptimizer(self.cost_function, n_pop=n_pop, n_var=self.num_good_piezos,
