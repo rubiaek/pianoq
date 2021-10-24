@@ -22,7 +22,7 @@ class ThorlabsRotatingServoMotor(KCubeDCServo):
     SERIAL_1 = 27253522
 
     # Has to do with the screwing angle of the waveplate to the inside of the motor
-    MY_HWP_ZERO = 2.75
+    MY_HWP_ZERO = 2.15
 
     def __init__(self, serial_number=None, zero_angle=None):
         self.zero_angle = zero_angle or self.MY_HWP_ZERO
