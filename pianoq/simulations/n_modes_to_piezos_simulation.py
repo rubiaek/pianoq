@@ -22,6 +22,9 @@ class NmodesToPiezosSimulation(object):
         self.res.timestamp = self.timestamp
         self.res.cost_func = 'pol2'  # 'focus' , 'degree of polarization'
         self.res.normalize_TMs_method = 'svd1'
+        self.res.pso_n_pop = 40
+        self.res.pso_n_iterations = 1000
+        self.res.pso_stop_after_n_const_iterations = 50
 
         self.saveto_path = None
 
@@ -71,7 +74,8 @@ class NmodesToPiezosSimulation(object):
             if piezo_num == 0:
                 pix1, pix2 = piano_sim.get_initial_pixels()
             else:
-                piano_sim.run(n_pop=40, n_iterations=1000, cost_function=cost_func, stop_after_n_const_iters=50)
+                piano_sim.run(n_pop=self.res.pso_n_pop, n_iterations=self.res.pso_n_iterations, cost_function=cost_func,
+                              stop_after_n_const_iters=self.res.pso_stop_after_n_const_iterations)
                 pix1, pix2 = piano_sim.get_pixels(piano_sim.amps_history[-1])
 
             sample_after = (pix1, pix2)

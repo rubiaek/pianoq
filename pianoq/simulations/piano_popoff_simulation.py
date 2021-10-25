@@ -202,10 +202,11 @@ class PianoPopoffSimulation(object):
 
 
 if __name__ == "__main__":
-    piano_sim = PianoPopoffSimulation(piezo_num=40, N_bends='fiber1',
+    piano_sim = PianoPopoffSimulation(piezo_num=20, N_bends='fiber1',
                                       normalize_cost_to_tot_power=True, prop_random_phases=True,
-                                      Nmodes=42, normalize_TMs_method='svd1')
+                                      Nmodes=56, normalize_TMs_method='svd1')
     # piano_sim.run(n_pop=30, n_iterations=50, cost_function=piano_sim.cost_function_pol)
-    piano_sim.run(n_pop=60, n_iterations=500, cost_function=piano_sim.cost_function_focus, stop_after_n_const_iters=30)
+    # piano_sim.run(n_pop=60, n_iterations=500, cost_function=piano_sim.cost_function_focus, stop_after_n_const_iters=30)
+    piano_sim.run(n_pop=40, n_iterations=1000, cost_function=piano_sim.cost_function_degree_of_pol, stop_after_n_const_iters=50)
     piano_sim.show_before_after()
     plt.show()
