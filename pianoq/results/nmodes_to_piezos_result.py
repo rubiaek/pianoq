@@ -42,6 +42,9 @@ class NmodesToPiezosResult(object):
         self.timestamp = None
         self.cost_func = None
         self.normalize_TMs_method = None
+        self.pso_n_pop = None
+        self.pso_n_iterations = None
+        self.pso_stop_after_n_const_iterations = None
 
     def saveto(self, path):
         f = open(path, 'wb')

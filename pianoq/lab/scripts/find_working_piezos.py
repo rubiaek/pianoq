@@ -8,6 +8,12 @@ from pianoq.misc.calc_correlation import get_correlation
 from pianoq.misc.consts import DEFAULT_BORDERS, DEFAULT_CAM_NO
 
 
+def crop_image(im):
+    part1 = im[:, 60:140]
+    part2 = im[:, 330:410]
+    im = np.concatenate((part1, part2), axis=1)
+    return im
+
 def check_piezo(e: Edac40, cam: VimbaCamera, piezo_num):
     amps = np.zeros(e.NUM_OF_PIEZOS)
 
@@ -18,7 +24,8 @@ def check_piezo(e: Edac40, cam: VimbaCamera, piezo_num):
     e.set_amplitudes(amps)
     im2 = cam.get_image()
 
-    correlation = get_correlation(im1, im2, use_mask=False)
+    # Check Cropping manually!
+    correlation = get_correlation(crop_image(im1), crop_image(im2), use_mask=False)
     print(f'{piezo_num} \t\t {correlation:.3f}')
 
     """
@@ -36,14 +43,14 @@ def check_all_piezos():
     print for each piezo index how much moving it decorrelates the picture,
     so indexes with correlaction > 0.98 probably don't work
     """
-    e = Edac40(max_piezo_voltage=30, ip=Edac40.DEFAULT_IP)
-    cam = VimbaCamera(DEFAULT_CAM_NO, exposure_time=350)
-    cam.set_borders(Borders(370, 520, 460, 615))
+    e = Edac40(max_piezo_voltage=50, ip=Edac40.DEFAULT_IP)
+    cam = VimbaCamera(DEFAULT_CAM_NO, exposure_time=800)
+    cam.set_borders(Borders(330, 550, 800, 640))
 
     print("Piezo num\t correlation")
     print("----------------------")
     # good_piezo_indexes = [2, 3, 4, 5, 6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
-    for i in range(40):
+    for i in range(10):
         check_piezo(e, cam, i)
 
     cam.close()
@@ -51,10 +58,11 @@ def check_all_piezos():
 
 
 def check_piezo_movement(piezo_num, sleep_duration=0.5):
-    e = Edac40(max_piezo_voltage=30, ip=Edac40.DEFAULT_IP)
+    e = Edac40(max_piezo_voltage=70, ip=Edac40.DEFAULT_IP)
     amps = np.zeros(40)
+    amps[9] = 0
     amps2 = np.zeros(40)
-    amps2[piezo_num] = 1
+    amps2[9] = 1
 
     try:
 
