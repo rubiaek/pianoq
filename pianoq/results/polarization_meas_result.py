@@ -81,7 +81,7 @@ class PolarizationMeasResult(object):
 
         fig.show()
 
-    def plot_poincare(self, points=1000, stds=2):
+    def plot_poincare(self, points=1000, stds=2, point_size=2):
 
         S0, S1, S2, S3 = self.get_stokes(normalized=True)
 
@@ -94,6 +94,7 @@ class PolarizationMeasResult(object):
             S1, S2, S3 = S1[chosen_indexes], S2[chosen_indexes], S3[chosen_indexes]  # 1D to shorter 1D
 
         b = qutip.Bloch()
+        b.point_size = [point_size]
         b.add_points([S1, S2, S3])
         b.show()
         plt.show(block=False)

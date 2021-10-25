@@ -38,8 +38,8 @@ class MeasurePolarization(object):
         self.res.version = 2
         self.res.start_first = 50
         self.res.end_first = 130
-        self.res.dist_x = 269
-        self.res.dist_y = 3
+        self.res.dist_x = 268
+        self.res.dist_y = -1
 
         self.saveto_path = saveto_path
         self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
@@ -127,8 +127,8 @@ class MeasurePolarization(object):
 
 
 if __name__ == "__main__":
-    # mp = MeasurePolarization(multi=False, exposure_time=500, roi=Borders(330, 550, 800, 640)) # When inserting PBS
-    mp = MeasurePolarization(multi=False, exposure_time=300, roi=Borders(330, 520, 800, 615))
+    mp = MeasurePolarization(multi=False, exposure_time=600, roi=Borders(330, 550, 800, 640)) # When inserting PBS
+    # mp = MeasurePolarization(multi=False, exposure_time=300, roi=Borders(330, 520, 800, 615))
     mp.run()
 
     # mp = MeasurePolarization(multi=True, exposure_time=900)
