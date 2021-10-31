@@ -37,7 +37,7 @@ class PianoPopoffSimulation(object):
 
         self.optimizer = None
         self.n_pop = None
-        self.in_modes = (1/np.sqrt(self.Nmodes)) * np.ones(self.Nmodes)
+        self.unif_in_modes = (1 / np.sqrt(self.Nmodes)) * np.ones(self.Nmodes)
 
         self.amps_history = []
 
@@ -89,9 +89,10 @@ class PianoPopoffSimulation(object):
         TM_indexes = np.around(amps).astype(int)
         return TM_indexes
 
-    def get_pixels(self, amps):
-        # (1) initialize some input beam in the mode basis
-        in_modes = self.in_modes.copy()
+    def get_pixels(self, amps, in_modes=None):
+        if in_modes is None:
+            # (1) initialize some input beam in the mode basis
+            in_modes = self.unif_in_modes.copy()
 
         # (2) translate the amps to dicreet dx values
         TM_indexes = self._amps_to_indexes(amps)
@@ -106,8 +107,11 @@ class PianoPopoffSimulation(object):
 
         return pix1, pix2
 
-    def get_initial_pixels(self):
-        in_modes = self.in_modes.copy()
+    def get_initial_pixels(self, in_modes=None):
+        if in_modes is None:
+            # (1) initialize some input beam in the mode basis
+            in_modes = self.unif_in_modes.copy()
+
         pix1, pix2 = self.pop.propagate(in_modes, self.TM_fiber)
         return pix1, pix2
 
@@ -142,18 +146,6 @@ class PianoPopoffSimulation(object):
             cost = -self._power_at_area(pix1)
         return cost
 
-    def cost_function_pol1(self, amps):
-        pix1, pix2 = self.get_pixels(amps)
-
-        pix1_power = (np.abs(pix1) ** 2).sum()
-        pix2_power = (np.abs(pix2) ** 2).sum()
-        tot_power = pix1_power + pix2_power
-
-        # We want all power in pix1, so we want pix2_power to be small
-        cost = pix2_power / tot_power
-
-        return cost
-
     def cost_function_pol2(self, amps):
         pix1, pix2 = self.get_pixels(amps)
 
@@ -176,7 +168,6 @@ class PianoPopoffSimulation(object):
 
         dop = np.sqrt(S1.sum() ** 2 + S2.sum() ** 2 + S3.sum() ** 2) / S0.sum()
         return -dop
-
 
     def post_iteration_callback(self, global_best_cost, global_best_positions):
         if not self.quiet:
@@ -204,9 +195,11 @@ class PianoPopoffSimulation(object):
 if __name__ == "__main__":
     piano_sim = PianoPopoffSimulation(piezo_num=20, N_bends='fiber1',
                                       normalize_cost_to_tot_power=True, prop_random_phases=True,
-                                      Nmodes=56, normalize_TMs_method='svd1')
+                                      Nmodes=6, normalize_TMs_method='svd1')
     # piano_sim.run(n_pop=30, n_iterations=50, cost_function=piano_sim.cost_function_pol)
     # piano_sim.run(n_pop=60, n_iterations=500, cost_function=piano_sim.cost_function_focus, stop_after_n_const_iters=30)
-    piano_sim.run(n_pop=40, n_iterations=1000, cost_function=piano_sim.cost_function_degree_of_pol, stop_after_n_const_iters=50)
-    piano_sim.show_before_after()
-    plt.show()
+    # TODO: play with this. and maybe make a func that does amps->DOP, for external usage also
+    # TODO: make also a show script + registry file
+    # piano_sim.run(n_pop=40, n_iterations=1000, cost_function=piano_sim.cost_function_degree_of_pol, stop_after_n_const_iters=50)
+    # piano_sim.show_before_after()
+    # plt.show()
