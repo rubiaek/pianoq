@@ -264,6 +264,15 @@ class PianoPopoffSimulation(object):
         cost_minus = self.cost_function_minus(amps)
         return np.mean([cost_H, cost_V, cost_plus, cost_minus])
 
+    def cost_function_max_HVPM(self, amps):
+        cost_H = self.cost_function_H(amps)
+        cost_V = self.cost_function_V(amps)
+        cost_plus = self.cost_function_plus(amps)
+        cost_minus = self.cost_function_minus(amps)
+        # These are all negative numbers, and i want them all to be as small as possible.
+        # Here instead of minimizing their mean, I try and minimize their maximum
+        return np.max([cost_H, cost_V, cost_plus, cost_minus])
+
     def cost_function_degree_of_pol(self, amps):
         Ax, Ay = self.get_pixels(amps)
 
@@ -299,13 +308,13 @@ class PianoPopoffSimulation(object):
 
 
 if __name__ == "__main__":
-    piano_sim = PianoPopoffSimulation(piezo_num=20, N_bends='fiber1',
+    piano_sim = PianoPopoffSimulation(piezo_num=30, N_bends='fiber1',
                                       normalize_cost_to_tot_power=True, prop_random_phases=True,
                                       Nmodes=6, normalize_TMs_method='svd1')
 
     # piano_sim.run(n_pop=60, n_iterations=500, cost_function=piano_sim.cost_function_focus, stop_after_n_const_iters=30)
     # TODO: play with this. and maybe make a func that does amps->DOP, for external usage also
     # TODO: make also a show script + registry file
-    piano_sim.run(n_pop=40, n_iterations=1000, cost_function=piano_sim.cost_function_mean_HVPM, stop_after_n_const_iters=50)
+    piano_sim.run(n_pop=40, n_iterations=1000, cost_function=piano_sim.cost_function_max_HVPM, stop_after_n_const_iters=50)
     # piano_sim.show_before_after()
     # plt.show()

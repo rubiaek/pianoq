@@ -45,6 +45,17 @@ class NmodesToPiezosResult(object):
         self.pso_n_pop = None
         self.pso_n_iterations = None
         self.pso_stop_after_n_const_iterations = None
+        self.N_bends = None
+
+    def __getattr__(self, attr: str):
+        if attr.startswith('__') and attr.endswith('__'):
+            raise AttributeError
+
+        value = self.__dict__.get(attr)
+        if not value:
+            print(f'{self.__class__.__name__}.{attr} is invalid in version {self.__dict__.get("version")}.')
+            return None
+        return value
 
     def saveto(self, path):
         f = open(path, 'wb')
