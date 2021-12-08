@@ -2,7 +2,7 @@ import time
 import datetime
 import numpy as np
 
-from pianoq import Borders
+from pianoq.misc.borders import Borders
 from pianoq.lab.Edac40 import Edac40
 from pianoq.lab.VimbaCamera import VimbaCamera
 from pianoq.lab.optimizations.my_pso import MyPSOOptimizer
