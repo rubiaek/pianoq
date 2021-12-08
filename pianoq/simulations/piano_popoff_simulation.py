@@ -37,9 +37,31 @@ class PianoPopoffSimulation(object):
 
         self.optimizer = None
         self.n_pop = None
-        self.in_modes = (1/np.sqrt(self.Nmodes)) * np.ones(self.Nmodes)
 
+        self._init_in_modes()
         self.amps_history = []
+
+    def _init_in_modes(self):
+        # Each mode comes in H polarization
+        self.H_in_modes = np.zeros(self.Nmodes)
+        self.H_Nmodes = self.Nmodes//2
+        self.H_in_modes[:self.H_Nmodes] = 1/np.sqrt(self.H_Nmodes)
+
+        # Each mode comes in V polarization
+        self.V_in_modes = np.zeros(self.Nmodes)
+        V_Nmodes = self.Nmodes // 2
+        self.V_in_modes[V_Nmodes:] = 1 / np.sqrt(V_Nmodes)
+
+        # Each mode comes in "+" polarization
+        self.plus_in_modes = (1 / np.sqrt(self.Nmodes)) * np.ones(self.Nmodes)
+
+        # Each mode comes in "-" polarization
+        self.minus_in_modes = (1 / np.sqrt(self.Nmodes)) * np.ones(self.Nmodes)
+        V_Nmodes = self.Nmodes // 2
+        self.minus_in_modes[V_Nmodes:] *= -1
+
+        # Is same as plus, used to use this in older version
+        self.unif_in_modes = (1 / np.sqrt(self.Nmodes)) * np.ones(self.Nmodes)
 
     def generate_fiber_TM(self, N_bends):
         if isinstance(N_bends, int):
@@ -89,25 +111,41 @@ class PianoPopoffSimulation(object):
         TM_indexes = np.around(amps).astype(int)
         return TM_indexes
 
-    def get_pixels(self, amps):
-        # (1) initialize some input beam in the mode basis
-        in_modes = self.in_modes.copy()
-
-        # (2) translate the amps to dicreet dx values
+    def _amps_to_tot_TM(self, amps):
         TM_indexes = self._amps_to_indexes(amps)
 
         # (3) propagate the input beam through the relevant TMs (according to (2) dxs)
         curr_TMs = [self.TMs[i] for i in TM_indexes]
         tot_piano_TM = reduce(lambda x, y: x @ y, curr_TMs)
         tot_curr_TM = tot_piano_TM @ self.TM_fiber
+        return tot_curr_TM
+
+    def get_pixels(self, amps, in_modes=None):
+        if in_modes is None:
+            # (1) initialize some input beam in the mode basis
+            in_modes = self.unif_in_modes.copy()
+
+        if amps is not None:
+            # (2) translate the amps to dicreet dx values
+            TM_indexes = self._amps_to_indexes(amps)
+
+            # (3) propagate the input beam through the relevant TMs (according to (2) dxs)
+            curr_TMs = [self.TMs[i] for i in TM_indexes]
+            tot_piano_TM = reduce(lambda x, y: x @ y, curr_TMs)
+            tot_curr_TM = tot_piano_TM @ self.TM_fiber
+        else:
+            tot_curr_TM = self.TM_fiber
 
         # (4) translate the output in mode basis to pixel basis
         pix1, pix2 = self.pop.propagate(in_modes, tot_curr_TM)
 
         return pix1, pix2
 
-    def get_initial_pixels(self):
-        in_modes = self.in_modes.copy()
+    def get_initial_pixels(self, in_modes=None):
+        if in_modes is None:
+            # (1) initialize some input beam in the mode basis
+            in_modes = self.unif_in_modes.copy()
+
         pix1, pix2 = self.pop.propagate(in_modes, self.TM_fiber)
         return pix1, pix2
 
@@ -142,18 +180,6 @@ class PianoPopoffSimulation(object):
             cost = -self._power_at_area(pix1)
         return cost
 
-    def cost_function_pol1(self, amps):
-        pix1, pix2 = self.get_pixels(amps)
-
-        pix1_power = (np.abs(pix1) ** 2).sum()
-        pix2_power = (np.abs(pix2) ** 2).sum()
-        tot_power = pix1_power + pix2_power
-
-        # We want all power in pix1, so we want pix2_power to be small
-        cost = pix2_power / tot_power
-
-        return cost
-
     def cost_function_pol2(self, amps):
         pix1, pix2 = self.get_pixels(amps)
 
@@ -166,6 +192,78 @@ class PianoPopoffSimulation(object):
 
         return cost
 
+    def cost_function_H(self, amps):
+        in_modes = self.H_in_modes.copy()
+
+        pix1, pix2 = self.get_pixels(amps, in_modes=in_modes)
+        pix1_power = (np.abs(pix1) ** 2).sum()
+        pix2_power = (np.abs(pix2) ** 2).sum()
+        tot_power = pix1_power + pix2_power
+
+        # We want all power in pix1, so we want pix2_power to be small
+        cost = -pix1_power / tot_power
+
+        return cost
+
+    def cost_function_V(self, amps):
+        in_modes = self.V_in_modes.copy()
+
+        pix1, pix2 = self.get_pixels(amps, in_modes=in_modes)
+        pix1_power = (np.abs(pix1) ** 2).sum()
+        pix2_power = (np.abs(pix2) ** 2).sum()
+        tot_power = pix1_power + pix2_power
+
+        # We want all power in pix1, so we want pix2_power to be small
+        cost = -pix2_power / tot_power
+
+        return cost
+
+    def cost_function_plus(self, amps):
+        # Each mode comes in "+" polarization
+        in_modes = self.plus_in_modes.copy()
+
+        pixH, pixV = self.get_pixels(amps, in_modes=in_modes)
+        pix_plus = (1 / np.sqrt(2)) * (pixH + pixV)
+        pix_minus = (1 / np.sqrt(2)) * (pixH - pixV)
+
+        plus_power = (np.abs(pix_plus) ** 2).sum()
+        minus_power = (np.abs(pix_minus) ** 2).sum()
+        tot_power = plus_power + minus_power
+
+        # We want all power in pix1, so we want pix2_power to be small
+        cost = -(plus_power / tot_power)
+
+        return cost
+
+    def cost_function_minus(self, amps):
+        # Each mode comes in "-" polarization
+        in_modes = self.minus_in_modes.copy()
+
+        pixH, pixV = self.get_pixels(amps, in_modes=in_modes)
+        pix_plus = (1 / np.sqrt(2)) * (pixH + pixV)
+        pix_minus = (1 / np.sqrt(2)) * (pixH - pixV)
+
+        plus_power = (np.abs(pix_plus) ** 2).sum()
+        minus_power = (np.abs(pix_minus) ** 2).sum()
+        tot_power = plus_power + minus_power
+
+        # We want all power in pix1, so we want pix2_power to be small
+        cost = -(minus_power / tot_power)
+
+        return cost
+
+    def cost_function_HV(self, amps):
+        cost_H = self.cost_function_H(amps)
+        cost_V = self.cost_function_V(amps)
+        return np.mean([cost_H, cost_V])
+
+    def cost_function_mean_HVPM(self, amps):
+        cost_H = self.cost_function_H(amps)
+        cost_V = self.cost_function_V(amps)
+        cost_plus = self.cost_function_plus(amps)
+        cost_minus = self.cost_function_minus(amps)
+        return np.mean([cost_H, cost_V, cost_plus, cost_minus])
+
     def cost_function_degree_of_pol(self, amps):
         Ax, Ay = self.get_pixels(amps)
 
@@ -176,7 +274,6 @@ class PianoPopoffSimulation(object):
 
         dop = np.sqrt(S1.sum() ** 2 + S2.sum() ** 2 + S3.sum() ** 2) / S0.sum()
         return -dop
-
 
     def post_iteration_callback(self, global_best_cost, global_best_positions):
         if not self.quiet:
@@ -204,9 +301,11 @@ class PianoPopoffSimulation(object):
 if __name__ == "__main__":
     piano_sim = PianoPopoffSimulation(piezo_num=20, N_bends='fiber1',
                                       normalize_cost_to_tot_power=True, prop_random_phases=True,
-                                      Nmodes=56, normalize_TMs_method='svd1')
-    # piano_sim.run(n_pop=30, n_iterations=50, cost_function=piano_sim.cost_function_pol)
+                                      Nmodes=6, normalize_TMs_method='svd1')
+
     # piano_sim.run(n_pop=60, n_iterations=500, cost_function=piano_sim.cost_function_focus, stop_after_n_const_iters=30)
-    piano_sim.run(n_pop=40, n_iterations=1000, cost_function=piano_sim.cost_function_degree_of_pol, stop_after_n_const_iters=50)
-    piano_sim.show_before_after()
-    plt.show()
+    # TODO: play with this. and maybe make a func that does amps->DOP, for external usage also
+    # TODO: make also a show script + registry file
+    piano_sim.run(n_pop=40, n_iterations=1000, cost_function=piano_sim.cost_function_mean_HVPM, stop_after_n_const_iters=50)
+    # piano_sim.show_before_after()
+    # plt.show()

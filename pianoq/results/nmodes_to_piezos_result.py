@@ -7,8 +7,8 @@ class PiezosForSpecificModeResult(object):
     def __init__(self):
         self.Nmodes = None
         self.piezo_nums = []
-        self.ratios = []
-        self.ratio_stds = []
+        self.costs = []
+        self.cost_stds = []
         self.example_befores = []
         self.example_afters = []
 
@@ -38,7 +38,7 @@ class NmodesToPiezosResult(object):
     def __init__(self):
         # list of PiezosForSpecificMode s
         self.different_modes = []
-        self.version = 1
+        self.version = 1.1
         self.timestamp = None
         self.cost_func = None
         self.normalize_TMs_method = None
@@ -59,15 +59,21 @@ class NmodesToPiezosResult(object):
 
     def show_all_ratios(self):
         fig, ax = plt.subplots()
+        ax.set_title(f'cost function: {self.cost_func}')
         ax.set_xlabel('piezo_num')
-        ax.set_ylabel('percent in wanted polarization')
+        if self.version == 1:
+            ax.set_ylabel('percent in wanted polarization')
+        elif self.version == 1.1:
+            ax.set_ylabel('minus cost function')
+        else:
+            raise Exception()
 
         for r in self.different_modes:
             # For viewing while running when dimensions might not match
-            l = len(r.ratios)
+            l = len(r.costs)
             piezo_nums = r.piezo_nums[:l]
 
-            ax.errorbar(piezo_nums, r.ratios, yerr=r.ratio_stds, fmt='.--', label=f'{r.Nmodes} modes')
+            ax.errorbar(piezo_nums, r.costs, yerr=r.cost_stds, fmt='.--', label=f'{r.Nmodes} modes')
 
         ax.legend()
         fig.show()
