@@ -35,7 +35,7 @@ def get_correlations_mask():
 def generate_correlations_mask():
     # When changing defulat borders we need to rerun this
     cam = VimbaCamera(DEFAULT_CAM_NO, exposure_time=700)
-    cam.set_borders(DEFAULT_BORDERS2)
+    cam.set_borders(DEFAULT_BORDERS)
 
     edac = Edac40(max_piezo_voltage=70, ip=Edac40.DEFAULT_IP)
 

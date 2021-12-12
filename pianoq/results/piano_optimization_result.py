@@ -25,14 +25,14 @@ class PianoPSOOptimizationResult(object):
         self.reduce_at_iterations = None
 
         self.normalized_images = []
-        self.normaloztion_to_one = None
+        self.normaliztion_to_one = None
         self.random_average_cost = None
 
     def _get_normalized_images(self):
         norm_ims = []
         for i, im in enumerate(self.images):
             norm_im = im / self.exposure_times[i]
-            norm_im = norm_im / self.normaloztion_to_one
+            norm_im = norm_im / self.normaliztion_to_one
             norm_ims.append(norm_im)
         return norm_ims
 
@@ -62,6 +62,20 @@ class PianoPSOOptimizationResult(object):
             return np.min(self.costs) / self.random_average_cost
         else:
             return -1
+
+    @property
+    def power_in_L_Pol_before_after(self):
+        im1 = self.normalized_images[0]
+        middle = im1.shape[1] // 2
+        percentage1 = im1[:, :middle].sum() / im1.sum()
+        # print(f'initial percentage: {percentage1}')
+
+        i = np.argmin(self.costs)
+        im2 = self.normalized_images[i]
+        percentage2 = im2[:, :middle].sum() / im2.sum()
+        # print(f'final percentage: {percentage2}')
+
+        return percentage1, percentage2
 
     def saveto(self, path):
         try:
@@ -100,7 +114,7 @@ class PianoPSOOptimizationResult(object):
         if self.random_average_cost:
             self.random_average_cost = self.random_average_cost.item()
 
-        self.normaloztion_to_one = self.images[0].max() / self.exposure_times[0]
+        self.normaliztion_to_one = self.images[0].max() / self.exposure_times[0]
         self.normalized_images = self._get_normalized_images()
 
         self.good_piezo_indexes = data.get('good_piezo_indexes', None)
