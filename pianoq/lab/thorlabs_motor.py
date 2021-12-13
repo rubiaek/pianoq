@@ -38,7 +38,7 @@ class ThorlabsRotatingServoMotor(KCubeDCServo):
         It is important to send float, and not some other np type...
         """
         device = self.get_device()
-        device.get_device().SetMoveRelativeDistance(Decimal(float(degrees)))
+        device.SetMoveRelativeDistance(Decimal(float(degrees)))
         device.MoveRelative(timeout)
 
     def move_absolute(self, degrees, timeout=10000):

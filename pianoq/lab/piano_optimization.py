@@ -6,7 +6,7 @@ from pianoq.misc.borders import Borders
 from pianoq.lab.Edac40 import Edac40
 from pianoq.lab.VimbaCamera import VimbaCamera
 from pianoq.lab.optimizations.my_pso import MyPSOOptimizer
-from pianoq.misc.consts import DEFAULT_BORDERS, DEFAULT_CAM_NO
+from pianoq.misc.consts import DEFAULT_BORDERS, DEFAULT_CAM_NO, DEFAULT_BORDERS2
 
 from pianoq.results.piano_optimization_result import PianoPSOOptimizationResult
 
@@ -16,13 +16,13 @@ LOGS_DIR = 'C:\\temp'
 class PianoOptimization(object):
 
     def __init__(self, initial_exposure_time=900, saveto_path=None, roi=None):
-        self.dac = Edac40(max_piezo_voltage=30, ip=Edac40.DEFAULT_IP)
+        self.dac = Edac40(max_piezo_voltage=70, ip=Edac40.DEFAULT_IP)
         self.cam = VimbaCamera(DEFAULT_CAM_NO, exposure_time=initial_exposure_time)
         self.initial_exposure_time = initial_exposure_time
         self.scaling_exposure_factor = 1
         # Should probably get as parameter the (x, y) and then define the borders around that part
-        # borders = DEFAULT_BORDERS
-        borders = Borders(330, 520, 800, 615)
+        borders = DEFAULT_BORDERS
+        # borders = Borders(330, 520, 800, 615)
         self.cam.set_borders(borders)
 
         self.saveto_path = saveto_path
@@ -38,8 +38,9 @@ class PianoOptimization(object):
         self.best_pos = None
 
         # self.good_piezo_indexes = [2, 3, 4, 6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
-        self.good_piezo_indexes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
-                                   20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37]
+        # self.good_piezo_indexes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+        #                            20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37]
+        self.good_piezo_indexes = np.arange(40)
         self.num_good_piezos = len(self.good_piezo_indexes)
 
         self.current_micro_iter = 0
