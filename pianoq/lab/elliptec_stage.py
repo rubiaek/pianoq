@@ -67,8 +67,8 @@ class ElliptecMotor(object):
     def move_relative(self, degs):
         degs = self._mm_to_pulse_8byte_hex_str(degs)
         _, cmdid, val = self.send_command('mr', degs)
-        assert cmdid == 'GS'
-        assert val == '00'
+        assert cmdid == 'PO'
+        self.current_position = self._pulse_hex_str_to_mm(val)
         print('OK')
 
     def get_position(self):
