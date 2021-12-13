@@ -264,6 +264,34 @@ class PianoPopoffSimulation(object):
         cost_minus = self.cost_function_minus(amps)
         return np.mean([cost_H, cost_V, cost_plus, cost_minus])
 
+    def cost_function_max_HVPM(self, amps):
+        cost_H = self.cost_function_H(amps)
+        cost_V = self.cost_function_V(amps)
+        cost_plus = self.cost_function_plus(amps)
+        cost_minus = self.cost_function_minus(amps)
+        # These are all negative numbers, and i want them all to be as small as possible.
+        # Here instead of minimizing their mean, I try and minimize their maximum
+        return np.max([cost_H, cost_V, cost_plus, cost_minus])
+
+    def cost_function_contrast(self, amps):
+        # TODO: maybe random each time?
+        # in_modes = self.H_in_modes.copy()
+        in_modes = np.random.uniform(0, 1, self.Nmodes)
+        C = np.sqrt((in_modes ** 2).sum())
+        in_modes /= C
+
+        pix1, pix2 = self.get_pixels(amps, in_modes=in_modes)
+        pix1_powers = (np.abs(pix1) ** 2)
+        pix2_powers = (np.abs(pix2) ** 2)
+        # Adding powers because different polarizations don't interfere, so the sum isn't coherent
+        tot_powers = pix1_powers + pix2_powers
+
+        nominator = (tot_powers ** 2).mean()
+        denominator = tot_powers.mean() ** 2
+
+        contrast = np.sqrt(nominator/denominator - 1)
+        return -contrast
+
     def cost_function_degree_of_pol(self, amps):
         Ax, Ay = self.get_pixels(amps)
 
@@ -280,16 +308,24 @@ class PianoPopoffSimulation(object):
             print(f'{self.optimizer.curr_iteration}.\t cost: {global_best_cost:2f}\t time: {(time.time()-self.optimizer.start_time):2f} seconds')
         self.amps_history.append(global_best_positions)
 
-    def show_before_after(self):
+    def show_before_after(self, seperate_pols=True):
         fig, axes = plt.subplots(2, 1, figsize=(5, 5.8), constrained_layout=True)
 
         pix1_0, pix2_0 = self.get_pixels(self.amps_history[0])
         pix1_1, pix2_1 = self.get_pixels(self.amps_history[-1])
-        pixs0 = np.concatenate((pix1_0, pix2_0), axis=1)
-        pixs1 = np.concatenate((pix1_1, pix2_1), axis=1)
+        if seperate_pols:
+            pixs0 = np.concatenate((pix1_0, pix2_0), axis=1)
+            pixs1 = np.concatenate((pix1_1, pix2_1), axis=1)
+            im0 = axes[0].imshow(np.abs(pixs0) ** 2)
+            im1 = axes[1].imshow(np.abs(pixs1) ** 2)
 
-        im0 = axes[0].imshow(np.abs(pixs0)**2)
-        im1 = axes[1].imshow(np.abs(pixs1)**2)
+        else:
+            power1_0, power2_0 = np.abs(pix1_0)**2, np.abs(pix2_0)**2
+            power1_1, power2_1 = np.abs(pix1_1)**2, np.abs(pix2_1)**2
+            # Polarization on top of each other
+            im0 = axes[0].imshow(power1_0 + power2_0)
+            im1 = axes[1].imshow(power1_1 + power2_1)
+
         fig.colorbar(im0, ax=axes[0])
         fig.colorbar(im1, ax=axes[1])
         axes[0].set_title('Before')
@@ -299,13 +335,14 @@ class PianoPopoffSimulation(object):
 
 
 if __name__ == "__main__":
-    piano_sim = PianoPopoffSimulation(piezo_num=20, N_bends='fiber1',
+    piano_sim = PianoPopoffSimulation(piezo_num=70, N_bends='fiber1',
                                       normalize_cost_to_tot_power=True, prop_random_phases=True,
                                       Nmodes=6, normalize_TMs_method='svd1')
 
     # piano_sim.run(n_pop=60, n_iterations=500, cost_function=piano_sim.cost_function_focus, stop_after_n_const_iters=30)
     # TODO: play with this. and maybe make a func that does amps->DOP, for external usage also
     # TODO: make also a show script + registry file
-    piano_sim.run(n_pop=40, n_iterations=1000, cost_function=piano_sim.cost_function_mean_HVPM, stop_after_n_const_iters=50)
-    # piano_sim.show_before_after()
-    # plt.show()
+    piano_sim.run(n_pop=40, n_iterations=1000, cost_function=piano_sim.cost_function_contrast, stop_after_n_const_iters=50)
+    piano_sim.show_before_after(seperate_pols=True)
+    piano_sim.show_before_after(seperate_pols=False)
+    plt.show()

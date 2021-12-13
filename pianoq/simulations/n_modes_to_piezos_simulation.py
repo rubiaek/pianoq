@@ -26,6 +26,7 @@ class NmodesToPiezosSimulation(object):
         self.res.pso_n_iterations = 1000
         self.res.pso_stop_after_n_const_iterations = 50
         self.res.version = 1.1
+        self.res.N_bends = 'fiber1'
 
         self.saveto_path = None
 
@@ -58,7 +59,7 @@ class NmodesToPiezosSimulation(object):
 
         for i in range(n_mean):
             print(f'##### {i} ####')
-            piano_sim = PianoPopoffSimulation(piezo_num=piezo_num, N_bends='fiber1',
+            piano_sim = PianoPopoffSimulation(piezo_num=piezo_num, N_bends=self.res.N_bends,
                                               normalize_cost_to_tot_power=True, prop_random_phases=True,
                                               Nmodes=Nmodes, normalize_TMs_method=self.res.normalize_TMs_method,
                                               quiet=True)
@@ -71,6 +72,10 @@ class NmodesToPiezosSimulation(object):
                 cost_func = piano_sim.cost_function_HV
             elif self.res.cost_func == 'mean_HVPM':
                 cost_func = piano_sim.cost_function_mean_HVPM
+            elif self.res.cost_func == 'max_HVPM':
+                cost_func = piano_sim.cost_function_max_HVPM
+            elif self.res.cost_func == 'DOP':
+                cost_func = piano_sim.cost_function_degree_of_pol
             else:
                 raise Exception()
 
@@ -98,8 +103,9 @@ class NmodesToPiezosSimulation(object):
 
 if __name__ == "__main__":
     # a, b, c = check_cost_functions_for_pol(50)
-    # 'mean_HVPM' , 'pol2' , 'focus' , 'degree of polarization'
-    n = NmodesToPiezosSimulation(cost_function='mean_HVPM')
+    # 'max_HVPM' , 'mean_HVPM' , 'pol2' , 'focus' , 'DOP'
+    # n = NmodesToPiezosSimulation(cost_function='mean_HVPM')
+    n = NmodesToPiezosSimulation(cost_function='DOP')
     n.run(n_mean=10)
 
     plt.show()
