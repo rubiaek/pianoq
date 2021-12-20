@@ -2,7 +2,7 @@ import serial
 
 
 class ElliptecMotor(object):
-    _PULS_PER_MM = 398 # Got this magic number from the GUI under "details"
+    _PULS_PER_MM = 398  # Got this magic number from the GUI under "details"
 
     def __init__(self, port_no=7):
         self.port_no = port_no
@@ -53,32 +53,37 @@ class ElliptecMotor(object):
     def set_home_offset(self, offset):
         offset = self._mm_to_pulse_8byte_hex_str(offset)
         _, cmdid, val = self.send_command('so', offset)
-        assert cmdid == 'GS'
+        assert cmdid in ('PO', 'GS')
         assert val == '00'
         print('OK')
 
     def move_absolute(self, degs):
+        assert 0 < degs < 360, 'Can\'t move absolute to more than 360 degrees'
         degs = self._mm_to_pulse_8byte_hex_str(degs)
         _, cmdid, val =self.send_command('ma', degs)
-        assert cmdid == 'GS'
-        assert val == '00'
+        assert cmdid in ('PO', 'GS')
+        if cmdid == 'GS':
+            assert val == '00'
         print('OK')
 
     def move_relative(self, degs):
         degs = self._mm_to_pulse_8byte_hex_str(degs)
         _, cmdid, val = self.send_command('mr', degs)
-        assert cmdid == 'PO'
+        assert cmdid in ('PO', 'GS')
         self.current_position = self._pulse_hex_str_to_mm(val)
         print('OK')
 
     def get_position(self):
         _, cmdid, val = self.send_command('gp')
-        assert cmdid == 'PO'
+        assert cmdid in ('PO', 'GS')
         self.current_position = self._pulse_hex_str_to_mm(val)
         return self.current_position
 
     def move_home(self):
-        pass
+        _, cmdid, val = self.send_command('ho', '1')
+        assert cmdid in ('PO', 'GS')
+        self.current_position = self._pulse_hex_str_to_mm(val)
+        print('OK')
 
     def send_command(self, command_type, command_val=''):
         self.ser.write(f'{self.motor_no}{command_type}{command_val}'.encode())
@@ -101,7 +106,11 @@ class ElliptecMotor(object):
 
     @classmethod
     def _pulse_hex_str_to_mm(cls, hex_str):
-        pos = int(hex_str, 16)/cls._PULS_PER_MM  # [mm]
+        raw_pos = int(hex_str, 16)
+        if raw_pos > 0xffffffff // 2:
+            raw_pos = -(0xffffffff - raw_pos)
+        pos = raw_pos / cls._PULS_PER_MM  # [mm]
+
         return pos
 
     @classmethod
@@ -113,10 +122,11 @@ class ElliptecMotor(object):
 
     @classmethod
     def _int2dword(cls, val: int):
-        assert(0 <= val <= 4294967295)
+        assert 0 <= abs(val) <= 0xffffffff // 2
+
+        if val < 0:
+            val = 0xffffffff + val
+
         # Due to the protocol, X must be in upper case
-        hex_str = format(val, '08X')  # Hex legnth 8
+        hex_str = format(val, '08X')  # Hex length 8
         return hex_str
-
-
-# int('0A', 16) == 10
