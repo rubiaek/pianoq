@@ -5,6 +5,7 @@ from pianoq import Borders
 from pianoq.lab import ThorlabsRotatingServoMotor
 from pianoq.lab.Edac40 import Edac40
 from pianoq.lab.VimbaCamera import VimbaCamera
+from pianoq.lab.elliptec_stage import ElliptecMotor
 from pianoq.lab.thorlabs_motor import ManualMotor
 from pianoq.misc.calc_correlation import get_correlations_mask
 from pianoq.misc.consts import DEFAULT_BORDERS, DEFAULT_CAM_NO
@@ -18,8 +19,8 @@ class MeasurePolarization(object):
 
     def __init__(self, exposure_time=900, saveto_path=None, roi=None, multi=False):
         self.cam = VimbaCamera(DEFAULT_CAM_NO, exposure_time=exposure_time)
-        self.dac = Edac40(max_piezo_voltage=30, ip=Edac40.DEFAULT_IP)
-        self.qwp_motor = ManualMotor()
+        self.dac = Edac40(max_piezo_voltage=70, ip=Edac40.DEFAULT_IP)
+        self.qwp_motor = ElliptecMotor()
         self.hwp_motor = ThorlabsRotatingServoMotor()
 
         self.is_multi = multi
@@ -36,8 +37,8 @@ class MeasurePolarization(object):
         self.res.roi = roi
         self.res.mask_of_interest = get_correlations_mask()
         self.res.version = 2
-        self.res.start_first = 50
-        self.res.end_first = 130
+        self.res.start_first = 20
+        self.res.end_first = 120
         self.res.dist_x = 268
         self.res.dist_y = -1
 
@@ -127,9 +128,10 @@ class MeasurePolarization(object):
 
 
 if __name__ == "__main__":
-    mp = MeasurePolarization(multi=False, exposure_time=600, roi=Borders(330, 550, 800, 640)) # When inserting PBS
-    # mp = MeasurePolarization(multi=False, exposure_time=300, roi=Borders(330, 520, 800, 615))
-    mp.run()
+    mp = MeasurePolarization(multi=False, exposure_time=200, roi=Borders(320, 540, 730, 670))
+    # mp = MeasurePolarization(multi=False, exposure_time=450, roi=Borders(320, 570, 730, 700))  # When inserting PBS
+    ### mp = MeasurePolarization(multi=False, exposure_time=300, roi=Borders(330, 520, 800, 615))
+    mp.run(amplitudes=0.7)
 
     # mp = MeasurePolarization(multi=True, exposure_time=900)
     # mp.run_multi()

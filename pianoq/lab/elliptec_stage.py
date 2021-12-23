@@ -48,7 +48,7 @@ class ElliptecMotor(object):
         _, cmdid, val = self.send_command('go')
         assert(cmdid == 'HO')
         self.home_offset = self._pulse_hex_str_to_mm(val)
-        return val
+        return self.home_offset
 
     def set_home_offset(self, offset):
         offset = self._mm_to_pulse_8byte_hex_str(offset)
@@ -58,7 +58,7 @@ class ElliptecMotor(object):
         print('OK')
 
     def move_absolute(self, degs):
-        assert 0 < degs < 360, 'Can\'t move absolute to more than 360 degrees'
+        assert 0 <= degs <= 360, 'Can\'t move absolute to more than 360 degrees'
         degs = self._mm_to_pulse_8byte_hex_str(degs)
         _, cmdid, val =self.send_command('ma', degs)
         assert cmdid in ('PO', 'GS')

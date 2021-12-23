@@ -99,12 +99,13 @@ class PolarizationMeasResult(object):
         b.show()
         plt.show(block=False)
 
-    def get_degree_of_polarization(self, only_good_points=False):
+    def get_degree_of_polarization(self, only_good_points=False, stds=2):
         S0, S1, S2, S3 = self.get_stokes(normalized=False)
 
         if only_good_points:
-            good_S0_indexes = np.where(S0 > (S0.mean() + 2*S0.std()))
+            good_S0_indexes = np.where(S0 > (S0.mean() + stds*S0.std()))
             S1, S2, S3 = S1[good_S0_indexes], S2[good_S0_indexes], S3[good_S0_indexes]  # 2D to 1D
+            S0 = S0[good_S0_indexes]
 
         return np.sqrt(S1.sum() ** 2 + S2.sum() ** 2 + S3.sum() ** 2) / S0.sum()
 
