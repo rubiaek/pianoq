@@ -31,7 +31,8 @@ class WavePlateOptimizationResult(object):
         # zero is on the top left
         fig, ax = plt.subplots()
         ax.set_title("Energy in H polarization")
-        ax.imshow(self.heatmap, extent=[0, 360, 360, 0])
+        im = ax.imshow(self.heatmap, extent=[self.Q_angles[0], self.Q_angles[-1], self.H_angles[-1], self.H_angles[0]])
         ax.set_xlabel(r'QWP angle')
         ax.set_ylabel(r'HWP angle')
+        fig.colorbar(im, ax=ax)
         fig.show()
