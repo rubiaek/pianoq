@@ -64,14 +64,14 @@ class ElliptecMotor(object):
         assert cmdid in ('PO', 'GS')
         if cmdid == 'GS':
             assert val == '00'
-        print('OK')
+        # print('OK')
 
     def move_relative(self, degs):
         degs = self._mm_to_pulse_8byte_hex_str(degs)
         _, cmdid, val = self.send_command('mr', degs)
         assert cmdid in ('PO', 'GS')
         self.current_position = self._pulse_hex_str_to_mm(val)
-        print('OK')
+        # print('OK')
 
     def get_position(self):
         _, cmdid, val = self.send_command('gp')
@@ -101,7 +101,7 @@ class ElliptecMotor(object):
     @classmethod
     def _mm_to_pulse_8byte_hex_str(cls, pos):
         val = round(pos * cls._PULS_PER_MM)
-        hex_str = cls._int2dword(val)
+        hex_str = cls._int2dword(int(val))
         return hex_str
 
     @classmethod

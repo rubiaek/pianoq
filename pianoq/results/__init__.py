@@ -3,4 +3,5 @@ from pianoq.results.piano_optimization_result import PianoPSOOptimizationResult
 from pianoq.results.polarization_meas_result import PolarizationMeasResult
 from pianoq.results.multi_polarization_meas_result import MultiPolarizationMeasResult
 from pianoq.results.nmodes_to_piezos_result import NmodesToPiezosResult, PiezosForSpecificModeResult
+from pianoq.results.waveplates_optimization_result import WavePlateOptimizationResult
 from pianoq.results.image_result import VimbaImage, show_image, load_image

@@ -41,7 +41,7 @@ class ThorlabsRotatingServoMotor(KCubeDCServo):
         device.SetMoveRelativeDistance(Decimal(float(degrees)))
         device.MoveRelative(timeout)
 
-    def move_absolute(self, degrees, timeout=10000):
+    def move_absolute(self, degrees, timeout=20000):
         """
         :param degrees: typically in mm, but in our case they are in degrees (0-360)
         :param timeout: in ms. send 0 for non-blocking
@@ -49,7 +49,8 @@ class ThorlabsRotatingServoMotor(KCubeDCServo):
         """
 
         device = self.get_device()
-        device.MoveTo(Decimal(float(degrees + self.zero_angle)), timeout)
+        angle = float(degrees + self.zero_angle) % 360  # can't be more that 360.
+        device.MoveTo(Decimal(angle), timeout)
 
     def close(self):
         self.disable()
