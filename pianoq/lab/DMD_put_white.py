@@ -10,6 +10,7 @@ except ImportError:
 sys.path.insert(0, os.path.split(os.path.realpath(__file__))[0])
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 WHITE_PATH = os.path.join(cur_dir, "../data/white.png")
+BLA_PATH = os.path.join(cur_dir, "../data/bla.png")
 
 
 def get_image(deviceType):
@@ -110,11 +111,22 @@ def main():
             pass
 
         if sequenceRepeatCount == 0:
-            input("Sequence repeating forever. Press Enter to stop the sequence")
-            hs.GetDriver().StopSequence(componentIndex)
+            try:
+                input("Sequence repeating forever. Press Enter to stop the sequence")
+                hs.GetDriver().StopSequence(componentIndex)
+            except Exception as e:
+                print("ERROR!!")
+                print(e)
+                hs.GetDriver().StopSequence(componentIndex)
 
-        print ("Waiting for the sequence to stop.")
-        while hs.GetDeviceState(componentIndex).RunState() == aj.RUN_STATE_RUNNING: pass
+        print("Waiting for the sequence to stop.")
+        try:
+            while hs.GetDeviceState(componentIndex).RunState() == aj.RUN_STATE_RUNNING:
+                pass
+        except Exception as e:
+            print("ERROR!!")
+            print(e)
+            hs.GetDriver().StopSequence(componentIndex)
 
 
 if __name__ == "__main__":

@@ -1,18 +1,22 @@
 import numpy as np
 from guizero import App, Text
 
+from pianoq import live_cam
 from pianoq.lab.Edac40 import Edac40
 from pianoq.lab.VimbaCamera import VimbaCamera
-from pianoq.misc.consts import DEFAULT_BORDERS
+from pianoq.misc.consts import DEFAULT_BORDERS, DEFAULT_CAM_NO
 from scipy import ndimage
 
 
 def get_polarizations_ratio(im):
     cm_row, cm_col = ndimage.measurements.center_of_mass(im)
     cm_row, cm_col = int(cm_row), int(cm_col)
-    pol1_energy = im[:, :cm_col].sum()
-    pol2_energy = im[:, cm_col:].sum()
-    return pol1_energy / pol2_energy
+    mid_col = im.shape[1] // 2
+
+    pol1_energy = im[:, :mid_col].sum()
+    pol2_energy = im[:, mid_col:].sum()
+    tot_energy = pol1_energy + pol2_energy
+    return pol1_energy / tot_energy
 
 
 def different_configs():
@@ -50,12 +54,13 @@ def empty_dac():
 
 def continuous():
     edac = Edac40(max_piezo_voltage=30, ip=Edac40.DEFAULT_IP)
-    cam = VimbaCamera(2)
+    cam = VimbaCamera(DEFAULT_CAM_NO)
     cam.set_borders(DEFAULT_BORDERS)
     edac.set_amplitudes(0)
 
     app = App(height=150, width=550)
     t = Text(app, text=1, size=50)
+    live_cam(cam)
 
     def callback():
         # amps = np.random.uniform(0, 1, 40)
