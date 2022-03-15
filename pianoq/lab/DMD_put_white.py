@@ -20,7 +20,9 @@ def get_image(deviceType):
     # white_img = np.zeros(shape=(imageHeight, imageWidth))
     # srcNumChan=0; srcBitDepth=8; srcMajorOrder=aj.ROW_MAJOR_ORDER; dstDeviceType=deviceType
     # image.ReadFromMemory(white_img, imageHeight, imageWidth, srcNumChan, srcBitDepth, srcMajorOrder, dstDeviceType)
-    image.ReadFromFile(WHITE_PATH, deviceType)
+    path = WHITE_PATH
+    print(path)
+    image.ReadFromFile(path, deviceType)
     return image
 
 
