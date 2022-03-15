@@ -15,7 +15,7 @@ LOGS_DIR = 'C:\\temp'
 
 class PianoOptimization(object):
 
-    def __init__(self, initial_exposure_time=900, saveto_path=None, roi=None):
+    def __init__(self, initial_exposure_time=900, saveto_path=None, roi=None, cost_function=None):
         self.dac = Edac40(max_piezo_voltage=70, ip=Edac40.DEFAULT_IP)
         self.cam = VimbaCamera(DEFAULT_CAM_NO, exposure_time=initial_exposure_time)
         self.initial_exposure_time = initial_exposure_time
@@ -32,6 +32,8 @@ class PianoOptimization(object):
         self.window_size = 2
         self.roi = roi or np.index_exp[150 - self.window_size: 150 + self.window_size,
                                        150 - self.window_size: 150 + self.window_size]
+
+        self.cost_function = cost_function or self.cost_function_roi
 
         self.optimizer = None
         self.best_cost = None
@@ -52,7 +54,7 @@ class PianoOptimization(object):
         self.res.roi = self.roi
 
     def optimize_my_pso(self, n_pop, n_iterations, stop_after_n_const_iters, reduce_at_iterations=()):
-        self.optimizer = MyPSOOptimizer(self.cost_function, n_pop=n_pop, n_var=self.num_good_piezos,
+        self.optimizer = MyPSOOptimizer(self.cost_function_callback, n_pop=n_pop, n_var=self.num_good_piezos,
                                         n_iterations=n_iterations,
                                         post_iteration_callback=self.post_iteration_callback,
                                         w=1, wdamp=0.99, c1=1.5, c2=2,
@@ -75,12 +77,12 @@ class PianoOptimization(object):
         res = []
         for amps in amps_times_n_particles:
             assert len(amps) == self.num_good_piezos
-            r = self.cost_function(amps)
+            r = self.cost_function_callback(amps)
             res.append(r)
 
         return np.array(res)
 
-    def cost_function(self, amps):
+    def cost_function_callback(self, amps):
         """
         amps is the array from the optimization algorithm, with only working amps
         :param amps:
@@ -90,15 +92,30 @@ class PianoOptimization(object):
         real_amps[self.good_piezo_indexes] = amps
         self.dac.set_amplitudes(real_amps)
 
-        im = self.cam.get_image()[self.roi]
-        cost = -int(im.mean())
-        cost *= self.scaling_exposure_factor
-        print(f"{self.current_micro_iter}. cost: {cost}")
+        im = self.cam.get_image()
+        cost = self.cost_function(im)
+        print(f"{self.current_micro_iter}. cost: {cost:.5f}")
         self.current_micro_iter += 1
 
         self._fix_exposure(im)
 
         return cost
+
+    def cost_function_roi(self, im):
+        im = im[self.roi]
+        cost = -int(im.mean())
+        cost *= self.scaling_exposure_factor
+        return cost
+
+    @staticmethod
+    def cost_function_H_pol(im):
+        # get the most light into H
+        mid_col = im.shape[1] // 2
+
+        pol1_energy = im[:, :mid_col].sum()
+        pol2_energy = im[:, mid_col:].sum()
+        tot_energy = pol1_energy + pol2_energy
+        return -(pol1_energy / tot_energy)
 
     def _fix_exposure(self, im):
         mx = im.max()
@@ -117,7 +134,7 @@ class PianoOptimization(object):
         self.res.timestamps.append(delta.total_seconds())
 
         self.res.amplitudes.append(global_best_positions)
-        cost = self.cost_function(global_best_positions)
+        cost = self.cost_function_callback(global_best_positions)
         # TODO: think about this cost and the reported global_best_cost (see two lines below)
 
         # self.res.costs.append(global_best_cost)
