@@ -1,5 +1,6 @@
 import numpy as np
 
+from pianoq import Borders
 from pianoq.lab import VimbaCamera
 from pianoq.lab.elliptec_stage import ElliptecMotor
 from pianoq.lab.thorlabs_motor import ThorlabsRotatingServoMotor
@@ -17,11 +18,12 @@ class GlobalRotationOptimization(object):
         self.qwm = ElliptecMotor(port_no=DEFAULT_ELLO_PORTNO)  # quicker
         print("Getting vimba camera")
         self.cam = VimbaCamera(DEFAULT_CAM_NO)
-        self.cam.set_borders(DEFAULT_BORDERS)
+        # self.cam.set_borders(Borders(100, 400, 650, 800))
+        # self.cam.set_borders(Borders(150, 570, 550, 690))
         self.res = WavePlateOptimizationResult()
 
-        self.H_angles = H_angles or np.linspace(0, 360, 37)
-        self.Q_angles = Q_angles or np.linspace(0, 360, 37)
+        self.H_angles = H_angles or np.linspace(0, 180, 19)
+        self.Q_angles = Q_angles or np.linspace(0, 180, 19)
 
         self.res.H_angles = self.H_angles
         self.res.Q_angles = self.Q_angles
