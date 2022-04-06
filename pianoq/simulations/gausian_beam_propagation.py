@@ -1,3 +1,8 @@
+"""
+Copyting from Yaron's matlab code which can be found also here:
+    G:\My Drive\Projects\Quantum Piano\Matlab Code\GaussianPropagation
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 
