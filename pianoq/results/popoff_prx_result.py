@@ -15,6 +15,7 @@ class PopoffPRXResult(object):
     And this PRX article https://arxiv.org/abs/2010.14813
     """
     DEFAULT_PATH = os.path.join(cur_dir, "../data/popoff_polarization_data.npz")
+    DEFAULT_PATH2 = os.path.join(cur_dir, "../data/popoff_polarization_data_fmf.npz")
 
     def __init__(self, TM_modes=None, dxs=None, index_dx0=None, modes_out=None, L=None, M=None, path=None):
         self.TM_modes = TM_modes  # Transmission matrices in the mode basis for different dx values
@@ -34,6 +35,7 @@ class PopoffPRXResult(object):
         self.modes_out_full = np.kron(np.array([[1, 0], [0, 1]]), self.modes_out)
         self.n = int(np.sqrt(self.modes_out.shape[1]))
         self.Nmodes = self.modes_out.shape[0] * 2  # 110
+        self.hNmodes = self.Nmodes // 2
         self.all_polarization_ratios = self.get_all_polarization_ratios(method=method)
 
     def _E_to_I(self, x):
@@ -72,12 +74,13 @@ class PopoffPRXResult(object):
 
         # remove 10 highest degenerate modes, since they are very lossy, and have pixelization effects
         mask = np.ones(self.TM_modes[0].shape, dtype=bool)
-        mask[:, hNmodes:55] = False
-        mask[hNmodes:55:, :] = False
-        mask[hNmodes+55:, :] = False
-        mask[:, hNmodes+55:] = False
+        mask[:, hNmodes:self.hNmodes] = False
+        mask[hNmodes:self.hNmodes:, :] = False
+        mask[hNmodes+self.hNmodes:, :] = False
+        mask[:, hNmodes+self.hNmodes:] = False
 
         self.Nmodes = Nmodes
+        self.hNmodes = hNmodes
         self.TM_modes = [TM[mask].reshape(Nmodes, Nmodes) for TM in self.TM_modes]
 
         # Shuold take care of this so pop.propagate() will work.

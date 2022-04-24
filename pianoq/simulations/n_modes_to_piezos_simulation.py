@@ -14,7 +14,7 @@ class NmodesToPiezosSimulation(object):
         self.less_piezo_nums = (0, 2, 4, 6, 8, 12, 16, 20)
 
         self.piezos_to_try = self.generic_piezo_nums
-        self.modes_to_try = [6, 12, 20, 30]
+        self.modes_to_try = [6, 12]
         # self.modes_to_try = [6, 12, 20, 30, 42, 56]
 
         self.res = NmodesToPiezosResult()
@@ -26,7 +26,7 @@ class NmodesToPiezosSimulation(object):
         self.res.pso_n_iterations = 1000
         self.res.pso_stop_after_n_const_iterations = 50
         self.res.version = 1.1
-        self.res.N_bends = 'fiber1'
+        self.res.N_bends = 'fiber2'
 
         self.saveto_path = None
 
@@ -105,7 +105,7 @@ if __name__ == "__main__":
     # a, b, c = check_cost_functions_for_pol(50)
     # 'max_HVPM' , 'mean_HVPM' , 'pol2' , 'focus' , 'DOP'
     # n = NmodesToPiezosSimulation(cost_function='mean_HVPM')
-    n = NmodesToPiezosSimulation(cost_function='DOP')
+    n = NmodesToPiezosSimulation(cost_function='mean_HVPM')
     n.run(n_mean=10)
 
     plt.show()

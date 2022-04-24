@@ -21,7 +21,7 @@ class PianoPopoffSimulation(object):
         self.normalize_cost_to_tot_power = normalize_cost_to_tot_power
         self.prop_random_phases = prop_random_phases
 
-        self.pop = PopoffPRXResult(path=PopoffPRXResult.DEFAULT_PATH)
+        self.pop = PopoffPRXResult(path=PopoffPRXResult.DEFAULT_PATH2)
 
         self.pop.set_Nmodes(Nmodes)
         self.pop.normalize_TMs(method=normalize_TMs_method)  # 'svd1'
@@ -80,6 +80,16 @@ class PianoPopoffSimulation(object):
                 mat = mat @ self.TMs[ind]
                 mat = mat @ self._get_random_phase_TM(self.Nmodes, rng)
 
+        elif N_bends == 'fiber2':
+            indexes = [10, 15, 20, 25, 20, 10, 11, 14, 17, 19, 25, 27, 13, 5]
+            rng = np.random.RandomState(2)  # So fiber TM will be given deterministically
+            mat = np.eye(self.Nmodes)
+            for ind in indexes:
+                mat = mat @ self.TMs[ind]
+                mat = mat @ self._get_random_phase_TM(self.Nmodes, rng)
+
+
+
         else:
             raise NotImplementedError
 
@@ -107,7 +117,7 @@ class PianoPopoffSimulation(object):
 
     def _amps_to_indexes(self, amps):
         # dx values are between 0 to 70 with jumps of 2: [0, 2, 4, ..., 68, 70]
-        amps = amps * 35  # now between [0, 35]
+        amps = amps * (len(self.TMs) - 2)  # now between [0, 35]
         TM_indexes = np.around(amps).astype(int)
         return TM_indexes
 
