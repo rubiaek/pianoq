@@ -24,7 +24,7 @@ class Edac40(object):
     DISCOVER_PORT = 30303
     AMP_GAIN = 80
     SLEEP_AFTER_SEND = 0.3
-    REST_AMP = 0.5
+    REST_AMP = 0
 
     # This is from .c code
     _EDAC_PHYS_CHANNELS = np.array([6, 7, 4, 5, 2, 3, 0, 1, 22, 23, 20, 21, 18, 19, 16, 17, 14, 15, 12, 13,
@@ -177,5 +177,5 @@ class Edac40(object):
         print(f"Voltage range between {minV} and {maxV} Volts")
 
     def close(self):
-        self.set_amplitudes(0.5 * np.ones(self.NUM_OF_PIEZOS))
+        self.set_amplitudes(self.REST_AMP * np.ones(self.NUM_OF_PIEZOS))
         self.sock.close()
