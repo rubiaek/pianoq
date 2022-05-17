@@ -5,7 +5,7 @@ import qutip
 
 from pianoq.results.popoff_prx_result import PopoffPRXResult
 
-PATH = "../data/popoff_polarization_data.npz"
+PATH = "../data/popoff_polarization_data_fmf2.npz"
 
 
 def TM_ratios_figures():
@@ -18,7 +18,7 @@ def TM_ratios_figures():
     pop.show_all_polarizations_ratios()
     # pop.show_polarizations_ratios_per_mode(range(0, 55, 2), logscale=True, legend=True)
     # pop.show_polarizations_ratios_bar_plots([0, 20, 30, 40])
-    # pop.show_mixing_of_mode(pop.TM_modes[5], 10)
+    pop.show_mixing_of_mode(pop.TM_modes[5], 10)
 
 
 def get_P(A):
@@ -62,7 +62,7 @@ def plot_poincare(TM_index, col_num=1):
 def get_all_2by2s(TM):
     """ return [55X2X2]"""
     Nmodes = TM.shape[0] // 2
-    assert Nmodes == 55
+    # assert Nmodes == 55
 
     all = []
 
@@ -183,15 +183,15 @@ def plot_schmidt_process(TM_index, threshold=0.3):
 
 def plot_poincares():
     plot_poincare(5, 0)
+    plot_poincare(10, 0)
     plot_poincare(20, 0)
     plot_poincare(30, 0)
-    plot_poincare(40, 0)
 
 
 if __name__ == "__main__":
     # TM_ratios_figures()
-    plot_schmidt_per_dxs(0.1)
-    plot_schmidt_process(20, 0.1)
-    plot_poincare(40, 0)
+    # plot_schmidt_per_dxs(0.1)
+    # plot_schmidt_process(20, 0.1)
+    # plot_poincare(40, 0)
     plot_poincares()
     plt.show()

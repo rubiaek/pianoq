@@ -15,7 +15,7 @@ class PopoffPRXResult(object):
     And this PRX article https://arxiv.org/abs/2010.14813
     """
     DEFAULT_PATH = os.path.join(cur_dir, "../data/popoff_polarization_data.npz")
-    DEFAULT_PATH2 = os.path.join(cur_dir, "../data/popoff_polarization_data_fmf.npz")
+    DEFAULT_PATH2 = os.path.join(cur_dir, "../data/popoff_polarization_data_fmf2.npz")
 
     def __init__(self, TM_modes=None, dxs=None, index_dx0=None, modes_out=None, L=None, M=None, path=None):
         self.TM_modes = TM_modes  # Transmission matrices in the mode basis for different dx values

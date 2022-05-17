@@ -105,7 +105,7 @@ if __name__ == "__main__":
     # a, b, c = check_cost_functions_for_pol(50)
     # 'max_HVPM' , 'mean_HVPM' , 'pol2' , 'focus' , 'DOP'
     # n = NmodesToPiezosSimulation(cost_function='mean_HVPM')
-    n = NmodesToPiezosSimulation(cost_function='mean_HVPM')
+    n = NmodesToPiezosSimulation(cost_function='max_HVPM')
     n.run(n_mean=10)
 
     plt.show()
