@@ -1,6 +1,6 @@
 from pianoq.misc.borders import Borders
 
-DEFAULT_BORDERS_MMF = Borders(160, 430, 720, 720)
+DEFAULT_BORDERS_MMF = Borders(80, 330, 680, 630)
 
 # with FMF
 DEFAULT_BORDERS = Borders(320, 540, 730, 670)

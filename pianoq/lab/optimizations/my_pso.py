@@ -44,7 +44,7 @@ class Swarm(object):
         self.w = self.w * self.wdamp
 
         restart_occurred = False
-        particles_to_mutate = np.random.choice(self.n_pop, 2)  # TODO: is this mutation good?
+        particles_to_mutate = np.random.choice(self.n_pop, 4)  # TODO: is this mutation good?
 
         # At end of iteration we will have a new global_best_positions and global_best_cost
         for i, particle in enumerate(self.particles):
@@ -63,7 +63,7 @@ class Swarm(object):
             self.iterations_since_restart_occured = 0
 
     def is_stuck(self):
-        return self.iterations_since_restart_occured > 10 and self.particles_are_clustered()
+        return self.iterations_since_restart_occured > 2 and self.particles_are_clustered()
 
     def particles_are_clustered(self):
         pop_mat = np.zeros((self.n_pop, self.n_var))  # Every row is a particle
@@ -209,7 +209,7 @@ class MyPSOOptimizer(object):
     def get_random_average_cost(self):
         self.log(f'Initializing random average cost')
         cost = 0
-        n = 40
+        n = 100
         for i in range(n):
             amps = self.swarm.sample_func(self.swarm.n_var)
             cost += self.swarm.cost_func(amps)

@@ -9,18 +9,18 @@ def focus():
     for i in range(n):
         whole_area_L = 40
         whole_speckle_L = 20
-        small_L = 6
+        small_L = 16
 
         wind = small_L // 2
         # roi_L = np.index_exp[70 - wind: 70 + wind, 60 - wind: 60 + wind]
-        roi_L = np.index_exp[150 - wind: 150 + wind, 100 - wind: 100 + wind]
+        roi_L = np.index_exp[150 - wind: 150 + wind, 150 - wind: 150 + wind]
         # roi_R = np.index_exp[70 - wind: 70 + wind, 335 - wind: 335 + wind]
 
         roi = roi_L
         # Don't pass here PianoOptimization.cost_function_roi since it isn't a staticmethod so it will do trouble
-        po = PianoOptimization(saveto_path=None, initial_exposure_time=200, roi=roi)
+        po = PianoOptimization(saveto_path=None, initial_exposure_time=2000, roi=roi)
         # po.optimize_my_pso(n_pop=20, n_iterations=20, stop_after_n_const_iters=5, reduce_at_iterations=(3,))
-        po.optimize_my_pso(n_pop=25, n_iterations=150, stop_after_n_const_iters=5, reduce_at_iterations=(4, 10))
+        po.optimize_my_pso(n_pop=25, n_iterations=150, stop_after_n_const_iters=10, reduce_at_iterations=(3,))
         po.close()
 
 
