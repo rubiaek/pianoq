@@ -209,7 +209,7 @@ class MyPSOOptimizer(object):
     def get_random_average_cost(self):
         self.log(f'Initializing random average cost')
         cost = 0
-        n = 100
+        n = 40
         for i in range(n):
             amps = self.swarm.sample_func(self.swarm.n_var)
             cost += self.swarm.cost_func(amps)

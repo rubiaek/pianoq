@@ -37,17 +37,19 @@ class VimbaImage(object):
         self.exposure_time = data.get('exposure_time', None).item()
         self.timestamp = data.get('timestamp', None).item()
 
-    def show_image(self, aspect=None):
+    def show_image(self, aspect=None, title=None):
         fig, axes = plt.subplots()
         im = axes.imshow(self.image, aspect=aspect)
+        if title:
+            axes.set_title(title)
         fig.colorbar(im, ax=axes)
         fig.show()
         return fig, axes
 
 
-def show_image(path):
+def show_image(path, title=None):
     vim = VimbaImage(path)
-    return vim.image, vim.show_image()
+    return vim.image, vim.show_image(title=title)
 
 def load_image(path):
     vim = VimbaImage(path)

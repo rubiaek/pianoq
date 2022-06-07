@@ -135,12 +135,12 @@ class PianoOptimization(object):
 
         self.res.amplitudes.append(global_best_positions)
         cost = self.cost_function_callback(global_best_positions)
-        # TODO: think about this cost and the reported global_best_cost (see two lines below)
 
-        # self.res.costs.append(global_best_cost)
+        # update global best cost to best cost I actually have a picture of it
+        self.optimizer.swarm.global_best_cost = cost
         self.res.costs.append(cost)
 
-        im = self.cam.get_averaged_image(amount=10)
+        im = self.cam.get_image()
         self.res.images.append(im)
         self.res.exposure_times.append(self.cam.get_exposure_time())
 

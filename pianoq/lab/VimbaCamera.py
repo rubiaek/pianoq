@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 
 
 class VimbaCamera(object):
+    PIXEL_SIZE = 4.8e-6
+
     def __init__(self, camera_num, exposure_time=None, borders: Borders = None):
         """
             You can check camera_num using vimb.get_all_cameras()[0].get_model()
