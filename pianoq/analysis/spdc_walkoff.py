@@ -90,3 +90,4 @@ if __name__ == "__main__":
     w0, w0_err, z0, z0_err, alpha, alpha_err = get_w0(x_range_m[21:44], ws[21:44])  # TODO: make more generic
 
     plot_rayleigh(x_range_m, ws, w_errs, w0, z0, alpha)
+
