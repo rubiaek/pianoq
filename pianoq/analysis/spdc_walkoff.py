@@ -101,7 +101,7 @@ def calc_expected_2d(w0=7.6e-6, alpha=ALPHA_WALKOFF_DEG):
     gs = []
     for i in range(len(Z)):
         # Normalization is important here, since we sum different Guassians. We normalize to total power of 1
-        C = 2/(np.pi*w[i])
+        C = 2/(np.pi*w[i]**2)  # with w^2 because a regular gaussian shuld have sqrt(w) and this is in 2D.
         w1 = w[i]
         x0 = x[i]
         g = C*np.exp(-2*((XX-x0)**2 + YY**2)/w1**2)
@@ -129,10 +129,10 @@ def show_meas(path=PATH):
     DC = img.data.mean() + 5
     im = img.data[790:830, 805:870] - DC
 
-    x_pixs, y_pixs = im.shape
-    (left, right, bottom, top) = (0, x_pixs*PIXEL_SIZE, 0, y_pixs*PIXEL_SIZE)
-    (left, right, bottom, top) = (left*1e6, right*1e6, bottom*1e6, top*1e6)
-    extent = ((left-right)/2, (right-left)/2, (bottom-top)/2, (top-bottom)/2)
+    y_pixs, x_pixs = im.shape
+    (left, right, bottom, top) = (0, x_pixs*PIXEL_SIZE*MAG_FACTOR, 0, y_pixs*PIXEL_SIZE*MAG_FACTOR)  #pix -> m
+    (left, right, bottom, top) = (left*1e6, right*1e6, bottom*1e6, top*1e6)  # m -> um
+    extent = ((left-right)/2, (right-left)/2, (bottom-top)/2, (top-bottom)/2)  # center
 
     fig, ax = plt.subplots()
     imm = ax.imshow(im, extent=extent, aspect='auto')
