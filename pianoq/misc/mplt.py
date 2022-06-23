@@ -13,7 +13,7 @@ def mimshow(im, title=None, aspect=None):
 
 def mplot(X, Y=None, title=None):
     fig, ax = plt.subplots()
-    if Y:
+    if Y is not None:
         ax.plot(X, Y)
     else:
         ax.plot(X)

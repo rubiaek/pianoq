@@ -10,8 +10,10 @@ PIXEL_SIZE = 3.76e-6  # m
 MAG_FACTOR = 100/150  # # from crystal to cam there is a 4f with 100mm than 150mm
 N = 1.55
 LAMBDA = 404e-9
-ALPHA_WALKOFF_RAD = 3 * (2*np.pi)/360  # from https://www.spiedigitallibrary.org/conference-proceedings-of-spie/10224/102242N/Broadband-biphotons-in-the-single-spatial-mode-through-high-pump/10.1117/12.2266937.full?SSO=1
+
+ALPHA_WALKOFF_DEG = 4.0  # from https://www.spiedigitallibrary.org/conference-proceedings-of-spie/10224/102242N/Broadband-biphotons-in-the-single-spatial-mode-through-high-pump/10.1117/12.2266937.full?SSO=1
                                        # In the section of Calculation results
+DEG2RAD = (2*np.pi)/360
 
 
 def get_w_in_pixels(V):
@@ -25,7 +27,7 @@ def get_w_in_pixels(V):
     perrs = np.sqrt(np.diag(pcov))
     w = popt[1]
     w_err = perrs[1]
-    assert w_err / w < 0.2, "Uncertainty in w larger that 20%!"
+    # assert w_err / w < 0.2, "Uncertainty in w larger that 20%!"
     return w, w_err
 
 
@@ -64,7 +66,7 @@ def get_ws(im, x_range):
 
 def rayleigh(z, w0, z0, alpha):
     z_r = (np.pi*(w0**2)*N)/LAMBDA
-    z_r_eff = z_r*alpha#ALPHA_WALKOFF_RAD
+    z_r_eff = z_r*alpha  # ALPHA_WALKOFF_DEG*DEG2RAD
     return w0 * np.sqrt(1 + ((z-z0) / z_r_eff) ** 2)
 
 
@@ -77,17 +79,91 @@ def get_w0(x_range_m, ws):
     return w0, w0_err, z0, z0_err, alpha, alpha_err
 
 
-if __name__ == "__main__":
+def w_of_z(w0, z):
+    z_r = (np.pi*(w0**2)*N)/LAMBDA
+    return w0 * np.sqrt(1 + (z / z_r) ** 2)
+
+
+def calc_expected_2d(w0=7.6e-6, alpha=ALPHA_WALKOFF_DEG):
+    # since the walkoff isn't of a delta in y, but rather of a gaussian in y, the picture in the walkoff isn't expected
+    # to be exactly rayleigh, but rather with some convolution with the gaussian width in the y direction
+    # Define transvers plane
+    X = np.linspace(-300e-6, 300e-6, 800)  # m
+    Y = np.linspace(-300e-6, 300e-6, 800)  # m
+    dx = X[1] - X[0]
+    dy = Y[1] - Y[0]
+    XX, YY = np.meshgrid(X, Y)
+
+    # define optical axis
+    Z = np.linspace(-2.5e-3, 2.5e-3, 100)
+    w = w_of_z(w0, Z)
+    x = alpha*DEG2RAD*Z
+    gs = []
+    for i in range(len(Z)):
+        # Normalization is important here, since we sum different Guassians. We normalize to total power of 1
+        C = 2/(np.pi*w[i])
+        w1 = w[i]
+        x0 = x[i]
+        g = C*np.exp(-2*((XX-x0)**2 + YY**2)/w1**2)
+        gs.append(g)
+
+    im = sum(gs)
+
+    fig, ax = plt.subplots()
+    (left, right, bottom, top) = (X[0], X[-1], Y[0], Y[-1])
+    (left, right, bottom, top) = (left*1e6, right*1e6, bottom*1e6, top*1e6)
+    extent1 = (left, right, bottom, top)
+    imm = ax.imshow(im, extent=extent1, aspect='auto')
+    fig.colorbar(imm, ax=ax)
+    ax.set_title(f'sum of Gaussians walking off, alpha={alpha} deg, w0={w0*1e6}um')
+    ax.set_xlabel('x(um)')
+    ax.set_ylabel('y(um)')
+
+    fig.show()
+
+    return im
+
+
+def show_meas(path=PATH):
+    img = fits.open(path)[0]
+    DC = img.data.mean() + 5
+    im = img.data[790:830, 805:870] - DC
+
+    x_pixs, y_pixs = im.shape
+    (left, right, bottom, top) = (0, x_pixs*PIXEL_SIZE, 0, y_pixs*PIXEL_SIZE)
+    (left, right, bottom, top) = (left*1e6, right*1e6, bottom*1e6, top*1e6)
+    extent = ((left-right)/2, (right-left)/2, (bottom-top)/2, (top-bottom)/2)
+
+    fig, ax = plt.subplots()
+    imm = ax.imshow(im, extent=extent, aspect='auto')
+    fig.colorbar(imm, ax=ax)
+    ax.set_title('measurement')
+    ax.set_xlabel('x(um)')
+    ax.set_ylabel('y(um)')
+    fig.show()
+
+
+def main():
+# if __name__ == "__main__":
     img = fits.open(PATH)[0]
-    im = img.data[750:860, 760:910]  # TODO: make more generic
-    x_range_pix = np.arange(45, 101)  # TODO: make more generic
+    # im = img.data[750:860, 760:910]  # TODO: make more generic?
+    # x_range_pix = np.arange(45, 101)  # TODO: make more generic?
+    im = calc_expected_2d(w0=6e-6, alpha=1.5)
+    x_range_pix = np.arange(250, 550)
 
     ws, w_errs = get_ws(im, x_range_pix)
 
     x_range_m = x_range_pix - x_range_pix.mean()
     x_range_m = x_range_m * PIXEL_SIZE
     x_range_m = x_range_m * MAG_FACTOR
-    w0, w0_err, z0, z0_err, alpha, alpha_err = get_w0(x_range_m[21:44], ws[21:44])  # TODO: make more generic
+    w0, w0_err, z0, z0_err, alpha, alpha_err = get_w0(x_range_m[21:44], ws[21:44])  # TODO: make more generic?
 
     plot_rayleigh(x_range_m, ws, w_errs, w0, z0, alpha)
 
+    fig, ax = plt.subplots()
+    ax.plot(x_range_m, ws, '*')
+    alpha = 3.5
+    ax.set_title(f'alpha = {alpha} deg')
+    ys = rayleigh(x_range_m, 7.6e-6, 11.2e-6, alpha/60)
+    ax.plot(x_range_m, ys)
+    fig.show()
