@@ -23,7 +23,7 @@ def get_w_in_pixels(V):
         return A*np.exp(-(2*(x-x0)**2)/(sigma**2)) + C
 
     xdata = np.arange(len(V))
-    popt, pcov = curve_fit(gaussian, xdata, V, bounds=(0, [5e4, 100, 100, 1e3]))
+    popt, pcov = curve_fit(gaussian, xdata, V, bounds=(0, [5e13, 100, 100, 1e3]))
     perrs = np.sqrt(np.diag(pcov))
     w = popt[1]
     w_err = perrs[1]
@@ -143,13 +143,15 @@ def show_meas(path=PATH):
     fig.show()
 
 
-def main():
-# if __name__ == "__main__":
+# def main():
+if __name__ == "__main__":
+    # when using this set 5e4 in fit bounds
     img = fits.open(PATH)[0]
     # im = img.data[750:860, 760:910]  # TODO: make more generic?
     # x_range_pix = np.arange(45, 101)  # TODO: make more generic?
-    im = calc_expected_2d(w0=6e-6, alpha=1.5)
-    x_range_pix = np.arange(250, 550)
+    # when using this set 5e13 in fit bounds
+    im = calc_expected_2d(w0=6e-6, alpha=1.5)[350:450, 200:600]
+    x_range_pix = np.arange(1, 400)
 
     ws, w_errs = get_ws(im, x_range_pix)
 
@@ -162,7 +164,7 @@ def main():
 
     fig, ax = plt.subplots()
     ax.plot(x_range_m, ws, '*')
-    alpha = 3.5
+    alpha = 0.9
     ax.set_title(f'alpha = {alpha} deg')
     ys = rayleigh(x_range_m, 7.6e-6, 11.2e-6, alpha/60)
     ax.plot(x_range_m, ys)
