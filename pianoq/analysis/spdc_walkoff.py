@@ -12,8 +12,14 @@ N = 1.55
 LAMBDA = 404e-9
 
 ALPHA_WALKOFF_DEG = 4.0  # from https://www.spiedigitallibrary.org/conference-proceedings-of-spie/10224/102242N/Broadband-biphotons-in-the-single-spatial-mode-through-high-pump/10.1117/12.2266937.full?SSO=1
-                                       # In the section of Calculation results
+# In the section of Calculation results
 DEG2RAD = (2*np.pi)/360
+
+
+class BowtieImage(object):
+    def __init__(self, path):
+        self.path = path
+        self.img = fits.open(path)
 
 
 def get_w_in_pixels(V):
@@ -143,8 +149,9 @@ def show_meas(path=PATH):
     fig.show()
 
 
-# def main():
-if __name__ == "__main__":
+def main():
+    # TODO: Automatically find the regoin of interest using center of mass etc.
+    # TODO: normalize images intensity to 1 so fitting Gaussians will be easier
     # when using this set 5e4 in fit bounds
     img = fits.open(PATH)[0]
     # im = img.data[750:860, 760:910]  # TODO: make more generic?
