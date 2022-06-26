@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from astropy.io import fits
 from scipy.optimize import curve_fit
+from scipy.ndimage import gaussian_filter
 
 PATH = r"G:\My Drive\Projects\Quantum Piano\Results\Calibrations\SPDC\Walkoff\Preview_20220621_110519_0.5sec_Bin4_34" \
        r".8C_gain100.fit "
@@ -17,72 +18,92 @@ DEG2RAD = (2*np.pi)/360
 
 
 class BowtieImage(object):
-    def __init__(self, path):
-        self.path = path
-        self.img = fits.open(path)
+    BT_HEIGHT = 25  # TODO: more generic?
+    BT_WIDTH = 40  # TODO: more generic?
 
+    def __init__(self, fits_path):
+        self.path = fits_path
+        self.img = fits.open(fits_path)[0]
+        # Binning of 4 means pixel is 4 times larger
+        self.pixel_size = PIXEL_SIZE * self.img.header['XBINNING']
 
-def get_w_in_pixels(V):
-    def gaussian(x, A, sigma, x0, C):
-        # convention from edmund optics Gaussian beam propagation eq (1):
-        # https://www.edmundoptics.in/knowledge-center/application-notes/lasers/gaussian-beam-propagation/
-        return A*np.exp(-(2*(x-x0)**2)/(sigma**2)) + C
+        self.im = self._fix_image(self.img.data)
+        self.ws, self.w_errs = self.get_ws()
 
-    xdata = np.arange(len(V))
-    popt, pcov = curve_fit(gaussian, xdata, V, bounds=(0, [5e13, 100, 100, 1e3]))
-    perrs = np.sqrt(np.diag(pcov))
-    w = popt[1]
-    w_err = perrs[1]
-    # assert w_err / w < 0.2, "Uncertainty in w larger that 20%!"
-    return w, w_err
+    def _fix_image(self, img):
+        im = img / img.max()
+        a = gaussian_filter(im, 10)  # In case I have noisy bright pixels
+        ind_row, ind_col = np.unravel_index(np.argmax(a, axis=None), a.shape)  # returns a tuple
+        im = im[ind_row-self.BT_HEIGHT:ind_row+self.BT_HEIGHT, ind_col-self.BT_WIDTH:ind_col+self.BT_WIDTH]
+        return im
 
+    def get_ws(self):
+        ws = []
+        w_errs = []
 
-def plot_rayleigh(x_range, ws, w_errs, w0, z0, alpha):
-    fig, ax = plt.subplots()
-    x_range = x_range*1e3
-    ws = ws*1e3
-    w_errs = w_errs*1e3
-    ax.errorbar(x_range, ws, yerr=w_errs, fmt='*', label='data')
-    dummy_z = np.linspace(x_range[0], x_range[-1])
-    fit_y = rayleigh(dummy_z, w0, z0, alpha)
-    ax.plot(dummy_z, fit_y, '--', label='fit to rayleigh')
-    ax.set_xlabel('z(mm)')
-    ax.set_ylabel('w(mm)')
-    ax.legend()
-    fig.show()
+        for col in range(self.im.shape[1]):
+            V = self.im[:, col]
+            w, w_err = self.get_w_in_pixels(V)
+            if w_err / w > 0.2:
+                print(f"Uncertainty in w larger that 20%! in col: {col}")
 
+            w_m = w * self.pixel_size * MAG_FACTOR
+            w_err_m = w_err * self.pixel_size * MAG_FACTOR
 
-def get_ws(im, x_range):
-    ws = []
-    w_errs = []
+            ws.append(w_m)
+            w_errs.append(w_err_m)
 
-    for col in x_range:
-        V = im[:, col]
-        w, w_err = get_w_in_pixels(V)
-        w_mm = w*PIXEL_SIZE
-        w_err_mm = w_err*PIXEL_SIZE
-        w_real = w_mm * MAG_FACTOR
-        w_err_real = w_err_mm * MAG_FACTOR
+        return np.array(ws), np.array(w_errs)
 
-        ws.append(w_real)
-        w_errs.append(w_err_real)
+    @staticmethod
+    def get_w_in_pixels(V):
+        def gaussian(x, A, sigma, x0, C):
+            # convention from edmund optics Gaussian beam propagation eq (1):
+            # https://www.edmundoptics.in/knowledge-center/application-notes/lasers/gaussian-beam-propagation/
+            return A*np.exp(-(2*(x-x0)**2)/(sigma**2)) + C
 
-    return np.array(ws), np.array(w_errs)
+        xdata = np.arange(len(V))
+        # image assumed to be normalized, so A shouldn't be more than 1, and the offset definitely shouldn't
+        popt, pcov = curve_fit(gaussian, xdata, V, bounds=(0, [2*V.max(), len(V), len(V), V.max()/3]))
+        perrs = np.sqrt(np.diag(pcov))
+        w = popt[1]
+        w_err = perrs[1]
+        return w, w_err
 
+    def plot_rayleigh(self, w0, z0, alpha):
+        fig, ax = plt.subplots()
 
-def rayleigh(z, w0, z0, alpha):
-    z_r = (np.pi*(w0**2)*N)/LAMBDA
-    z_r_eff = z_r*alpha  # ALPHA_WALKOFF_DEG*DEG2RAD
-    return w0 * np.sqrt(1 + ((z-z0) / z_r_eff) ** 2)
+        x_range = np.arange(len(self.ws)) * self.pixel_size * MAG_FACTOR
+        x_range = x_range - x_range.mean()
 
+        # ws = self.ws*1e3
+        # w_errs = self.w_errs*1e3
+        # x_range = x_range*1e3
 
-def get_w0(x_range_m, ws):
-    popt, pcov = curve_fit(rayleigh, x_range_m, ws, bounds=([3e-6, 0, 0], [10e-6, 3e-5, 10/60]))
-    perrs = np.sqrt(np.diag(pcov))
-    w0, z0, alpha = popt
-    w0_err, z0_err, alpha_err = perrs
+        ax.errorbar(x_range, self.ws, yerr=self.w_errs, fmt='*', label='data')
 
-    return w0, w0_err, z0, z0_err, alpha, alpha_err
+        dummy_z = np.linspace(x_range[0], x_range[-1])
+        fit_y = self.rayleigh(dummy_z, w0, z0, alpha)
+        ax.plot(dummy_z, fit_y, '--', label='fit to rayleigh')
+        ax.set_xlabel('z(m)')
+        ax.set_ylabel('w(m)')
+        ax.ticklabel_format(axis='both', style='sci', scilimits=(-6, -6))
+        ax.legend()
+        fig.show()
+
+    @staticmethod
+    def rayleigh(z, w0, z0, alpha):
+        z_r = (np.pi*(w0**2)*N)/LAMBDA
+        z_r_eff = z_r*alpha  # ALPHA_WALKOFF_DEG*DEG2RAD
+        return w0 * np.sqrt(1 + ((z-z0) / z_r_eff) ** 2)
+
+    def get_w0(self, x_range_m, ws):
+        popt, pcov = curve_fit(self.rayleigh, x_range_m, ws, bounds=([3e-6, 0, 0], [10e-6, 3e-5, 10/60]))
+        perrs = np.sqrt(np.diag(pcov))
+        w0, z0, alpha = popt
+        w0_err, z0_err, alpha_err = perrs
+
+        return w0, w0_err, z0, z0_err, alpha, alpha_err
 
 
 def w_of_z(w0, z):
@@ -148,6 +169,12 @@ def show_meas(path=PATH):
     ax.set_ylabel('y(um)')
     fig.show()
 
+
+def simulation():
+    pass
+
+def meas():
+    pass
 
 def main():
     # TODO: Automatically find the regoin of interest using center of mass etc.
