@@ -1,3 +1,4 @@
+import glob
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy.io import fits
@@ -19,7 +20,7 @@ DEG2RAD = (2*np.pi)/360
 
 class BowtieImage(object):
     BT_HEIGHT = 25  # TODO: more generic?
-    BT_WIDTH = 40  # TODO: more generic?
+    BT_WIDTH = 30  # TODO: more generic?
 
     def __init__(self, fits_path):
         self.path = fits_path
@@ -29,13 +30,36 @@ class BowtieImage(object):
 
         self.im = self._fix_image(self.img.data)
         self.ws, self.w_errs = self.get_ws()
+        self.x_for_ws = self.get_xrange()
+        self.ys = self.get_y_range()
+        self.dummy_x = np.linspace(self.x_for_ws[0], self.x_for_ws[-1], 200)
 
     def _fix_image(self, img):
+        DC = np.mean([img[0, :].mean(), img[-1, :].mean(), img[:, 0].mean(), img[:, -1].mean()])
+        img = img - 0.95*DC  # keep 5% of DC to avoid negative values
         im = img / img.max()
+
         a = gaussian_filter(im, 10)  # In case I have noisy bright pixels
         ind_row, ind_col = np.unravel_index(np.argmax(a, axis=None), a.shape)  # returns a tuple
         im = im[ind_row-self.BT_HEIGHT:ind_row+self.BT_HEIGHT, ind_col-self.BT_WIDTH:ind_col+self.BT_WIDTH]
         return im
+
+    def show_both(self, ax):
+        if ax is None:
+            fig, ax = plt.subplots()
+        self.plot_ws(ax)
+        popt, _ = self.fit_to_rayleigh()
+        self.plot_rayleigh(ax, *popt)
+
+    def get_xrange(self):
+        x_range = np.arange(len(self.ws)) * self.pixel_size * MAG_FACTOR
+        x_range = x_range - x_range.mean()
+        return x_range
+
+    def get_y_range(self):
+        Y = np.arange(self.im.shape[0]) * self.pixel_size * MAG_FACTOR
+        Y = Y - Y.mean()
+        return Y
 
     def get_ws(self):
         ws = []
@@ -43,8 +67,16 @@ class BowtieImage(object):
 
         for col in range(self.im.shape[1]):
             V = self.im[:, col]
-            w, w_err = self.get_w_in_pixels(V)
+            popt, perrs = self.get_w_in_pixels(V)
+
+            w = popt[1]
+            w_err = perrs[1]
+
             if w_err / w > 0.2:
+                # These really don't look like Gaussians...
+                # print(f'old w: {w}, old w_err: {w_err}')
+                # w, w_err = self.get_w_in_pixels2(V)
+                # print(f'new w: {w}, new w_err: {w_err}')
                 print(f"Uncertainty in w larger that 20%! in col: {col}")
 
             w_m = w * self.pixel_size * MAG_FACTOR
@@ -55,55 +87,81 @@ class BowtieImage(object):
 
         return np.array(ws), np.array(w_errs)
 
-    @staticmethod
-    def get_w_in_pixels(V):
-        def gaussian(x, A, sigma, x0, C):
-            # convention from edmund optics Gaussian beam propagation eq (1):
-            # https://www.edmundoptics.in/knowledge-center/application-notes/lasers/gaussian-beam-propagation/
-            return A*np.exp(-(2*(x-x0)**2)/(sigma**2)) + C
+    def show_gaussian_fit(self, index):
+        V = self.im[:, index]
+        X = np.arange(len(V))
 
-        xdata = np.arange(len(V))
-        # image assumed to be normalized, so A shouldn't be more than 1, and the offset definitely shouldn't
-        popt, pcov = curve_fit(gaussian, xdata, V, bounds=(0, [2*V.max(), len(V), len(V), V.max()/3]))
-        perrs = np.sqrt(np.diag(pcov))
-        w = popt[1]
-        w_err = perrs[1]
-        return w, w_err
+        popt, perrs = self.get_w_in_pixels(V)
 
-    def plot_rayleigh(self, w0, z0, alpha):
         fig, ax = plt.subplots()
-
-        x_range = np.arange(len(self.ws)) * self.pixel_size * MAG_FACTOR
-        x_range = x_range - x_range.mean()
-
-        # ws = self.ws*1e3
-        # w_errs = self.w_errs*1e3
-        # x_range = x_range*1e3
-
-        ax.errorbar(x_range, self.ws, yerr=self.w_errs, fmt='*', label='data')
-
-        dummy_z = np.linspace(x_range[0], x_range[-1])
-        fit_y = self.rayleigh(dummy_z, w0, z0, alpha)
-        ax.plot(dummy_z, fit_y, '--', label='fit to rayleigh')
-        ax.set_xlabel('z(m)')
-        ax.set_ylabel('w(m)')
-        ax.ticklabel_format(axis='both', style='sci', scilimits=(-6, -6))
+        ax.plot(X, V, '*', label='data')
+        ax.plot(X, self.gaussian(X, *popt), '--', label='fit')
         ax.legend()
         fig.show()
 
     @staticmethod
+    def gaussian(x, A, sigma, x0, C):
+        # convention from edmund optics Gaussian beam propagation eq (1):
+        # https://www.edmundoptics.in/knowledge-center/application-notes/lasers/gaussian-beam-propagation/
+        return A*np.exp(-(2*(x-x0)**2)/(sigma**2)) + C
+
+    @staticmethod
+    def get_w_in_pixels(V):
+        xdata = np.arange(len(V))
+        # image assumed to be normalized, so A shouldn't be more than 1, and the offset definitely shouldn't
+        popt, pcov = curve_fit(BowtieImage.gaussian, xdata, V, bounds=(0, [2*V.max(), len(V), len(V), V.max()/3]))
+        perrs = np.sqrt(np.diag(pcov))
+        return popt, perrs
+
+    def plot_ws(self, ax=None):
+        if ax is None:
+            fig, ax = plt.subplots()
+        ax.errorbar(self.x_for_ws, self.ws, yerr=self.w_errs, fmt='*', label='data')
+        ax.figure.show()
+        ax.set_xlabel('z(m)')
+        ax.set_ylabel('w(m)')
+        ax.ticklabel_format(axis='both', style='sci', scilimits=(-6, -6))
+        ax.legend()
+        return ax
+
+    def plot_rayleigh(self, ax=None, *popt):
+        if ax is None:
+            fig, ax = plt.subplots()
+
+        w0, _, alpha = popt
+
+        fit_y = self.rayleigh(self.dummy_x, *popt)
+        ax.plot(self.dummy_x, fit_y, '--', label=fr'fit rayleigh, $ w_0 $={w0:2f}, $ \alpha $={alpha:2f}')
+        ax.legend()
+        ax.figure.show()
+
+    def show_im(self, ax=None):
+        if ax is None:
+            fig, ax = plt.subplots()
+
+        extent = (self.x_for_ws[0], self.x_for_ws[-1], self.ys[0], self.ys[-1])  # (left, right, bottom, top)
+
+        imm = ax.imshow(self.im, extent=extent, aspect='auto')
+        ax.figure.colorbar(imm, ax=ax)
+        ax.set_title('measurement')
+        ax.set_xlabel('x(m)')
+        ax.set_ylabel('y(m)')
+        ax.ticklabel_format(axis='both', style='sci', scilimits=(-6, -6))
+        ax.figure.show()
+
+    @staticmethod
     def rayleigh(z, w0, z0, alpha):
         z_r = (np.pi*(w0**2)*N)/LAMBDA
-        z_r_eff = z_r*alpha  # ALPHA_WALKOFF_DEG*DEG2RAD
+        z_r_eff = z_r*alpha
         return w0 * np.sqrt(1 + ((z-z0) / z_r_eff) ** 2)
 
-    def get_w0(self, x_range_m, ws):
-        popt, pcov = curve_fit(self.rayleigh, x_range_m, ws, bounds=([3e-6, 0, 0], [10e-6, 3e-5, 10/60]))
-        perrs = np.sqrt(np.diag(pcov))
-        w0, z0, alpha = popt
-        w0_err, z0_err, alpha_err = perrs
+    def fit_to_rayleigh(self):
+        popt, pcov = curve_fit(self.rayleigh, self.x_for_ws, self.ws,
+                               bounds=([np.min(self.ws)/3, self.x_for_ws[0], 0],
+                                       [np.min(self.ws)*3, self.x_for_ws[-1], 10/60]))
 
-        return w0, w0_err, z0, z0_err, alpha, alpha_err
+        perrs = np.sqrt(np.diag(pcov))
+        return popt, perrs
 
 
 def w_of_z(w0, z):
@@ -170,11 +228,14 @@ def show_meas(path=PATH):
     fig.show()
 
 
-def simulation():
-    pass
+def different_thetas():
+    DIR_PATH = r'G:\My Drive\Projects\Quantum Piano\Results\Calibrations\SPDC\Walkoff\Change theta'
+    paths = glob.glob(DIR_PATH + '\\*.fit')
+    fig, ax = plt.subplots()
+    for path in paths:
+        bi = BowtieImage(path)
+        bi.show_both(ax)
 
-def meas():
-    pass
 
 def main():
     # TODO: Automatically find the regoin of interest using center of mass etc.
