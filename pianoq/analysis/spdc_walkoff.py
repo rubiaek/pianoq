@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from astropy.io import fits
 from scipy.optimize import curve_fit
 from scipy.ndimage import gaussian_filter
+from pianoq.misc import color_gen
 
 PATH = r"G:\My Drive\Projects\Quantum Piano\Results\Calibrations\SPDC\Walkoff\Preview_20220621_110519_0.5sec_Bin4_34" \
        r".8C_gain100.fit "
@@ -33,6 +34,7 @@ class BowtieImage(object):
         self.x_for_ws = self.get_xrange()
         self.ys = self.get_y_range()
         self.dummy_x = np.linspace(self.x_for_ws[0], self.x_for_ws[-1], 200)
+        self.color = next(color_gen)
 
     def _fix_image(self, img):
         DC = np.mean([img[0, :].mean(), img[-1, :].mean(), img[:, 0].mean(), img[:, -1].mean()])
@@ -113,10 +115,13 @@ class BowtieImage(object):
         perrs = np.sqrt(np.diag(pcov))
         return popt, perrs
 
-    def plot_ws(self, ax=None):
+    def plot_ws(self, ax=None, show_errs=True):
         if ax is None:
             fig, ax = plt.subplots()
-        ax.errorbar(self.x_for_ws, self.ws, yerr=self.w_errs, fmt='*', label='data')
+        if show_errs:
+            ax.errorbar(self.x_for_ws, self.ws, yerr=self.w_errs, fmt='*', label='data', color=self.color)
+        else:
+            ax.plot(self.x_for_ws, self.ws, '*--', label='data', color=self.color)
         ax.figure.show()
         ax.set_xlabel('z(m)')
         ax.set_ylabel('w(m)')
@@ -131,7 +136,8 @@ class BowtieImage(object):
         w0, _, alpha = popt
 
         fit_y = self.rayleigh(self.dummy_x, *popt)
-        ax.plot(self.dummy_x, fit_y, '--', label=fr'fit rayleigh, $ w_0 $={w0:2f}, $ \alpha $={alpha:2f}')
+        ax.plot(self.dummy_x, fit_y, '--', label=fr'fit rayleigh, $ w_0 $={w0:2f}, $ \alpha $={alpha:2f}',
+                color=self.color)
         ax.legend()
         ax.figure.show()
 
@@ -228,13 +234,18 @@ def show_meas(path=PATH):
     fig.show()
 
 
-def different_thetas():
+def different_thetas(verbose=True):
     DIR_PATH = r'G:\My Drive\Projects\Quantum Piano\Results\Calibrations\SPDC\Walkoff\Change theta'
     paths = glob.glob(DIR_PATH + '\\*.fit')
     fig, ax = plt.subplots()
     for path in paths:
         bi = BowtieImage(path)
-        bi.show_both(ax)
+        if verbose:
+            bi.show_both(ax)
+        else:
+            bi.plot_ws(ax, show_errs=False)
+            # popt, _ = bi.fit_to_rayleigh()
+            # bi.plot_rayleigh(ax, *popt)
 
 
 def main():
