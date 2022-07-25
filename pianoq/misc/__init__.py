@@ -10,3 +10,12 @@ except Exception as e:
     print("ERROR!!")
     print(e)
     traceback.print_exc()
+
+
+def color_generator():
+    while True:
+        for item in ['r', 'g', 'b', 'c', 'm', 'y', 'k']:
+            yield item
+
+
+color_gen = color_generator()
