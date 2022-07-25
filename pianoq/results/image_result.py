@@ -42,6 +42,7 @@ class VimbaImage(object):
             print("old image")
 
     def show_image(self, aspect=None, title=None):
+        # TODO: set the extent so the scale will be in mm
         fig, axes = plt.subplots()
         im = axes.imshow(self.image, aspect=aspect)
         if title:
@@ -54,6 +55,7 @@ class VimbaImage(object):
 def show_image(path, title=None):
     vim = VimbaImage(path)
     return vim.image, vim.show_image(title=title)
+
 
 def load_image(path):
     vim = VimbaImage(path)

@@ -23,7 +23,7 @@ class Edac40(object):
     PORT = 1234
     DISCOVER_PORT = 30303
     AMP_GAIN = 80
-    SLEEP_AFTER_SEND = 0.3
+    SLEEP_AFTER_SEND = 1
     REST_AMP = 0
 
     # This is from .c code
