@@ -1,7 +1,9 @@
 import glob
 import numpy as np
 import matplotlib.pyplot as plt
+import datetime
 from astropy.io import fits
+from astropy.time import Time
 from scipy.optimize import curve_fit
 from scipy.ndimage import gaussian_filter
 from pianoq.misc import color_gen
@@ -10,7 +12,6 @@ PATH = r"G:\My Drive\Projects\Quantum Piano\Results\Calibrations\SPDC\Walkoff\Pr
        r".8C_gain100.fit "
 
 PIXEL_SIZE = 3.76e-6  # m
-MAG_FACTOR = 100/150  # # from crystal to cam there is a 4f with 100mm than 150mm
 N = 1.55
 LAMBDA = 404e-9
 
@@ -25,7 +26,8 @@ class BowtieImage(object):
 
     def __init__(self, fits_path):
         self.path = fits_path
-        self.img = fits.open(fits_path)[0]
+        self.f = fits.open(fits_path)
+        self.img = self.f[0]
         # Binning of 4 means pixel is 4 times larger
         self.pixel_size = PIXEL_SIZE * self.img.header['XBINNING']
 
@@ -35,6 +37,15 @@ class BowtieImage(object):
         self.ys = self.get_y_range()
         self.dummy_x = np.linspace(self.x_for_ws[0], self.x_for_ws[-1], 200)
         self.color = next(color_gen)
+
+    @property
+    def mag_factor(self):
+        date = Time(self.img.header['DATE-OBS']).datetime
+        change_setup_date = datetime.datetime(2022, 7, 25)
+        if date < change_setup_date:
+            return 100 / 150  # from crystal to cam there is a 4f with 100mm than 150mm
+        elif change_setup_date < date:
+            return 150 / 100  # from crystal to cam there is a 4f with 150mm than 100mm in new configuration
 
     def _fix_image(self, img):
         DC = np.mean([img[0, :].mean(), img[-1, :].mean(), img[:, 0].mean(), img[:, -1].mean()])
@@ -46,7 +57,7 @@ class BowtieImage(object):
         im = im[ind_row-self.BT_HEIGHT:ind_row+self.BT_HEIGHT, ind_col-self.BT_WIDTH:ind_col+self.BT_WIDTH]
         return im
 
-    def show_both(self, ax):
+    def show_both(self, ax=None):
         if ax is None:
             fig, ax = plt.subplots()
         self.plot_ws(ax)
@@ -54,12 +65,12 @@ class BowtieImage(object):
         self.plot_rayleigh(ax, *popt)
 
     def get_xrange(self):
-        x_range = np.arange(len(self.ws)) * self.pixel_size * MAG_FACTOR
+        x_range = np.arange(len(self.ws)) * self.pixel_size * self.mag_factor
         x_range = x_range - x_range.mean()
         return x_range
 
     def get_y_range(self):
-        Y = np.arange(self.im.shape[0]) * self.pixel_size * MAG_FACTOR
+        Y = np.arange(self.im.shape[0]) * self.pixel_size * self.mag_factor
         Y = Y - Y.mean()
         return Y
 
@@ -81,8 +92,8 @@ class BowtieImage(object):
                 # print(f'new w: {w}, new w_err: {w_err}')
                 print(f"Uncertainty in w larger that 20%! in col: {col}")
 
-            w_m = w * self.pixel_size * MAG_FACTOR
-            w_err_m = w_err * self.pixel_size * MAG_FACTOR
+            w_m = w * self.pixel_size * self.mag_factor
+            w_err_m = w_err * self.pixel_size * self.mag_factor
 
             ws.append(w_m)
             w_errs.append(w_err_m)
@@ -141,13 +152,13 @@ class BowtieImage(object):
         ax.legend()
         ax.figure.show()
 
-    def show_im(self, ax=None):
+    def show_im(self, ax=None, im=None):
         if ax is None:
             fig, ax = plt.subplots()
 
         extent = (self.x_for_ws[0], self.x_for_ws[-1], self.ys[0], self.ys[-1])  # (left, right, bottom, top)
 
-        imm = ax.imshow(self.im, extent=extent, aspect='auto')
+        imm = ax.imshow(im or self.im, extent=extent, aspect='auto')
         ax.figure.colorbar(imm, ax=ax)
         ax.set_title('measurement')
         ax.set_xlabel('x(m)')
@@ -168,6 +179,9 @@ class BowtieImage(object):
 
         perrs = np.sqrt(np.diag(pcov))
         return popt, perrs
+
+    def close(self):
+        self.f.close()
 
 
 def w_of_z(w0, z):
