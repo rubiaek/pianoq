@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy.io import fits
+from scipy import signal
 
 
 class Speckle1D(object):
@@ -22,6 +23,10 @@ class Speckle1D(object):
         Y = np.correlate(V-V.mean(), V-V.mean(), mode='full')
         Y /= Y.max()
         X = signal.correlation_lags(len(V), len(V), 'full')
+        # https://dsp.stackexchange.com/questions/78959/how-to-interpret-values-of-the-autocorrelation-sequence
+        # https://www.dsprelated.com/freebooks/sasp/Biased_Sample_Autocorrelation.html
+        Y = np.divide(Y, np.bartlett(len(Y)))
+
         return X, Y
 
     def plot_auto_corr(self, V, ax=None, label=None):
@@ -34,7 +39,8 @@ class Speckle1D(object):
     def plot_few_autocorrs(self, N=2):
         fig, ax = plt.subplots()
         for col in np.arange(self.x_min, self.x_max)[::N]:
-            self.plot_auto_corr(self.img[950:1050, col], ax=ax, label=f'x={col}')
+            # self.plot_auto_corr(self.img[950:1050, col], ax=ax, label=f'x={col}')
+            self.plot_auto_corr(self.img[:, col], ax=ax, label=f'x={col}')
         ax.legend()
 
     def _contrast(self, V):
@@ -69,10 +75,8 @@ class Speckle1D(object):
         ax.set_ylabel('contrast')
         fig.show()
 
-
     def close(self):
         self.f.close()
-
 
 
 if __name__ == "__main__":
