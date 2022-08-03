@@ -11,11 +11,11 @@ class Speckle1D(object):
         self.x_min = x_min
         self.x_max = x_max
 
-    def _fix_image(self, img):
-        # DC = np.mean([img[0, :].mean(), img[-1, :].mean(), img[:, 0].mean(), img[:, -1].mean()])
-        # img = img - 0.94*DC  # keep 5% of DC to avoid negative values
-        img = img - img.min()
-        im = img / img.max()
+    def _fix_image(self, im):
+        img = im.astype(float)
+        DC = img[:, 0:10].mean()
+        img = img - DC
+        im = img / img.max()  # TODO: take actual max and not some random burnt pixel
         return im
 
     def _autocorrelation(self, V):
@@ -47,36 +47,47 @@ class Speckle1D(object):
         Q = (V**2).mean() / ((V.mean())**2)
         return np.sqrt(Q-1)
 
-    def contrast_R2L(self, row, window=40):
+    def contrast_R2L(self, row, window=40, ax=None):
         X = np.arange(self.x_min, self.x_max)
         Y = []
         for x in X:
             V = self.img[row-window:row+window, x]
             Y.append(self._contrast(V))
 
-        fig, ax = plt.subplots()
+        if not ax:
+            fig, ax = plt.subplots()
         ax.plot(X, Y)
         ax.set_title(f'contrast at row {row}')
         ax.set_xlabel('columns')
         ax.set_ylabel('contrast')
-        fig.show()
+        ax.figure.show()
 
-    def contrast_U2D(self, col=1150, window=70):
+    def contrast_U2D(self, col=1150, window=70, ax=None):
         X = np.arange(0, self.img.shape[0])
         Y = []
         for x in X:
             V = self.img[x:x+window, col]
             Y.append(self._contrast(V))
 
-        fig, ax = plt.subplots()
+        if not ax:
+            fig, ax = plt.subplots()
         ax.plot(X, Y)
         ax.set_title(f'contrast at col {col}')
         ax.set_xlabel('rows')
         ax.set_ylabel('contrast')
-        fig.show()
+        ax.figure.show()
 
     def close(self):
         self.f.close()
+
+
+def different_filters():
+    paths = [
+        r"G:\My Drive\Projects\Quantum Piano\Results\Calibrations\SPDC\New_Setup_07-2022\2022-08-02\Nearfield\Preview_20220802_142401_0.5sec_Bin1_32.8C_gain300_yes_telescope_filter_80nm.fit",
+        r"G:\My Drive\Projects\Quantum Piano\Results\Calibrations\SPDC\New_Setup_07-2022\2022-08-02\Nearfield\Preview_20220802_142526_0.5sec_Bin1_32.8C_gain300_yes_telescope_filter_10nm.fit",
+        r"G:\My Drive\Projects\Quantum Piano\Results\Calibrations\SPDC\New_Setup_07-2022\2022-08-02\Nearfield\Preview_20220802_145013_0.5sec_Bin1_33.0C_gain300_yes_telescope_filter_3nm.fit"
+    ]
+    fig, ax = plt.subplots()
 
 
 if __name__ == "__main__":

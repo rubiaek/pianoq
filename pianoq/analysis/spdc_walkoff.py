@@ -42,10 +42,13 @@ class BowtieImage(object):
     def mag_factor(self):
         date = Time(self.img.header['DATE-OBS']).datetime
         change_setup_date = datetime.datetime(2022, 7, 25)
+        change_setup_date2 = datetime.datetime(2022, 8, 1)
         if date < change_setup_date:
             return 100 / 150  # from crystal to cam there is a 4f with 100mm than 150mm
-        elif change_setup_date < date:
+        elif change_setup_date < date < change_setup_date2:
             return 150 / 100  # from crystal to cam there is a 4f with 150mm than 100mm in new configuration
+        elif change_setup_date2 < date:
+            return 150 / 200  # from crystal to cam there is a 4f with 150mm than 200mm in new new configuration
 
     def _fix_image(self, img):
         DC = np.mean([img[0, :].mean(), img[-1, :].mean(), img[:, 0].mean(), img[:, -1].mean()])
@@ -260,6 +263,7 @@ def different_thetas(verbose=True):
             bi.plot_ws(ax, show_errs=False)
             # popt, _ = bi.fit_to_rayleigh()
             # bi.plot_rayleigh(ax, *popt)
+    ax.set_title('Different Thetas')
 
 
 def main():
