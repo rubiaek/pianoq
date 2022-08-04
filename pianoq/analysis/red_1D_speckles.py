@@ -2,21 +2,38 @@ import numpy as np
 import matplotlib.pyplot as plt
 from astropy.io import fits
 from scipy import signal
+from scipy.ndimage import gaussian_filter
 
 
 class Speckle1D(object):
     def __init__(self, path, x_min, x_max):
         self.f = fits.open(path)
+        self.brightest = None
         self.img = self._fix_image(self.f[0].data)
         self.x_min = x_min
         self.x_max = x_max
 
-    def _fix_image(self, im):
-        img = im.astype(float)
+
+    def show(self, title=None, **args):
+        fig, ax = plt.subplots()
+        imm = ax.imshow(self.img, vmax=1, aspect='auto', **args)
+        fig.colorbar(imm, ax=ax)
+        if title:
+            ax.set_title(title)
+        fig.show()
+        return fig, ax
+
+    def _fix_image(self, img):
+        img = img.astype(float)
         DC = img[:, 0:10].mean()
         img = img - DC
-        im = img / img.max()  # TODO: take actual max and not some random burnt pixel
-        return im
+
+        a = gaussian_filter(img, 5)  # In case I have noisy bright pixels
+        ind_row, ind_col = np.unravel_index(np.argmax(a, axis=None), a.shape)  # returns a tuple
+        self.brightest = img[ind_row, ind_col]
+
+        img = img / self.brightest
+        return img
 
     def _autocorrelation(self, V):
         # V = self.img[:, 1150]
@@ -62,7 +79,7 @@ class Speckle1D(object):
         ax.set_ylabel('contrast')
         ax.figure.show()
 
-    def contrast_U2D(self, col=1150, window=70, ax=None):
+    def contrast_U2D(self, col=1150, window=70, ax=None, label=None):
         X = np.arange(0, self.img.shape[0])
         Y = []
         for x in X:
@@ -71,7 +88,7 @@ class Speckle1D(object):
 
         if not ax:
             fig, ax = plt.subplots()
-        ax.plot(X, Y)
+        ax.plot(X, Y, label=label)
         ax.set_title(f'contrast at col {col}')
         ax.set_xlabel('rows')
         ax.set_ylabel('contrast')
@@ -81,13 +98,27 @@ class Speckle1D(object):
         self.f.close()
 
 
-def different_filters():
+def different_filters(col=3105, window=100):
     paths = [
-        r"G:\My Drive\Projects\Quantum Piano\Results\Calibrations\SPDC\New_Setup_07-2022\2022-08-02\Nearfield\Preview_20220802_142401_0.5sec_Bin1_32.8C_gain300_yes_telescope_filter_80nm.fit",
+        r"G:\My Drive\Projects\Quantum Piano\Results\Calibrations\SPDC\New_Setup_07-2022\2022-08-02\Nearfield\Preview_20220802_145013_0.5sec_Bin1_33.0C_gain300_yes_telescope_filter_3nm.fit",
         r"G:\My Drive\Projects\Quantum Piano\Results\Calibrations\SPDC\New_Setup_07-2022\2022-08-02\Nearfield\Preview_20220802_142526_0.5sec_Bin1_32.8C_gain300_yes_telescope_filter_10nm.fit",
-        r"G:\My Drive\Projects\Quantum Piano\Results\Calibrations\SPDC\New_Setup_07-2022\2022-08-02\Nearfield\Preview_20220802_145013_0.5sec_Bin1_33.0C_gain300_yes_telescope_filter_3nm.fit"
+        r"G:\My Drive\Projects\Quantum Piano\Results\Calibrations\SPDC\New_Setup_07-2022\2022-08-02\Nearfield\Preview_20220802_142401_0.5sec_Bin1_32.8C_gain300_yes_telescope_filter_80nm.fit",
     ]
+
+    filters = [3, 10, 80]
+
+
     fig, ax = plt.subplots()
+
+    for i in range(3):
+        s = Speckle1D(paths[i], 3020, 3180)
+        s.contrast_U2D(col=col, window=window, ax=ax, label=f'filter {filters[i]}nm')
+        s.close()
+
+    ax.legend()
+    ax.set_ylim((-0.25, 1.5))
+    ax.set_xlim(left=1200)
+    ax.figure.show()
 
 
 if __name__ == "__main__":
