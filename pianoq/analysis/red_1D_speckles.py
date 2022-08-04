@@ -13,7 +13,6 @@ class Speckle1D(object):
         self.x_min = x_min
         self.x_max = x_max
 
-
     def show(self, title=None, **args):
         fig, ax = plt.subplots()
         imm = ax.imshow(self.img, vmax=1, aspect='auto', **args)
@@ -53,27 +52,29 @@ class Speckle1D(object):
         ax.plot(lags, corr, label=label)
         ax.figure.show()
 
-    def plot_few_autocorrs(self, N=2):
+    def plot_few_autocorrs(self, N=2, title=None):
         fig, ax = plt.subplots()
         for col in np.arange(self.x_min, self.x_max)[::N]:
-            # self.plot_auto_corr(self.img[950:1050, col], ax=ax, label=f'x={col}')
-            self.plot_auto_corr(self.img[:, col], ax=ax, label=f'x={col}')
+            self.plot_auto_corr(self.img[2500:3500, col], ax=ax, label=f'x={col}')
+            # self.plot_auto_corr(self.img[:, col], ax=ax, label=f'x={col}')
         ax.legend()
+        ax.set_title(title)
+        ax.figure.show()
 
     def _contrast(self, V):
         Q = (V**2).mean() / ((V.mean())**2)
         return np.sqrt(Q-1)
 
-    def contrast_R2L(self, row, window=40, ax=None):
+    def contrast_R2L(self, row, window=100, ax=None, label=None):
         X = np.arange(self.x_min, self.x_max)
         Y = []
         for x in X:
-            V = self.img[row-window:row+window, x]
+            V = self.img[row:row+window, x]
             Y.append(self._contrast(V))
 
         if not ax:
             fig, ax = plt.subplots()
-        ax.plot(X, Y)
+        ax.plot(X, Y, label=label)
         ax.set_title(f'contrast at row {row}')
         ax.set_xlabel('columns')
         ax.set_ylabel('contrast')
@@ -89,7 +90,7 @@ class Speckle1D(object):
         if not ax:
             fig, ax = plt.subplots()
         ax.plot(X, Y, label=label)
-        ax.set_title(f'contrast at col {col}')
+        ax.set_title(f'contrast at col {col} with window {window}')
         ax.set_xlabel('rows')
         ax.set_ylabel('contrast')
         ax.figure.show()
@@ -98,27 +99,42 @@ class Speckle1D(object):
         self.f.close()
 
 
-def different_filters(col=3105, window=100):
-    paths = [
+def different_filters(col=3105, row=3200, window=100, yes_telescope=True):
+    yes_telescope_paths = [
         r"G:\My Drive\Projects\Quantum Piano\Results\Calibrations\SPDC\New_Setup_07-2022\2022-08-02\Nearfield\Preview_20220802_145013_0.5sec_Bin1_33.0C_gain300_yes_telescope_filter_3nm.fit",
         r"G:\My Drive\Projects\Quantum Piano\Results\Calibrations\SPDC\New_Setup_07-2022\2022-08-02\Nearfield\Preview_20220802_142526_0.5sec_Bin1_32.8C_gain300_yes_telescope_filter_10nm.fit",
         r"G:\My Drive\Projects\Quantum Piano\Results\Calibrations\SPDC\New_Setup_07-2022\2022-08-02\Nearfield\Preview_20220802_142401_0.5sec_Bin1_32.8C_gain300_yes_telescope_filter_80nm.fit",
     ]
 
+    no_telescope_paths = [
+        r"G:\My Drive\Projects\Quantum Piano\Results\Calibrations\SPDC\New_Setup_07-2022\2022-08-02\Nearfield\Preview_20220802_155013_0.5sec_Bin1_33.5C_gain300_no_telescope_filter_3nm.fit",
+        r"G:\My Drive\Projects\Quantum Piano\Results\Calibrations\SPDC\New_Setup_07-2022\2022-08-02\Nearfield\Preview_20220802_154746_0.5sec_Bin1_33.5C_gain300_no_telescope_filter_10nm.fit",
+        r"G:\My Drive\Projects\Quantum Piano\Results\Calibrations\SPDC\New_Setup_07-2022\2022-08-02\Nearfield\Preview_20220802_155421_0.5sec_Bin1_31.8C_gain300_no_telescope_filter_80nm.fit",
+    ]
+
+    paths = yes_telescope_paths if yes_telescope else no_telescope_paths
+
     filters = [3, 10, 80]
 
-
     fig, ax = plt.subplots()
+    fig2, ax2 = plt.subplots()
 
     for i in range(3):
-        s = Speckle1D(paths[i], 3020, 3180)
+        if yes_telescope:
+            s = Speckle1D(paths[i], 3040, 3180)
+        else:
+            s = Speckle1D(paths[i], 3110, 3240)
         s.contrast_U2D(col=col, window=window, ax=ax, label=f'filter {filters[i]}nm')
+        s.contrast_R2L(row=row, window=window, ax=ax2, label=f'filter {filters[i]}nm')
         s.close()
 
     ax.legend()
     ax.set_ylim((-0.25, 1.5))
     ax.set_xlim(left=1200)
     ax.figure.show()
+
+    ax2.legend()
+    ax2.figure.show()
 
 
 if __name__ == "__main__":
