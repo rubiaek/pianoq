@@ -6,16 +6,18 @@ from scipy.ndimage import gaussian_filter
 
 
 class Speckle1D(object):
-    def __init__(self, path, x_min, x_max):
+    def __init__(self, path, x_min, x_max, should_remove_freqs=False):
         self.f = fits.open(path)
         self.brightest = None
+        self.should_remove_freqs = should_remove_freqs
         self.img = self._fix_image(self.f[0].data)
         self.x_min = x_min
         self.x_max = x_max
 
+
     def show(self, title=None, **args):
         fig, ax = plt.subplots()
-        imm = ax.imshow(self.img, vmax=1, aspect='auto', **args)
+        imm = ax.imshow(self.img, vmax=1.5, aspect='auto', **args)
         fig.colorbar(imm, ax=ax)
         if title:
             ax.set_title(title)
@@ -32,7 +34,25 @@ class Speckle1D(object):
         self.brightest = img[ind_row, ind_col]
 
         img = img / self.brightest
+
+        if self.should_remove_freqs:
+            img = self.remove_freqs(img)
         return img
+
+    def remove_freqs(self, img, percent=0.5):
+        img_k = np.fft.fftshift(np.fft.fft2(np.fft.fftshift(img)))
+        # percent = self.should_remove_freqs if type(self.should_remove_freqs) == float else 0.5
+        new_img_k = np.zeros_like(img)
+
+        y, x = img.shape
+        cropx = int(x * percent)
+        cropy = int(y * percent)
+        startx = x // 2 - (cropx // 2)
+        starty = y // 2 - (cropy // 2)
+        new_img_k[starty:starty + cropy, startx:startx + cropx] = img_k[starty:starty + cropy, startx:startx + cropx]
+
+        new_img = np.fft.fftshift(np.fft.ifft2(np.fft.fftshift(new_img_k))).real
+        return new_img
 
     def _autocorrelation(self, V):
         # V = self.img[:, 1150]
@@ -51,6 +71,7 @@ class Speckle1D(object):
         lags, corr = self._autocorrelation(V)
         ax.plot(lags, corr, label=label)
         ax.figure.show()
+        return ax
 
     def plot_few_autocorrs(self, N=2, title=None):
         fig, ax = plt.subplots()
