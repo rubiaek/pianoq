@@ -14,7 +14,6 @@ class Speckle1D(object):
         self.x_min = x_min
         self.x_max = x_max
 
-
     def show(self, title=None, **args):
         fig, ax = plt.subplots()
         imm = ax.imshow(self.img, vmax=1.5, aspect='auto', **args)
