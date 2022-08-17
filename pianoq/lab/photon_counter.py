@@ -13,7 +13,7 @@ class PhotonCounter(object):
     for j in range(0, 8):
         W[j, j * 5 + 1: (j + 1) * 5] = [1, 128, 16384, 2097152]
 
-    def __init__(self, serial_port='COM1', integration_time=1):
+    def __init__(self, serial_port='COM9', integration_time=1):
         self.serial_port = serial_port
         assert integration_time >= 0.2, 'PhotonCounter doesn\'t support integration_time<0.2'
         self.integration_time = integration_time
