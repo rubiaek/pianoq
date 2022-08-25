@@ -8,7 +8,7 @@ asi.init('C:\\code\\ASI_Windows_SDK_V1.22\\ASI SDK\\lib\\x64\\ASICamera2.dll')
 
 
 class ASICam(object):
-    def __init__(self):
+    def __init__(self, exposure=1.5, binning=2, image_bits=16, roi=(1500, 950, 200, 200)):
         self._cam = asi.Camera(0)  # Assume we will always have only 1 camera
         self.set_roi = self._cam.set_roi
         self.get_roi = self._cam.get_roi
@@ -16,17 +16,21 @@ class ASICam(object):
         self.image_bits = self.set_image_bits(8)
         self._cam.disable_dark_subtract()
         self.pixel_size = self._cam.get_camera_property()['PixelSize']
+        self.set_binning(binning)
+        self.set_exposure(exposure)
+        self.set_image_bits(image_bits)
+        self.set_roi(*roi)
 
     def show_image(self, im=None, title=None, **kwargs):
         if im is None:
             im = self.get_image()
         fig, ax = plt.subplots()
-        im = ax.imshow(im, **kwargs)
-        fig.colorbar(im, ax=ax)
+        imm = ax.imshow(im, **kwargs)
+        fig.colorbar(imm, ax=ax)
         if title:
             ax.set_title(title)
         fig.show()
-        return fig, ax
+        return im, ax
 
     def save_image(self, path, im=None, comment=''):
         if im is None:
