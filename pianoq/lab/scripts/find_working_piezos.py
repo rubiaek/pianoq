@@ -65,9 +65,9 @@ def check_all_piezos():
 def check_piezo_movement(piezo_num, sleep_duration=0.5):
     e = Edac40(max_piezo_voltage=70, ip=Edac40.DEFAULT_IP)
     amps = np.zeros(40)
-    amps[9] = 0
+    amps[piezo_num] = 0
     amps2 = np.zeros(40)
-    amps2[9] = 1
+    amps2[piezo_num] = 1
 
     try:
 
@@ -88,7 +88,7 @@ global flag
 def live_piezo_diff(dac, cam, piezzo_num, close_at_end=False):
     global flag
     flag = True
-    fig, axes = plt.subplots(1, 2)
+    fig, axes = plt.subplots(1, 2, figsize=(18, 8))
     im0 = axes[0].imshow(cam.get_image())
     im1 = axes[1].imshow(cam.get_image())
     axes[0].set_title('piezzo 0 press')
