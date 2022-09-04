@@ -1,4 +1,5 @@
 import re
+import glob
 import numpy as np
 from astropy.io import fits
 from matplotlib.patches import Rectangle
@@ -7,6 +8,7 @@ from scipy.ndimage import gaussian_filter
 
 
 PATH = r'G:\My Drive\Projects\Quantum Piano\Results\Calibrations\Red Speckles After Fiber'
+PATH_NO_TELESCOPE = r"G:\My Drive\Projects\Quantum Piano\Results\Calibrations\Red Speckles After Fiber\No telescope"
 
 
 class RedMMFSpeckles(object):
@@ -29,6 +31,7 @@ class RedMMFSpeckles(object):
 
     @property
     def contrast2(self):
+        # This is completely equivalent
         im = self.im[self.roi]
         return im.std() / im.mean()
 
@@ -64,19 +67,28 @@ class RedMMFSpeckles(object):
 
 
 if __name__ == "__main__":
-    paths = glob.glob(PATH + r'\*.fit')
-    rs = [RedMMFSpeckles(path) for path in paths]
-    rs[0].roi = np.index_exp[2120: 2220, 3655: 3760]
-    rs[1].roi = np.index_exp[2120: 2220, 3655: 3760]
-    rs[2].roi = np.index_exp[1910: 2010, 3680: 3780]
-    rs[3].roi = np.index_exp[2130: 2210, 3670: 3750]
-    rs[4].roi = np.index_exp[2040: 2120, 3680: 3775]
-    rs[5].roi = np.index_exp[2120: 2220, 3680: 3780]
-    rs[6].roi = np.index_exp[2080: 2160, 3710: 3800]
-    rs[7].roi = np.index_exp[2120: 2220, 3665: 3760]
-    rs[8].roi = np.index_exp[2100: 2200, 3700: 3785]
-    rs[9].roi = np.index_exp[1780: 1890, 2760: 2860]
-    rs[10].roi = np.index_exp[1770: 1880, 2780: 2880]
-    rs[11].roi = np.index_exp[2380: 2480, 3350: 3440]
-    rs[12].roi = np.index_exp[2510: 2620, 3320: 3430]
+    yes_telescope = False
+    if yes_telescope:
+        paths = glob.glob(PATH + r'\*.fit')
+        rs = [RedMMFSpeckles(path) for path in paths]
+        rs[0].roi = np.index_exp[2120: 2220, 3655: 3760]
+        rs[1].roi = np.index_exp[2120: 2220, 3655: 3760]
+        rs[2].roi = np.index_exp[1910: 2010, 3680: 3780]
+        rs[3].roi = np.index_exp[2130: 2210, 3670: 3750]
+        rs[4].roi = np.index_exp[2040: 2120, 3680: 3775]
+        rs[5].roi = np.index_exp[2120: 2220, 3680: 3780]
+        rs[6].roi = np.index_exp[2080: 2160, 3710: 3800]
+        rs[7].roi = np.index_exp[2120: 2220, 3665: 3760]
+        rs[8].roi = np.index_exp[2100: 2200, 3700: 3785]
+        rs[9].roi = np.index_exp[1780: 1890, 2760: 2860]
+        rs[10].roi = np.index_exp[1770: 1880, 2780: 2880]
+        rs[11].roi = np.index_exp[2510: 2620, 3320: 3430]
+        rs[12].roi = np.index_exp[2380: 2480, 3350: 3440]
 
+    else:
+        paths = glob.glob(PATH_NO_TELESCOPE + r'\*.fit')
+        rs = [RedMMFSpeckles(path, np.index_exp[2360: 2460, 3345: 3460]) for path in paths]
+
+    for r in rs:
+        r.print_contrast2()
+        r.show_roi()

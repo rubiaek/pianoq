@@ -1,5 +1,6 @@
 from pianoq.lab.Edac40 import Edac40
 from pianoq.lab.VimbaCamera import VimbaCamera
+from pianoq.lab.asi_cam import ASICam
 from pianoq.lab.piano_optimization import PianoOptimization
 from pianoq.misc.borders import Borders
 

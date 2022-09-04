@@ -1,5 +1,7 @@
-import numpy as np
 import time
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 
 from pianoq import Borders
 from pianoq.lab.Edac40 import Edac40
@@ -14,6 +16,7 @@ def crop_image(im):
     # part2 = im[:, 330:410]
     # im = np.concatenate((part1, part2), axis=1)
     # return im
+
 
 def check_piezo(e: Edac40, cam: VimbaCamera, piezo_num):
     amps = np.zeros(e.NUM_OF_PIEZOS)
@@ -76,6 +79,46 @@ def check_piezo_movement(piezo_num, sleep_duration=0.5):
             time.sleep(sleep_duration)
     except KeyboardInterrupt:
         e.close()
+
+
+global ani
+global flag
+
+
+def live_piezo_diff(dac, cam, piezzo_num, close_at_end=False):
+    global flag
+    flag = True
+    fig, axes = plt.subplots(1, 2)
+    im0 = axes[0].imshow(cam.get_image())
+    im1 = axes[1].imshow(cam.get_image())
+    axes[0].set_title('piezzo 0 press')
+    axes[1].set_title('piezzo 1 press')
+    fig.colorbar(im0, ax=axes[0])
+    fig.colorbar(im1, ax=axes[1])
+
+    def update(i):
+        global flag
+        if flag:
+            amps = np.zeros(40); dac.set_amplitudes(amps)
+            im0.set_data(cam.get_image())
+        else:
+            amps = np.zeros(40); amps[piezzo_num] = 1; dac.set_amplitudes(amps)
+            im1.set_data(cam.get_image())
+        flag = not flag
+        # ax.set_title('%03d' % i)
+
+    global ani
+    ani = FuncAnimation(fig, update)
+
+    def close(event):
+        if event.key == 'q':
+            plt.close(event.canvas.figure)
+            if close_at_end:
+                cam.close()
+
+    cid = fig.canvas.mpl_connect("key_press_event", close)
+
+    plt.show(block=False)
 
 
 if __name__ == "__main__":
