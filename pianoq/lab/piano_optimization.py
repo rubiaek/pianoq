@@ -15,13 +15,13 @@ LOGS_DIR = 'C:\\temp'
 
 class PianoOptimization(object):
 
-    def __init__(self, initial_exposure_time=2000, saveto_path=None, roi=None, cost_function=None):
-        self.dac = Edac40(max_piezo_voltage=50, ip=Edac40.DEFAULT_IP)
+    def __init__(self, initial_exposure_time=655, saveto_path=None, roi=None, cost_function=None):
+        self.dac = Edac40(max_piezo_voltage=120, ip=Edac40.DEFAULT_IP)
         self.cam = VimbaCamera(DEFAULT_CAM_NO, exposure_time=initial_exposure_time)
         self.initial_exposure_time = initial_exposure_time
         self.scaling_exposure_factor = 1
         # Should probably get as parameter the (x, y) and then define the borders around that part
-        borders = Borders(300, 500, 710, 630)
+        borders = Borders(400, 278, 1024, 634)
         # borders = Borders(330, 520, 800, 615)
         self.cam.set_borders(borders)
 
@@ -42,9 +42,9 @@ class PianoOptimization(object):
         # self.good_piezo_indexes = [2, 3, 4, 6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
         # self.good_piezo_indexes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
         #                            20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37]
-        # self.good_piezo_indexes = np.arange(40)
-        self.good_piezo_indexes = [0, 1, 3, 5, 9, 10, 11, 12, 13, 14, 15, 16, 17,
-                                                               23, 24, 25, 28, 30, 32, 33, 35, 36]
+        self.good_piezo_indexes = np.arange(40)
+        # self.good_piezo_indexes = [0, 1, 3, 5, 9, 10, 11, 12, 13, 14, 15, 16, 17,
+        #                                                        23, 24, 25, 28, 30, 32, 33, 35, 36]
         self.num_good_piezos = len(self.good_piezo_indexes)
 
         self.current_micro_iter = 0
@@ -59,7 +59,8 @@ class PianoOptimization(object):
         self.optimizer = MyPSOOptimizer(self.cost_function_callback, n_pop=n_pop, n_var=self.num_good_piezos,
                                         n_iterations=n_iterations,
                                         post_iteration_callback=self.post_iteration_callback,
-                                        w=1, wdamp=0.99, c1=1.5, c2=2,
+                                        # w is inertia, c1 to self beet, c2 to global best
+                                        w=1, wdamp=0.97, c1=1.5, c2=2.2,
                                         timeout=60*60*2,
                                         stop_early=True, stop_after_n_const_iter=stop_after_n_const_iters,
                                         vary_popuation=True, reduce_at_iterations=reduce_at_iterations)
@@ -73,6 +74,26 @@ class PianoOptimization(object):
         print(f"Actual amount of iterations is: {self.optimizer.amount_of_micro_iterations()}.\n"
               f"It should take {self.optimizer.amount_of_micro_iterations() * self.dac.SLEEP_AFTER_SEND / 60} minutes")
         self.optimizer.optimize()
+
+    def optimize_partitioning(self, n_iterations):
+        # Tried for fun - it doesn't immediately work well...
+        choosing_vector = np.zeros(self.num_good_piezos)
+        choosing_vector[:self.num_good_piezos//2] = 1
+        current_amps = np.zeros(self.num_good_piezos)
+
+        for n in range(n_iterations):
+            np.random.shuffle(choosing_vector)
+            best_cost = 0
+            best_amps = np.zeros(self.num_good_piezos)
+            for i in np.linspace(0, 1, 11):
+                amps = i*choosing_vector + current_amps
+                amps = np.mod(amps, 1)
+                cost = self.cost_function_callback(i*choosing_vector)
+                if cost < best_cost:
+                    best_cost = cost
+                    best_amps = amps
+            self.post_iteration_callback(best_cost, best_amps)
+            current_amps = best_amps
 
     def vectorial_cost_function(self, amps_times_n_particles):
         # Was needed for optimize_pso from the pyswarms package
@@ -139,7 +160,7 @@ class PianoOptimization(object):
         cost = self.cost_function_callback(global_best_positions)
 
         # update global best cost to best cost I actually have a picture of it
-        self.optimizer.swarm.global_best_cost = cost
+        # self.optimizer.swarm.global_best_cost = cost
         self.res.costs.append(cost)
 
         im = self.cam.get_image()

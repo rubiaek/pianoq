@@ -23,7 +23,7 @@ class Edac40(object):
     PORT = 1234
     DISCOVER_PORT = 30303
     AMP_GAIN = 80
-    SLEEP_AFTER_SEND = 1
+    SLEEP_AFTER_SEND = 0.4
     REST_AMP = 0
 
     # This is from .c code
@@ -66,7 +66,7 @@ class Edac40(object):
         self.set_global_offset(0)
         self.set_offset(0x8000)
         self.save_to_nvram()
-        self.set_amplitudes(self.REST_AMP * np.ones(self.NUM_OF_PIEZOS))
+        # self.set_amplitudes(self.REST_AMP * np.ones(self.NUM_OF_PIEZOS))
 
         self.print_voltage_range()
 
@@ -177,5 +177,5 @@ class Edac40(object):
         print(f"Voltage range between {minV} and {maxV} Volts")
 
     def close(self):
-        self.set_amplitudes(self.REST_AMP * np.ones(self.NUM_OF_PIEZOS))
+        # self.set_amplitudes(self.REST_AMP * np.ones(self.NUM_OF_PIEZOS))
         self.sock.close()

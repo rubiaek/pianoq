@@ -3,7 +3,7 @@ import pyMMF.modes
 import numpy as np
 import matplotlib.pyplot as plt
 
-N_POINTS_MODES = 2**10  # resolution of the window
+N_POINTS_MODES = 2**8  # resolution of the window
 
 def get_OM1_modes(wl=0.810):
     NA = 0.275

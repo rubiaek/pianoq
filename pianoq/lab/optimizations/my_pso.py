@@ -13,7 +13,7 @@ class Swarm(object):
         self.c2 = c2
         self.lower_bound, self.upper_bound = bounds or (0, 1)
         self.sample_func = sample_func or self.rand_sample
-        self.vel_max = 0.1 * (self.upper_bound - self.lower_bound)
+        self.vel_max = 0.15 * (self.upper_bound - self.lower_bound)
         self.vel_min = -self.vel_max
 
         self.particles = []
@@ -44,7 +44,7 @@ class Swarm(object):
         self.w = self.w * self.wdamp
 
         restart_occurred = False
-        particles_to_mutate = np.random.choice(self.n_pop, 4)  # TODO: is this mutation good?
+        particles_to_mutate = np.random.choice(self.n_pop, 2)  # TODO: is this mutation good?
 
         # At end of iteration we will have a new global_best_positions and global_best_cost
         for i, particle in enumerate(self.particles):
@@ -94,7 +94,7 @@ class Particle(object):
         self.velocities = np.zeros(self.dim)
 
     def mutate(self):
-        n_piezos_to_mutate = 3  # TODO: var to self.var
+        n_piezos_to_mutate = 2  # TODO: var to self.var
         piezos_to_mutate = np.random.choice(self.dim, n_piezos_to_mutate)
         new_positions = self.swarm.sample_func(size=n_piezos_to_mutate)
         self.positions[piezos_to_mutate] = new_positions
@@ -209,7 +209,7 @@ class MyPSOOptimizer(object):
     def get_random_average_cost(self):
         self.log(f'Initializing random average cost')
         cost = 0
-        n = 40
+        n = 20
         for i in range(n):
             amps = self.swarm.sample_func(self.swarm.n_var)
             cost += self.swarm.cost_func(amps)
