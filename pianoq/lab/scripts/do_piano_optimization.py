@@ -27,14 +27,14 @@ def focus():
 
         wind = small_L // 2
         # roi_L = np.index_exp[70 - wind: 70 + wind, 60 - wind: 60 + wind]
-        y = 190
+        y = 200
         x = 200
         roi_L = np.index_exp[y - wind: y + wind, x - wind: x + wind]
         # roi_R = np.index_exp[70 - wind: 70 + wind, 335 - wind: 335 + wind]
 
         roi = roi_L
         # Don't pass here PianoOptimization.cost_function_roi since it isn't a staticmethod so it will do trouble
-        po = PianoOptimization(saveto_path=None, initial_exposure_time=150, roi=roi)
+        po = PianoOptimization(saveto_path=None, initial_exposure_time=450, roi=roi)
         po.optimize_my_pso(n_pop=20, n_iterations=50, stop_after_n_const_iters=5, reduce_at_iterations=(3,))
         # po.optimize_my_pso(n_pop=25, n_iterations=150, stop_after_n_const_iters=10, reduce_at_iterations=(3,))
         po.close()

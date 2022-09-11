@@ -12,7 +12,7 @@ cur_dir = os.path.dirname(os.path.abspath(__file__))
 CORR_MASK_PATH = os.path.join(cur_dir, "correlations_mask.npz")
 
 
-def get_correlation(im1, im2, use_mask=True):
+def get_correlation(im1, im2, use_mask=False):
     if use_mask:
         mask = get_correlations_mask()
         im1 = im1[mask]

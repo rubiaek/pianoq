@@ -15,8 +15,9 @@ LOGS_DIR = 'C:\\temp'
 
 class PianoOptimization(object):
 
-    def __init__(self, initial_exposure_time=655, saveto_path=None, roi=None, cost_function=None):
-        self.dac = Edac40(max_piezo_voltage=120, ip=Edac40.DEFAULT_IP)
+    def __init__(self, initial_exposure_time=450, saveto_path=None, roi=None, cost_function=None):
+        ##########   CAREFULL CHANGING THIS VOLTAGE!!! #########
+        self.dac = Edac40(max_piezo_voltage=150, ip=Edac40.DEFAULT_IP)
         self.cam = VimbaCamera(DEFAULT_CAM_NO, exposure_time=initial_exposure_time)
         self.initial_exposure_time = initial_exposure_time
         self.scaling_exposure_factor = 1

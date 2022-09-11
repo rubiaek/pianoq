@@ -1,5 +1,7 @@
+import time
 import numpy as np
 
+from pianoq import Borders
 from pianoq.lab.Edac40 import Edac40
 from pianoq.lab.VimbaCamera import VimbaCamera
 from pianoq.misc.calc_correlation import get_correlation
@@ -7,9 +9,9 @@ from pianoq.misc.consts import DEFAULT_BORDERS
 
 
 def check_rest_time():
-    e = Edac40(max_piezo_voltage=30, ip=Edac40.DEFAULT_IP)
-    cam = VimbaCamera(2, exposure_time=800)
-    borders = DEFAULT_BORDERS
+    e = Edac40(max_piezo_voltage=150, ip=Edac40.DEFAULT_IP)
+    cam = VimbaCamera(1, exposure_time=150)
+    borders = Borders(540, 420, 650, 530)
     cam.set_borders(borders)
     e.SLEEP_AFTER_SEND = 0.0001
 
@@ -20,13 +22,14 @@ def check_rest_time():
     print('---------------------------------')
 
     amps = np.random.uniform(0, 1, 40)
-    e.set_amplitudes(amps)
+    e.set_amplitudes(0)
 
-    import time
     start = time.time()
     times.append(0)
     im = cam.get_image()
     ims.append(im)
+
+    e.set_amplitudes(1)
 
     for i in range(10):
         im = cam.get_image()

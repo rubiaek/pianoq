@@ -31,6 +31,7 @@ def check_piezo(e: Edac40, cam: VimbaCamera, piezo_num):
     # Check Cropping manually!
     correlation = get_correlation(crop_image(im1), crop_image(im2), use_mask=False)
     print(f'{piezo_num} \t\t {correlation:.3f}')
+    return piezo_num, correlation
 
     """
     amps[piezo_num] = 0
@@ -47,19 +48,23 @@ def check_all_piezos():
     print for each piezo index how much moving it decorrelates the picture,
     so indexes with correlaction > 0.98 probably don't work
     """
-    e = Edac40(max_piezo_voltage=70, ip=Edac40.DEFAULT_IP)
-    cam = VimbaCamera(DEFAULT_CAM_NO, exposure_time=5.5e3)
+    e = Edac40(max_piezo_voltage=150, ip=Edac40.DEFAULT_IP)
+    cam = VimbaCamera(DEFAULT_CAM_NO, exposure_time=450)
     # cam.set_borders(Borders(330, 550, 800, 640))
-    cam.set_borders(DEFAULT_BORDERS)
+    # cam.set_borders(DEFAULT_BORDERS)
 
     print("Piezo num\t correlation")
     print("----------------------")
     # good_piezo_indexes = [2, 3, 4, 5, 6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
-    for i in range(10,19):
-        check_piezo(e, cam, i)
+    res = []
+    for i in range(40):
+        piezo_num, correlation = check_piezo(e, cam, i)
+        res.append(list((piezo_num, correlation)))
 
     cam.close()
     e.close()
+
+    return np.array(res)
 
 
 def check_piezo_movement(piezo_num, sleep_duration=0.5):
@@ -89,22 +94,35 @@ def live_piezo_diff(dac, cam, piezzo_num, close_at_end=False):
     global flag
     flag = True
     fig, axes = plt.subplots(1, 2, figsize=(18, 8))
-    im0 = axes[0].imshow(cam.get_image())
-    im1 = axes[1].imshow(cam.get_image())
+    global im0
+    global im1
+    im0 = cam.get_image()
+    imm0 = axes[0].imshow(im0, animated=True)
+    im1 = cam.get_image()
+    imm1 = axes[1].imshow(im1, animated=True)
+    title = fig.suptitle('foo', fontsize=36)
     axes[0].set_title('piezzo 0 press')
     axes[1].set_title('piezzo 1 press')
-    fig.colorbar(im0, ax=axes[0])
-    fig.colorbar(im1, ax=axes[1])
+    fig.colorbar(imm0, ax=axes[0])
+    fig.colorbar(imm1, ax=axes[1])
 
     def update(i):
         global flag
+        global im0
+        global im1
         if flag:
             amps = np.zeros(40); dac.set_amplitudes(amps)
-            im0.set_data(cam.get_image())
+            im0 = cam.get_image()
+            imm0.set_data(im0)
         else:
             amps = np.zeros(40); amps[piezzo_num] = 1; dac.set_amplitudes(amps)
-            im1.set_data(cam.get_image())
+            im1 = cam.get_image()
+            imm1.set_data(im1)
         flag = not flag
+
+        corr = get_correlation(im0, im1, False)
+        title.set_text(f'PCC: {corr:.3f}')
+
         # ax.set_title('%03d' % i)
 
     global ani
@@ -122,5 +140,8 @@ def live_piezo_diff(dac, cam, piezzo_num, close_at_end=False):
 
 
 if __name__ == "__main__":
-    check_all_piezos()
+    # res = check_all_piezos()
+    # res = np.array(res)
+    # Q = res[:, 1]
     # check_piezo_movement(2)
+    pass
