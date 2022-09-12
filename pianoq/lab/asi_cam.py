@@ -88,7 +88,11 @@ class ASICam(object):
         return self._cam.get_control_value(asi.ASI_GAIN)[0]
 
     def get_exposure(self):
-        return self._cam.get_control_value(asi.ASI_EXPOSURE)[0]
+        """ in seconds """
+        return self._cam.get_control_value(asi.ASI_EXPOSURE)[0] * 1e-6
+
+    def get_exposure_time(self):
+        return self.get_exposure()
 
     def get_binning(self):
         return self._cam.get_roi_format()[2]
