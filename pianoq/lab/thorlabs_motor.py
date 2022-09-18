@@ -10,6 +10,13 @@ except ImportError:
     print('cant use py_thorlabs_ctrl.kinesis')
 
 
+try:
+    import thorlabs_apt as apt
+    # If python crashes - open the kinesis program and close it.
+except ImportError:
+    print('cant use thorlabs apt')
+
+
 class ThorlabsRotatingServoMotor(KCubeDCServo):
     """
     Uses this library to communicate with the motors:
@@ -55,6 +62,58 @@ class ThorlabsRotatingServoMotor(KCubeDCServo):
     def close(self):
         self.disable()
         self.disconnect()
+
+
+class ThorLabsMotorsXY(object):
+    """All units here are in mm"""
+
+    def __init__(self, xy=True):
+        apt.core._cleanup()
+        apt.core._lib = apt.core._load_library()
+        self.serials = apt.list_available_devices()
+
+        self.xy = xy
+        if xy:
+            self.x_motor = apt.Motor(26001271)
+            self.y_motor = apt.Motor(27253522)
+            # self.z_motor = apt.Motor(27501989)
+        else:
+            self.motors = [apt.Motor(ser[1]) for ser in self.serials]
+
+    @staticmethod
+    def move_relative(motor, mms):
+        """move in mm units"""
+        motor.move_by(mms, blocking=True)
+
+    @staticmethod
+    def move_absolute(motor, location):
+        """Location in mms"""
+        motor.move_to(location, blocking=True)
+
+    def move_x_relative(self, mms):
+        if not self.xy:
+            raise Exception('this will work only if self.xy!')
+        self.move_relative(self.x_motor, mms)
+
+    def move_y_relative(self, mms):
+        if not self.xy:
+            raise Exception('this will work only if self.xy!')
+        self.move_relative(self.y_motor, mms)
+
+    def move_x_absolute(self, location):
+        if not self.xy:
+            raise Exception('this will work only if self.xy!')
+        self.move_absolute(self.x_motor, location)
+
+    def move_y_absolute(self, location):
+        if not self.xy:
+            raise Exception('this will work only if self.xy!')
+        self.move_absolute(self.y_motor, location)
+
+    @staticmethod
+    def close():
+        apt.core._cleanup()
+        apt.core._lib = apt.core._load_library()
 
 
 class ManualMotor(object):
