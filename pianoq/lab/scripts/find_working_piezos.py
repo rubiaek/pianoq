@@ -43,12 +43,12 @@ def check_piezo(e: Edac40, cam: VimbaCamera, piezo_num):
     """
 
 
-def check_all_piezos():
+def check_all_piezos(max_piezo_voltage=100):
     """
     print for each piezo index how much moving it decorrelates the picture,
     so indexes with correlaction > 0.98 probably don't work
     """
-    e = Edac40(max_piezo_voltage=150, ip=Edac40.DEFAULT_IP)
+    e = Edac40(max_piezo_voltage=max_piezo_voltage, ip=Edac40.DEFAULT_IP)
     cam = VimbaCamera(DEFAULT_CAM_NO, exposure_time=450)
     # cam.set_borders(Borders(330, 550, 800, 640))
     # cam.set_borders(DEFAULT_BORDERS)
@@ -64,7 +64,13 @@ def check_all_piezos():
     cam.close()
     e.close()
 
-    return np.array(res)
+    res = np.array(res)
+
+    fig, ax = plt.subplots()
+    ax.plot(res[:, 0], res[:, 1])
+    fig.show()
+
+    return res, ax
 
 
 def check_piezo_movement(piezo_num, sleep_duration=0.5):

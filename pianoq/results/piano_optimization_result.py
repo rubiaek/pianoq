@@ -27,6 +27,7 @@ class PianoPSOOptimizationResult(object):
         self.normalized_images = []
         self.normaliztion_to_one = None
         self.random_average_cost = None
+        self.cam_type = None
 
     def _get_normalized_images(self):
         norm_ims = []
@@ -93,7 +94,8 @@ class PianoPSOOptimizationResult(object):
                      n_pop=self.n_pop,
                      n_iterations=self.n_iterations,
                      stop_after_n_const_iters=self.stop_after_n_const_iters,
-                     reduce_at_iterations=self.reduce_at_iterations
+                     reduce_at_iterations=self.reduce_at_iterations,
+                     cam_type=self.cam_type
                      )
             f.close()
         except Exception as e:
@@ -125,3 +127,4 @@ class PianoPSOOptimizationResult(object):
         self.n_iterations = data.get('n_iterations', None)
         self.stop_after_n_const_iters = data.get('stop_after_n_const_iters', None)
         self.reduce_at_iterations = data.get('reduce_at_iterations', None)
+        self.cam_type = data.get('cam_type', None)

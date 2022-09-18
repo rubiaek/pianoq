@@ -19,7 +19,8 @@ class Swarm(object):
 
         self.particles = []
         self.global_best_positions = ((self.upper_bound - self.lower_bound) / 2) * np.ones(self.n_var)
-        self.global_best_cost = cost_func(self.global_best_positions)
+        self.global_best_cost, im = cost_func(self.global_best_positions)
+        self.optimizer.new_best_callback(self.global_best_cost, self.global_best_positions, im)
         self.best_particle = None
 
         self.iterations_since_restart_occured = 0
@@ -183,6 +184,7 @@ class MyPSOOptimizer(object):
         for i in range(self.n_iterations):
             self.curr_iteration += 1
             self.swarm.do_iteration()
+            print(f"### iteration no. {self.curr_iteration} - best is {self.swarm.global_best_cost} ###")
 
             if self.vary_popuation and self.curr_iteration in self.reduce_at_iterations:
                 self.swarm.reduce_population(reduction_factor=2)
@@ -210,7 +212,8 @@ class MyPSOOptimizer(object):
         n = 20
         for i in range(n):
             amps = self.swarm.sample_func(self.swarm.n_var)
-            cost += self.swarm.cost_func(amps)
+            costt, im = self.swarm.cost_func(amps)
+            cost += costt
 
         return cost / n
 

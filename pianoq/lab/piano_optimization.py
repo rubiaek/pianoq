@@ -18,13 +18,15 @@ class PianoOptimization(object):
 
     def __init__(self, initial_exposure_time=450, saveto_path=None, roi=None, cost_function=None, cam_type='vimba'):
         ##########   CAREFULL CHANGING THIS VOLTAGE!!! #########
-        self.dac = Edac40(max_piezo_voltage=150, ip=Edac40.DEFAULT_IP)
+        self.dac = Edac40(max_piezo_voltage=160, ip=Edac40.DEFAULT_IP)
+
         self.cam_type = cam_type
         if self.cam_type == 'vimba':
             self.cam = VimbaCamera(DEFAULT_CAM_NO, exposure_time=initial_exposure_time)
         elif self.cam_type == 'ASI':
-            self.cam = ASICam(exposure=0.7, binning=2, image_bits=16, roi=(1555, 1020, 200, 200))
-            self.cam.set_gain(300)
+            self.dac.SLEEP_AFTER_SEND = 0.2  # wait a bit less since the exposure is so long...
+            self.cam = ASICam(exposure=0.7, binning=3, image_bits=16, roi=(1065, 700, 96, 96))
+            self.cam.set_gain(400)
 
         self.initial_exposure_time = initial_exposure_time
         self.scaling_exposure_factor = 1
@@ -62,6 +64,7 @@ class PianoOptimization(object):
         self.res.good_piezo_indexes = np.array(self.good_piezo_indexes)
         self.res.max_piezo_voltage = self.dac.max_piezo_voltage
         self.res.roi = self.roi
+        self.res.cam_type = self.cam_type
 
     def optimize_my_pso(self, n_pop, n_iterations, stop_after_n_const_iters, reduce_at_iterations=()):
         self.optimizer = MyPSOOptimizer(self.cost_function_callback, n_pop=n_pop, n_var=self.num_good_piezos,
@@ -79,7 +82,9 @@ class PianoOptimization(object):
         self.res.stop_after_n_const_iters = stop_after_n_const_iters
         self.res.reduce_at_iterations = reduce_at_iterations
 
-        time_per_iteration = self.dac.SLEEP_AFTER_SEND + self.cam.get_exposure()
+        time_per_iteration = self.dac.SLEEP_AFTER_SEND
+        if self.cam_type == 'ASI':
+            time_per_iteration += self.cam.get_exposure_time()
 
         print(f"Actual amount of iterations is: {self.optimizer.amount_of_micro_iterations()}.\n"
               f"It should take {self.optimizer.amount_of_micro_iterations() * time_per_iteration / 60} minutes")

@@ -19,21 +19,21 @@ def focus_partitioning():
 
 
 def focus_singles():
-    small_L = 4
+    L = 2
+    wind = L // 2
+    y = 50
+    x = 50
+    roi = np.index_exp[y - 1: y + 2, x - 1: x + 2]
 
-    wind = small_L // 2
-    # roi_L = np.index_exp[70 - wind: 70 + wind, 60 - wind: 60 + wind]
-    y = 100
-    x = 125
-    roi = np.index_exp[y - wind: y + wind, x - wind: x + wind]
-
-    po = PianoOptimization(saveto_path=None, roi=roi, cam_type='ASI')
-    po.optimize_my_pso(n_pop=20, n_iterations=50, stop_after_n_const_iters=5, reduce_at_iterations=(3,))
-    po.close()
+    n = 1
+    for i in range(n):
+        po = PianoOptimization(saveto_path=None, roi=roi, cam_type='ASI')
+        po.optimize_my_pso(n_pop=20, n_iterations=50, stop_after_n_const_iters=5, reduce_at_iterations=(3,))
+        po.close()
 
 
 def focus():
-    n = 1
+    n = 3
     for i in range(n):
         whole_area_L = 40
         whole_speckle_L = 20
@@ -41,14 +41,14 @@ def focus():
 
         wind = small_L // 2
         # roi_L = np.index_exp[70 - wind: 70 + wind, 60 - wind: 60 + wind]
-        y = 180
-        x = 180
+        y = 200
+        x = 400
         roi_L = np.index_exp[y - wind: y + wind, x - wind: x + wind]
         # roi_R = np.index_exp[70 - wind: 70 + wind, 335 - wind: 335 + wind]
 
         roi = roi_L
         # Don't pass here PianoOptimization.cost_function_roi since it isn't a staticmethod so it will do trouble
-        po = PianoOptimization(saveto_path=None, initial_exposure_time=450, roi=roi, cam_type='vimba')
+        po = PianoOptimization(saveto_path=None, initial_exposure_time=350, roi=roi, cam_type='vimba')
         po.optimize_my_pso(n_pop=20, n_iterations=50, stop_after_n_const_iters=5, reduce_at_iterations=(3,))
         # po.optimize_my_pso(n_pop=25, n_iterations=150, stop_after_n_const_iters=10, reduce_at_iterations=(3,))
         po.close()
