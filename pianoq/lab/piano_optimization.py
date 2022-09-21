@@ -9,7 +9,7 @@ from pianoq.lab.VimbaCamera import VimbaCamera
 from pianoq.lab.optimizations.my_pso import MyPSOOptimizer
 from pianoq.misc.consts import DEFAULT_BORDERS, DEFAULT_CAM_NO, DEFAULT_BORDERS2, DEFAULT_BORDERS_MMF
 
-from pianoq.results.piano_optimization_result import PianoPSOOptimizationResult
+from pianoq_results.piano_optimization_result import PianoPSOOptimizationResult
 
 LOGS_DIR = 'C:\\temp'
 

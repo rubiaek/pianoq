@@ -120,3 +120,4 @@ class ManualMotor(object):
 
     def close(self):
         pass
+

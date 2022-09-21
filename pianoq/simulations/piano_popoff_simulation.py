@@ -7,7 +7,7 @@ import numpy as np
 from numpy.linalg import matrix_power
 
 from pianoq.lab.optimizations.my_pso import MyPSOOptimizer
-from pianoq.results import PopoffPRXResult
+from pianoq_results import PopoffPRXResult
 
 
 class PianoPopoffSimulation(object):

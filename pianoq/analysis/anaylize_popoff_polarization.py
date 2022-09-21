@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import scipy.linalg as la
 import qutip
 
-from pianoq.results.popoff_prx_result import PopoffPRXResult
+from pianoq_results.popoff_prx_result import PopoffPRXResult
 
 PATH = "../data/popoff_polarization_data_fmf2.npz"
 

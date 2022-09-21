@@ -7,7 +7,7 @@ from pianoq.lab.photon_counter import PhotonCounter
 import numpy as np
 import matplotlib.pyplot as plt
 
-from pianoq.results.scan_result import ScanResult
+from pianoq_results.scan_result import ScanResult
 from pianoq.misc.mplt import my_mesh
 LOGS_DIR = "C:\\temp"
 
@@ -134,7 +134,7 @@ class PhotonScanner(object):
         fig.show()
 
 
-def scan(name='minimal', integration_time=1):
+def whole_scan(name='whole_area', integration_time=5):
     start_x = 16.4
     start_y = 16.2
     x_pixels = 25
@@ -142,6 +142,19 @@ def scan(name='minimal', integration_time=1):
     pixel_size_x = 0.050
     pixel_size_y = 0.050
 
+
+    scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
+                            run_name=name)
+    single1s, single2s, coincidences = scanner.scan()
+
+
+def middle_scan(name='middle_area', integration_time=15):
+    start_x = 16.75
+    start_y = 16.55
+    x_pixels = 10
+    y_pixels = 10
+    pixel_size_x = 0.050
+    pixel_size_y = 0.050
 
     scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
                             run_name=name)
@@ -154,4 +167,4 @@ if __name__ == '__main__':
     best_y = 16.9
     best_z = 10  # Not very accurate, but seems OK
 
-    scan('initial_tests')
+    middle_scan()
