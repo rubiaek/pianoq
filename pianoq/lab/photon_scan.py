@@ -1,7 +1,7 @@
 import time
 import datetime
 
-from pianoq.lab.thorlabs_motor import ThorLabsMotorsXY
+from pianoq.lab.thorlabs_motor import ThorlabsKcubeDC, ThorlabsKcubeStepper
 from pianoq.lab.photon_counter import PhotonCounter
 
 import numpy as np
@@ -43,14 +43,15 @@ class PhotonScanner(object):
 
     def scan(self):
         print('getting motors...')
-        ms = ThorLabsMotorsXY()
+        x_motor = ThorlabsKcubeStepper()
+        y_motor = ThorlabsKcubeDC()
 
         print('getting photon counter...')
         ph = PhotonCounter(integration_time=self.integration_time)
 
         print('Moving to starting position...')
-        ms.move_x_absolute(self.start_x)
-        ms.move_y_absolute(self.start_y)
+        x_motor.move_absolute(self.start_x)
+        y_motor.move_absolute(self.start_y)
 
         try:
             print('starting scan')
@@ -58,7 +59,7 @@ class PhotonScanner(object):
             start_time = time.time()
             for i in range(self.y_pixels):
                 for j in range(self.x_pixels):
-                    ms.move_x_relative(self.pixel_size_x)
+                    x_motor.move_relative(self.pixel_size_x)
                     self.single1s[i, j], self.single2s[i, j], self.coincidences[i, j] = ph.read_interesting()
                     duration_till_now = time.time() - start_time
                     print(f'dur: {int(duration_till_now)}. pix: {i}, {j}. Singles1: {self.single1s[i, j]}. '
@@ -81,8 +82,8 @@ class PhotonScanner(object):
                         fig.savefig(f"C:\\temp\\{self.timestamp}coincidence.png")
                     plt.pause(0.03)  # Have plot interact a bit on every move
 
-                ms.move_y_relative(self.pixel_size_y)
-                ms.move_x_absolute(self.start_x)
+                y_motor.move_relative(self.pixel_size_y)
+                x_motor.move_absolute(self.start_x)
 
             self.result.coincidences = self.coincidences
             self.result.single1s = self.single1s
@@ -94,7 +95,8 @@ class PhotonScanner(object):
             print(e)
             import traceback
             traceback.print_exc()
-        ms.close()
+        x_motor.close()
+        y_motor.close()
         ph.close()
 
         return self.single1s, self.single2s, self.coincidences
@@ -132,9 +134,9 @@ class PhotonScanner(object):
         fig.show()
 
 
-def scan(name='minimal', integration_time=5):
+def scan(name='minimal', integration_time=1):
     start_x = 16.4
-    start_y = 16.3
+    start_y = 16.2
     x_pixels = 25
     y_pixels = 25
     pixel_size_x = 0.050

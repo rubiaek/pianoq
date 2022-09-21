@@ -54,7 +54,8 @@ class ScanResult(object):
                      single1s=self.single1s,
                      single2s=self.single2s,
                      X=self.X,
-                     Y=self.Y)
+                     Y=self.Y,
+                     integration_time=self.integration_time)
             f.close()
         except Exception as e:
             print("ERROR!!")
@@ -82,6 +83,7 @@ class ScanResult(object):
         self.single2s = data['single2s']
         self.X = data['X']
         self.Y = data['Y']
+        self.integration_time = data.get('integration_time', None)
 
         self.accidentals = self.single1s * self.single2s * 2 * self.coin_window
 

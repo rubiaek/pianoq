@@ -1,20 +1,14 @@
 import numpy as np
+import clr
 
 try:
     import py_thorlabs_ctrl.kinesis
     _KINESIS_PATH = r'C:\Program Files\Thorlabs\Kinesis'
     py_thorlabs_ctrl.kinesis.init(_KINESIS_PATH)
-    from py_thorlabs_ctrl.kinesis.motor import KCubeDCServo
+    from py_thorlabs_ctrl.kinesis.motor import KCubeDCServo, KCubeStepper
     from System import Decimal
 except ImportError:
     print('cant use py_thorlabs_ctrl.kinesis')
-
-
-try:
-    import thorlabs_apt as apt
-    # If python crashes - open the kinesis program and close it.
-except ImportError:
-    print('cant use thorlabs apt')
 
 
 class ThorlabsRotatingServoMotor(KCubeDCServo):
@@ -64,56 +58,54 @@ class ThorlabsRotatingServoMotor(KCubeDCServo):
         self.disconnect()
 
 
-class ThorLabsMotorsXY(object):
-    """All units here are in mm"""
+class ThorlabsKcubeDC(KCubeDCServo):
+    SERIAL_1 = 27253522
 
-    def __init__(self, xy=True):
-        apt.core._cleanup()
-        apt.core._lib = apt.core._load_library()
-        self.serials = apt.list_available_devices()
+    def __init__(self, serial_number=None):
+        serial_number = serial_number or self.SERIAL_1
+        super().__init__(serial_number=serial_number)
+        self.create()
+        self.enable()
 
-        self.xy = xy
-        if xy:
-            self.x_motor = apt.Motor(26001271)
-            self.y_motor = apt.Motor(27253522)
-            # self.z_motor = apt.Motor(27501989)
-        else:
-            self.motors = [apt.Motor(ser[1]) for ser in self.serials]
+    def move_relative(self, mm, timeout=10000):
+        """ timeout in ms. send 0 for non-blocking. It is important to send float, and not some other np type..."""
+        device = self.get_device()
+        device.SetMoveRelativeDistance(Decimal(float(mm)))
+        device.MoveRelative(timeout)
 
-    @staticmethod
-    def move_relative(motor, mms):
-        """move in mm units"""
-        motor.move_by(mms, blocking=True)
+    def move_absolute(self, mm, timeout=20000):
+        """ timeout in ms. send 0 for non-blocking. It is important to send float, and not some other np type..."""
+        device = self.get_device()
+        device.MoveTo(Decimal(mm), timeout)
 
-    @staticmethod
-    def move_absolute(motor, location):
-        """Location in mms"""
-        motor.move_to(location, blocking=True)
+    def close(self):
+        self.disable()
+        self.disconnect()
 
-    def move_x_relative(self, mms):
-        if not self.xy:
-            raise Exception('this will work only if self.xy!')
-        self.move_relative(self.x_motor, mms)
 
-    def move_y_relative(self, mms):
-        if not self.xy:
-            raise Exception('this will work only if self.xy!')
-        self.move_relative(self.y_motor, mms)
+class ThorlabsKcubeStepper(KCubeStepper):
+    SERIAL_1 = 26001271
 
-    def move_x_absolute(self, location):
-        if not self.xy:
-            raise Exception('this will work only if self.xy!')
-        self.move_absolute(self.x_motor, location)
+    def __init__(self, serial_number=None):
+        serial_number = serial_number or self.SERIAL_1
+        super().__init__(serial_number=serial_number)
+        self.create()
+        self.enable()
 
-    def move_y_absolute(self, location):
-        if not self.xy:
-            raise Exception('this will work only if self.xy!')
-        self.move_absolute(self.y_motor, location)
+    def move_relative(self, mm, timeout=10000):
+        """ timeout in ms. send 0 for non-blocking. It is important to send float, and not some other np type..."""
+        device = self.get_device()
+        device.SetMoveRelativeDistance(Decimal(float(mm)))
+        device.MoveRelative(timeout)
 
-    @staticmethod
-    def close():
-        apt.core._cleanup()
-        apt.core._lib = apt.core._load_library()
+    def move_absolute(self, mm, timeout=20000):
+        """ timeout in ms. send 0 for non-blocking. It is important to send float, and not some other np type..."""
+        device = self.get_device()
+        device.MoveTo(Decimal(mm), timeout)
+
+    def close(self):
+        self.disable()
+        self.disconnect()
 
 
 class ManualMotor(object):
