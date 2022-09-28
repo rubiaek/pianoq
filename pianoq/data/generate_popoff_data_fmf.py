@@ -1,7 +1,7 @@
 import os
 import pickle
 import numpy as np
-from pianoq.results.popoff_prx_result import PopoffPRXResult
+from pianoq_results.popoff_prx_result import PopoffPRXResult
 from scipy.ndimage import zoom
 
 data_folder = r'G:\My Drive\Projects\Quantum Piano\Random\Rodrigo FMF TMs'

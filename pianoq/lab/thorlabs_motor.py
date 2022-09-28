@@ -1,10 +1,11 @@
 import numpy as np
+import clr
 
 try:
     import py_thorlabs_ctrl.kinesis
     _KINESIS_PATH = r'C:\Program Files\Thorlabs\Kinesis'
     py_thorlabs_ctrl.kinesis.init(_KINESIS_PATH)
-    from py_thorlabs_ctrl.kinesis.motor import KCubeDCServo
+    from py_thorlabs_ctrl.kinesis.motor import KCubeDCServo, KCubeStepper
     from System import Decimal
 except ImportError:
     print('cant use py_thorlabs_ctrl.kinesis')
@@ -57,6 +58,56 @@ class ThorlabsRotatingServoMotor(KCubeDCServo):
         self.disconnect()
 
 
+class ThorlabsKcubeDC(KCubeDCServo):
+    SERIAL_1 = 27253522
+
+    def __init__(self, serial_number=None):
+        serial_number = serial_number or self.SERIAL_1
+        super().__init__(serial_number=serial_number)
+        self.create()
+        self.enable()
+
+    def move_relative(self, mm, timeout=10000):
+        """ timeout in ms. send 0 for non-blocking. It is important to send float, and not some other np type..."""
+        device = self.get_device()
+        device.SetMoveRelativeDistance(Decimal(float(mm)))
+        device.MoveRelative(timeout)
+
+    def move_absolute(self, mm, timeout=20000):
+        """ timeout in ms. send 0 for non-blocking. It is important to send float, and not some other np type..."""
+        device = self.get_device()
+        device.MoveTo(Decimal(mm), timeout)
+
+    def close(self):
+        self.disable()
+        self.disconnect()
+
+
+class ThorlabsKcubeStepper(KCubeStepper):
+    SERIAL_1 = 26001271
+
+    def __init__(self, serial_number=None):
+        serial_number = serial_number or self.SERIAL_1
+        super().__init__(serial_number=serial_number)
+        self.create()
+        self.enable()
+
+    def move_relative(self, mm, timeout=10000):
+        """ timeout in ms. send 0 for non-blocking. It is important to send float, and not some other np type..."""
+        device = self.get_device()
+        device.SetMoveRelativeDistance(Decimal(float(mm)))
+        device.MoveRelative(timeout)
+
+    def move_absolute(self, mm, timeout=20000):
+        """ timeout in ms. send 0 for non-blocking. It is important to send float, and not some other np type..."""
+        device = self.get_device()
+        device.MoveTo(Decimal(mm), timeout)
+
+    def close(self):
+        self.disable()
+        self.disconnect()
+
+
 class ManualMotor(object):
     MY_QWP_ZERO = 5
 
@@ -69,3 +120,4 @@ class ManualMotor(object):
 
     def close(self):
         pass
+

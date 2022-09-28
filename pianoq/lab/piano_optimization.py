@@ -2,28 +2,38 @@ import time
 import datetime
 import numpy as np
 
+from pianoq.lab.asi_cam import ASICam
 from pianoq.misc.borders import Borders
 from pianoq.lab.Edac40 import Edac40
 from pianoq.lab.VimbaCamera import VimbaCamera
 from pianoq.lab.optimizations.my_pso import MyPSOOptimizer
 from pianoq.misc.consts import DEFAULT_BORDERS, DEFAULT_CAM_NO, DEFAULT_BORDERS2, DEFAULT_BORDERS_MMF
 
-from pianoq.results.piano_optimization_result import PianoPSOOptimizationResult
+from pianoq_results.piano_optimization_result import PianoPSOOptimizationResult
 
 LOGS_DIR = 'C:\\temp'
 
 
 class PianoOptimization(object):
 
-    def __init__(self, initial_exposure_time=2000, saveto_path=None, roi=None, cost_function=None):
-        self.dac = Edac40(max_piezo_voltage=50, ip=Edac40.DEFAULT_IP)
-        self.cam = VimbaCamera(DEFAULT_CAM_NO, exposure_time=initial_exposure_time)
+    def __init__(self, initial_exposure_time=450, saveto_path=None, roi=None, cost_function=None, cam_type='vimba'):
+        ##########   CAREFULL CHANGING THIS VOLTAGE!!! #########
+        self.dac = Edac40(max_piezo_voltage=160, ip=Edac40.DEFAULT_IP)
+
+        self.cam_type = cam_type
+        if self.cam_type == 'vimba':
+            self.cam = VimbaCamera(DEFAULT_CAM_NO, exposure_time=initial_exposure_time)
+        elif self.cam_type == 'ASI':
+            self.dac.SLEEP_AFTER_SEND = 0.2  # wait a bit less since the exposure is so long...
+            self.cam = ASICam(exposure=0.7, binning=3, image_bits=16, roi=(1065, 700, 96, 96))
+            self.cam.set_gain(400)
+
         self.initial_exposure_time = initial_exposure_time
         self.scaling_exposure_factor = 1
         # Should probably get as parameter the (x, y) and then define the borders around that part
-        borders = Borders(300, 500, 710, 630)
+        # borders = Borders(400, 278, 1024, 634)
         # borders = Borders(330, 520, 800, 615)
-        self.cam.set_borders(borders)
+        # self.cam.set_borders(borders)
 
         self.saveto_path = saveto_path
         self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
@@ -42,9 +52,9 @@ class PianoOptimization(object):
         # self.good_piezo_indexes = [2, 3, 4, 6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
         # self.good_piezo_indexes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
         #                            20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37]
-        # self.good_piezo_indexes = np.arange(40)
-        self.good_piezo_indexes = [0, 1, 3, 5, 9, 10, 11, 12, 13, 14, 15, 16, 17,
-                                                               23, 24, 25, 28, 30, 32, 33, 35, 36]
+        self.good_piezo_indexes = np.arange(40)
+        # self.good_piezo_indexes = [0, 1, 3, 5, 9, 10, 11, 12, 13, 14, 15, 16, 17,
+        #                                                        23, 24, 25, 28, 30, 32, 33, 35, 36]
         self.num_good_piezos = len(self.good_piezo_indexes)
 
         self.current_micro_iter = 0
@@ -54,12 +64,14 @@ class PianoOptimization(object):
         self.res.good_piezo_indexes = np.array(self.good_piezo_indexes)
         self.res.max_piezo_voltage = self.dac.max_piezo_voltage
         self.res.roi = self.roi
+        self.res.cam_type = self.cam_type
 
     def optimize_my_pso(self, n_pop, n_iterations, stop_after_n_const_iters, reduce_at_iterations=()):
         self.optimizer = MyPSOOptimizer(self.cost_function_callback, n_pop=n_pop, n_var=self.num_good_piezos,
                                         n_iterations=n_iterations,
-                                        post_iteration_callback=self.post_iteration_callback,
-                                        w=1, wdamp=0.99, c1=1.5, c2=2,
+                                        new_best_callback=self.new_best_callback,
+                                        # w is inertia, c1 to self beet, c2 to global best
+                                        w=1, wdamp=0.97, c1=1.5, c2=2.2,
                                         timeout=60*60*2,
                                         stop_early=True, stop_after_n_const_iter=stop_after_n_const_iters,
                                         vary_popuation=True, reduce_at_iterations=reduce_at_iterations)
@@ -70,19 +82,33 @@ class PianoOptimization(object):
         self.res.stop_after_n_const_iters = stop_after_n_const_iters
         self.res.reduce_at_iterations = reduce_at_iterations
 
+        time_per_iteration = self.dac.SLEEP_AFTER_SEND
+        if self.cam_type == 'ASI':
+            time_per_iteration += self.cam.get_exposure_time()
+
         print(f"Actual amount of iterations is: {self.optimizer.amount_of_micro_iterations()}.\n"
-              f"It should take {self.optimizer.amount_of_micro_iterations() * self.dac.SLEEP_AFTER_SEND / 60} minutes")
+              f"It should take {self.optimizer.amount_of_micro_iterations() * time_per_iteration / 60} minutes")
         self.optimizer.optimize()
 
-    def vectorial_cost_function(self, amps_times_n_particles):
-        # Was needed for optimize_pso from the pyswarms package
-        res = []
-        for amps in amps_times_n_particles:
-            assert len(amps) == self.num_good_piezos
-            r = self.cost_function_callback(amps)
-            res.append(r)
+    def optimize_partitioning(self, n_iterations):
+        # Tried for fun - it doesn't immediately work well...
+        choosing_vector = np.zeros(self.num_good_piezos)
+        choosing_vector[:self.num_good_piezos//2] = 1
+        current_amps = np.zeros(self.num_good_piezos)
 
-        return np.array(res)
+        for n in range(n_iterations):
+            np.random.shuffle(choosing_vector)
+            best_cost = 0
+            best_amps = np.zeros(self.num_good_piezos)
+            for i in np.linspace(0, 1, 11):
+                amps = i*choosing_vector + current_amps
+                amps = np.mod(amps, 1)
+                cost, im = self.cost_function_callback(i*choosing_vector)
+                if cost < best_cost:
+                    best_cost = cost
+                    best_amps = amps
+            self.new_best_callback(best_cost, best_amps)
+            current_amps = best_amps
 
     def cost_function_callback(self, amps):
         """
@@ -101,7 +127,7 @@ class PianoOptimization(object):
 
         self._fix_exposure(im)
 
-        return cost
+        return cost, im
 
     def cost_function_roi(self, im):
         im = im[self.roi]
@@ -120,33 +146,31 @@ class PianoOptimization(object):
         return -(pol1_energy / tot_energy)
 
     def _fix_exposure(self, im):
-        mx = im.max()
-        if mx > 240:
-            print('Lowering exposure time!')
-            exp_time = self.cam.get_exposure_time()
-            if exp_time * (4 / 5) > 45:
-                self.cam.set_exposure_time(exp_time * (4 / 5))
-                self.scaling_exposure_factor *= (5 / 4)
-            else:
-                print('**At shortest exposure and still saturated... You might want to add an ND to the camera..**')
+        if self.cam_type == 'vimba':
+            mx = im.max()
+            if mx > 240:
+                print('Lowering exposure time!')
+                exp_time = self.cam.get_exposure_time()
+                if exp_time * (4 / 5) > 45:
+                    self.cam.set_exposure_time(exp_time * (4 / 5))
+                    self.scaling_exposure_factor *= (5 / 4)
+                else:
+                    print('**At shortest exposure and still saturated... You might want to add an ND to the camera..**')
+        else:
+            pass
 
-    def post_iteration_callback(self, global_best_cost, global_best_positions):
+    def new_best_callback(self, global_best_cost, global_best_positions, im):
         now = datetime.datetime.now()
         delta = now - self.start_time
         self.res.timestamps.append(delta.total_seconds())
 
+        self.res.costs.append(global_best_cost)
         self.res.amplitudes.append(global_best_positions)
-        cost = self.cost_function_callback(global_best_positions)
-
-        # update global best cost to best cost I actually have a picture of it
-        self.optimizer.swarm.global_best_cost = cost
-        self.res.costs.append(cost)
-
-        im = self.cam.get_image()
         self.res.images.append(im)
-        self.res.exposure_times.append(self.cam.get_exposure_time())
 
-        # self.o.default_post_iteration(global_best_cost, global_best_positions)
+        if self.cam_type in ['vimba', 'ASI']:
+            self.res.exposure_times.append(self.cam.get_exposure_time())
+
         self.current_macro_iter += 1
         print(f'{self.current_macro_iter}.\t cost: {global_best_cost}\t time: {delta.total_seconds()} seconds')
         self._save_result()

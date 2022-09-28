@@ -5,7 +5,7 @@ from pianoq.lab import VimbaCamera
 from pianoq.lab.elliptec_stage import ElliptecMotor
 from pianoq.lab.thorlabs_motor import ThorlabsRotatingServoMotor
 from pianoq.misc.consts import DEFAULT_CAM_NO, DEFAULT_BORDERS, DEFAULT_ELLO_PORTNO
-from pianoq.results.waveplates_optimization_result import WavePlateOptimizationResult
+from pianoq_results.waveplates_optimization_result import WavePlateOptimizationResult
 
 LOGS_DIR = "C:\\temp"
 

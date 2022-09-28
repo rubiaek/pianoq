@@ -9,8 +9,8 @@ from pianoq.lab.elliptec_stage import ElliptecMotor
 from pianoq.lab.thorlabs_motor import ManualMotor
 from pianoq.misc.calc_correlation import get_correlations_mask
 from pianoq.misc.consts import DEFAULT_BORDERS, DEFAULT_CAM_NO
-from pianoq.results.polarization_meas_result import PolarizationMeasResult
-from pianoq.results.multi_polarization_meas_result import MultiPolarizationMeasResult
+from pianoq_results.polarization_meas_result import PolarizationMeasResult
+from pianoq_results.multi_polarization_meas_result import MultiPolarizationMeasResult
 
 LOGS_DIR = 'C:\\temp'
 

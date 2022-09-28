@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import ndimage
 
-from pianoq.results.image_result import VimbaImage
+from pianoq_results.image_result import VimbaImage
 
 
 PATH_TEMPLATE = r"G:\My Drive\Projects\Quantum Piano\Results\Calibrations\Images of Equal in Both Pols\im%d.cam"

@@ -23,7 +23,7 @@ class Edac40(object):
     PORT = 1234
     DISCOVER_PORT = 30303
     AMP_GAIN = 80
-    SLEEP_AFTER_SEND = 1
+    SLEEP_AFTER_SEND = 0.3
     REST_AMP = 0
 
     # This is from .c code
@@ -47,6 +47,7 @@ class Edac40(object):
     DEFAULT_IP = '169.254.124.204'
 
     def __init__(self, max_piezo_voltage=30, ip='169.254.124.204'):
+        assert max_piezo_voltage < 161, 'Voltage too high!!'
         self.max_piezo_voltage = max_piezo_voltage
         self.max_dac_voltage = self.max_piezo_voltage / self.AMP_GAIN
         assert 0 < self.max_dac_voltage < 12, "DAC max voltage must be between 0V and 12V"
@@ -66,7 +67,7 @@ class Edac40(object):
         self.set_global_offset(0)
         self.set_offset(0x8000)
         self.save_to_nvram()
-        self.set_amplitudes(self.REST_AMP * np.ones(self.NUM_OF_PIEZOS))
+        # self.set_amplitudes(self.REST_AMP * np.ones(self.NUM_OF_PIEZOS))
 
         self.print_voltage_range()
 
@@ -177,5 +178,5 @@ class Edac40(object):
         print(f"Voltage range between {minV} and {maxV} Volts")
 
     def close(self):
-        self.set_amplitudes(self.REST_AMP * np.ones(self.NUM_OF_PIEZOS))
+        # self.set_amplitudes(self.REST_AMP * np.ones(self.NUM_OF_PIEZOS))
         self.sock.close()

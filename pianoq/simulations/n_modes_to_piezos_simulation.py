@@ -4,7 +4,7 @@ import datetime
 
 from pianoq.misc.consts import LOGS_DIR
 from pianoq.simulations import PianoPopoffSimulation
-from pianoq.results.nmodes_to_piezos_result import NmodesToPiezosResult, PiezosForSpecificModeResult
+from pianoq_results.nmodes_to_piezos_result import NmodesToPiezosResult, PiezosForSpecificModeResult
 
 
 class NmodesToPiezosSimulation(object):

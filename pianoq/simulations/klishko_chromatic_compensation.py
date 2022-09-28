@@ -1,10 +1,14 @@
 import re
 import pyMMF
+import pyMMF.modes
 import numpy as np
 from scipy.io import loadmat
 import matplotlib.pyplot as plt
 import glob
+N_POINTS_MODES = 2**8  # resolution of the window
 FOLDER = r'G:\My Drive\Lab Wiki\Optical fibers\Nonlinear-Logan simulation\Logan Simulation\GMMNLSE-Solver-FINAL-master\Fibers\GRIN_ronen2'
+
+N_POINTS_MODES = 2**8  # resolution of the window
 
 def get_OM1_modes(wl=0.810):
     NA = 0.275
@@ -26,7 +30,7 @@ def get_OM1_modes(wl=0.810):
     min_radius_bc = 1.5
 
     profile = pyMMF.IndexProfile(
-        npoints=n_points_modes,
+        npoints=N_POINTS_MODES,
         areaSize=areaSize
     )
     profile.initParabolicGRIN(n1=n1, a=radius, NA=NA)
@@ -48,15 +52,24 @@ def get_OM1_modes(wl=0.810):
     return modes
 
 
-def get_logan_modes(folder, wavelength):
-    files = glob.glob(folder + f'\\*wavelength{wavelength}.mat')
-    d = {}
-    for file in files:
-        mode_num = re.findall('fieldscalarmode(\d+)', files[0])[0]
-        Q = loadmat(file)
-        d[mode_num] = {'profile': Q['phi'], 'neff': Q['neff'][0][0]}
+def get_field(V, modes: pyMMF.modes.Modes):
+    M0 = modes.getModeMatrix()
+    field = np.zeros([N_POINTS_MODES] * 2)
+    for i in range(len(modes.betas)):
+        Mi = modes.profiles[i]
+        profile_i = Mi.reshape([N_POINTS_MODES] * 2)
+        field = field + profile_i * V[i]
 
-    return d
+    return field
+
+
+def main():
+    modes810 = get_OM1_modes(wl=0.810)
+    L = 2e6  # um
+    TM = modes810.getPropagationMatrix(L)
+    V0 = np.ones(len(modes810.betas))
+    Vout = TM@V0
+
 
 
 if __name__ == "__main__":

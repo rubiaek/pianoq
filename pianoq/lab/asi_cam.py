@@ -44,7 +44,7 @@ class ASICam(object):
         hdu.header['YBINNING'] = self.get_binning()
         hdu.header['EXPOINUS'] = self.get_exposure()
         hdu.header['GAIN'] = self.get_gain()
-        hdu.header['OFFSET'] = hdu.header['BRIGHTNESS'] = self.get_brightness()
+        hdu.header['OFFSET'] = hdu.header['BRIGHTNS'] = self.get_brightness()
         hdu.header['DATE-OBS'] = astropy.time.Time(datetime.datetime.now()).fits
         hdu.header['COLORTYP'] = 'RAW8' if self.image_bits == 8 else 'RAW16'
         hdu.header['INPUTFMT'] = 'FITS'
@@ -88,7 +88,11 @@ class ASICam(object):
         return self._cam.get_control_value(asi.ASI_GAIN)[0]
 
     def get_exposure(self):
-        return self._cam.get_control_value(asi.ASI_EXPOSURE)[0]
+        """ in seconds """
+        return self._cam.get_control_value(asi.ASI_EXPOSURE)[0] * 1e-6
+
+    def get_exposure_time(self):
+        return self.get_exposure()
 
     def get_binning(self):
         return self._cam.get_roi_format()[2]

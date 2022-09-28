@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from pianoq.results.popoff_prx_result import PopoffPRXResult
+from pianoq_results.popoff_prx_result import PopoffPRXResult
 
 
 def main():

@@ -1,7 +1,7 @@
 import numpy as np
 import time
 from pianoq.misc.borders import Borders
-from pianoq.results.image_result import VimbaImage
+from pianoq_results.image_result import VimbaImage
 
 try:
     from vimba import Vimba
