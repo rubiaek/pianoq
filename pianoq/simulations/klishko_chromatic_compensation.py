@@ -1,7 +1,10 @@
+import re
 import pyMMF
 import numpy as np
+from scipy.io import loadmat
 import matplotlib.pyplot as plt
-
+import glob
+FOLDER = r'G:\My Drive\Lab Wiki\Optical fibers\Nonlinear-Logan simulation\Logan Simulation\GMMNLSE-Solver-FINAL-master\Fibers\GRIN_ronen2'
 
 def get_OM1_modes(wl=0.810):
     NA = 0.275
@@ -43,6 +46,18 @@ def get_OM1_modes(wl=0.810):
                          )
 
     return modes
+
+
+def get_logan_modes(folder, wavelength):
+    files = glob.glob(folder + f'\\*wavelength{wavelength}.mat')
+    d = {}
+    for file in files:
+        mode_num = re.findall('fieldscalarmode(\d+)', files[0])[0]
+        Q = loadmat(file)
+        d[mode_num] = {'profile': Q['phi'], 'neff': Q['neff'][0][0]}
+
+    return d
+
 
 if __name__ == "__main__":
     pass
