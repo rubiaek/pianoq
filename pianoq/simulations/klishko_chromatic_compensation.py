@@ -1,14 +1,9 @@
-import re
 import pyMMF
 import pyMMF.modes
 import numpy as np
-from scipy.io import loadmat
 import matplotlib.pyplot as plt
-import glob
 N_POINTS_MODES = 2**8  # resolution of the window
-FOLDER = r'G:\My Drive\Lab Wiki\Optical fibers\Nonlinear-Logan simulation\Logan Simulation\GMMNLSE-Solver-FINAL-master\Fibers\GRIN_ronen2'
 
-N_POINTS_MODES = 2**8  # resolution of the window
 
 def get_OM1_modes(wl=0.810):
     NA = 0.275
