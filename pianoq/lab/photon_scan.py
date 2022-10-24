@@ -162,9 +162,25 @@ def middle_scan(name='middle_area', integration_time=15):
     scanner.plot_coincidence(name)
 
 
+def scan_1D(name='1D', integration_time=1):
+    start_x = 15.5
+    start_y = 16.6
+    x_pixels = 20
+    y_pixels = 1
+    pixel_size_x = 0.050
+    pixel_size_y = 0.050
+
+    scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
+                            run_name=name)
+    single1s, single2s, coincidences = scanner.scan()
+    scanner.plot_coincidence(name)
+
+
 if __name__ == '__main__':
     best_x = 17.5
     best_y = 16.9
     best_z = 10  # Not very accurate, but seems OK
 
-    middle_scan()
+    # middle_scan()
+    whole_scan(integration_time=1)
+    # scan_1D(integration_time=1)

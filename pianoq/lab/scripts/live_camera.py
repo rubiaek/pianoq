@@ -12,9 +12,9 @@ def main():
     live_cam(cam)
 
 
-def live_cam(cam, interval=100, close_at_end=False):
+def live_cam(cam, interval=100, close_at_end=False, **kwargs):
     fig, ax = plt.subplots()
-    im = ax.imshow(cam.get_image())
+    im = ax.imshow(cam.get_image(), **kwargs)
     fig.colorbar(im, ax=ax)
 
     def update(i):
