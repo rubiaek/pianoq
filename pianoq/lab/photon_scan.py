@@ -42,12 +42,12 @@ class PhotonScanner(object):
         self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
 
     def scan(self):
+        print('getting photon counter...')
+        ph = PhotonCounter(integration_time=self.integration_time)
+
         print('getting motors...')
         x_motor = ThorlabsKcubeStepper()
         y_motor = ThorlabsKcubeDC()
-
-        print('getting photon counter...')
-        ph = PhotonCounter(integration_time=self.integration_time)
 
         print('Moving to starting position...')
         x_motor.move_absolute(self.start_x)
@@ -136,9 +136,9 @@ class PhotonScanner(object):
 
 def whole_scan(name='whole_area', integration_time=5):
     start_x = 16.4
-    start_y = 16.2
-    x_pixels = 25
-    y_pixels = 25
+    start_y = 16.4
+    x_pixels = 20
+    y_pixels = 20
     pixel_size_x = 0.050
     pixel_size_y = 0.050
 
