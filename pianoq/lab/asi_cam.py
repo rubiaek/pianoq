@@ -4,7 +4,7 @@ import datetime
 from astropy.io import fits
 import astropy.time
 
-asi.init('C:\\code\\ASI_Windows_SDK_V1.22\\ASI SDK\\lib\\x64\\ASICamera2.dll')
+# asi.init('C:\\code\\ASI_Windows_SDK_V1.22\\ASI SDK\\lib\\x64\\ASICamera2.dll')
 
 
 class ASICam(object):
