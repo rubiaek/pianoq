@@ -15,10 +15,13 @@ def main():
 def live_cam(cam, interval=100, close_at_end=False, **kwargs):
     fig, ax = plt.subplots()
     im = ax.imshow(cam.get_image(), **kwargs)
+    title = fig.suptitle('foo', fontsize=36)
     fig.colorbar(im, ax=ax)
 
     def update(i):
-        im.set_data(cam.get_image())
+        imm = cam.get_image()
+        im.set_data(imm)
+        title.set_text(f'Total power: {imm.sum():.3f}')
         # ax.set_title('%03d' % i)
 
     global ani

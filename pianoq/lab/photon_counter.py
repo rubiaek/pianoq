@@ -23,12 +23,21 @@ class PhotonCounter(object):
         self.ser = self.open_serial()
 
     def open_serial(self):
-        ser = serial.Serial(baudrate=19200, timeout=2)
-        ser.set_buffer_size(self.buffer_size)
-        ser.setPort(self.serial_port)
+        success = False
+        for i in range(4):
+            try:
+                ser = serial.Serial(baudrate=19200, timeout=2)
+                ser.set_buffer_size(self.buffer_size)
+                ser.setPort(self.serial_port)
 
-        ser.open()
-
+                ser.open()
+                success = True
+                break
+            except Exception:
+                print(f'not able to open port {self.serial_port}, trying again...')
+                time.sleep(0.2)
+                if i == 3:
+                    raise
         return ser
 
     def read_interesting(self):

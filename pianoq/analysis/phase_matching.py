@@ -12,6 +12,10 @@ sys.path.append('C:\\code\\pianoq_results')
 from pianoq_results import FITSImage
 
 
+T_FOR_140_MW = 29.5  # C (This way we are collinear, but also loose some signal)
+T_FOR_365_MW = 91.8  # C (This way we are collinear, but also loose some signal)
+
+
 def image(s, e, normalize=False):
     dir_path = r'G:\My Drive\Projects\Quantum Piano\Results\Calibrations\SPDC\PPKTP\New-2022-10\f=250_before\Temperature\Image\*.fit'
     paths = glob.glob(dir_path)

@@ -64,8 +64,15 @@ class ThorlabsKcubeDC(KCubeDCServo):
     def __init__(self, serial_number=None):
         serial_number = serial_number or self.SERIAL_1
         super().__init__(serial_number=serial_number)
-        self.create()
-        self.enable()
+        for i in range(4):
+            try:
+                self.create()
+                self.enable()
+                break
+            except Exception:
+                print(f'not able to connect to motor, trying again...')
+                if i ==3:
+                    raise
 
     def move_relative(self, mm, timeout=10000):
         """ timeout in ms. send 0 for non-blocking. It is important to send float, and not some other np type..."""
@@ -89,8 +96,14 @@ class ThorlabsKcubeStepper(KCubeStepper):
     def __init__(self, serial_number=None):
         serial_number = serial_number or self.SERIAL_1
         super().__init__(serial_number=serial_number)
-        self.create()
-        self.enable()
+
+        for i in range(4):
+            try:
+                self.create()
+                self.enable()
+                break
+            except Exception:
+                print(f'not able to connect to motor, trying again...')
 
     def move_relative(self, mm, timeout=10000):
         """ timeout in ms. send 0 for non-blocking. It is important to send float, and not some other np type..."""

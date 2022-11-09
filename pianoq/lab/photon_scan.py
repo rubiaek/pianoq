@@ -62,8 +62,8 @@ class PhotonScanner(object):
                     x_motor.move_relative(self.pixel_size_x)
                     self.single1s[i, j], self.single2s[i, j], self.coincidences[i, j] = ph.read_interesting()
                     duration_till_now = time.time() - start_time
-                    print(f'dur: {int(duration_till_now)}. pix: {i}, {j}. Singles1: {self.single1s[i, j]}. '
-                          f'Singles2: {self.single2s[i, j]}. Coincidence: {self.coincidences[i, j]}.')
+                    print(f'dur: {int(duration_till_now)}. pix: {i}, {j}. Singles1: {self.single1s[i, j]:2f}. '
+                          f'Singles2: {self.single2s[i, j]:2f}. Coincidence: {self.coincidences[i, j]:2f}.')
 
                     count += 1
                     if count % 5 == 0:
@@ -135,12 +135,12 @@ class PhotonScanner(object):
 
 
 def whole_scan(name='whole_area', integration_time=5):
-    start_x = 16.4
-    start_y = 16.4
-    x_pixels = 20
-    y_pixels = 20
-    pixel_size_x = 0.050
-    pixel_size_y = 0.050
+    start_x = 15.2
+    start_y = 15.3
+    x_pixels = 15
+    y_pixels = 15
+    pixel_size_x = 0.1
+    pixel_size_y = 0.1
 
 
     scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
@@ -148,32 +148,46 @@ def whole_scan(name='whole_area', integration_time=5):
     single1s, single2s, coincidences = scanner.scan()
 
 
-def middle_scan(name='middle_area', integration_time=15):
-    start_x = 16.75
-    start_y = 16.55
-    x_pixels = 10
-    y_pixels = 10
+def middle_scan(name='middle_area', integration_time=20):
+    start_x = 15.65
+    start_y = 15.8
+    x_pixels = 12
+    y_pixels = 12
+    pixel_size_x = 0.05
+    pixel_size_y = 0.05
+
+    scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
+                            run_name=name)
+    single1s, single2s, coincidences = scanner.scan()
+    # scanner.plot_coincidence(name)
+
+
+def small_scan(name='small_area', integration_time=20):
+    start_x = 16.85
+    start_y = 16.45
+    x_pixels = 5
+    y_pixels = 5
     pixel_size_x = 0.050
     pixel_size_y = 0.050
 
     scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
                             run_name=name)
     single1s, single2s, coincidences = scanner.scan()
-    scanner.plot_coincidence(name)
+    # scanner.plot_coincidence(name)
 
 
 def scan_1D(name='1D', integration_time=1):
-    start_x = 15.5
+    start_x = 15
     start_y = 16.6
-    x_pixels = 20
+    x_pixels = 30
     y_pixels = 1
-    pixel_size_x = 0.050
-    pixel_size_y = 0.050
+    pixel_size_x = 0.1
+    pixel_size_y = 0.1
 
     scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
                             run_name=name)
     single1s, single2s, coincidences = scanner.scan()
-    scanner.plot_coincidence(name)
+    # scanner.plot_coincidence(name)
 
 
 if __name__ == '__main__':
@@ -181,6 +195,7 @@ if __name__ == '__main__':
     best_y = 16.9
     best_z = 10  # Not very accurate, but seems OK
 
-    # middle_scan()
-    whole_scan(integration_time=1)
-    # scan_1D(integration_time=1)
+    middle_scan(integration_time=5)
+    # small_scan(integration_time=1)
+    # whole_scan(integration_time=3)
+    # scan_1D(integration_time=0.5)
