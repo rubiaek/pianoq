@@ -2,6 +2,8 @@ import time
 import glob
 import os
 
+import matplotlib.pyplot as plt
+
 from pianoq.misc.calc_correlation import get_correlation
 from pianoq.misc.borders import Borders
 from pianoq.lab import VimbaCamera
@@ -22,19 +24,36 @@ def main(interval=60):
         print(f'i: {(time.time()-start_time):2f}')
 
 
-def analyse(dir_path=rf'G:\My Drive\Projects\Quantum Piano\Results\Calibrations\Stability\*.cam'):
+def analyse(dir_path=rf'G:\My Drive\Projects\Quantum Piano\Results\Calibrations\Stability\2\*.cam', i0=20):
     paths = glob.glob(dir_path)
-    im0 = load_image(paths[0])
-    corrs = []
-    times = []
-    for path in paths:
-        im = load_image(path)
-        corr = get_correlation(im0, im)
-        time = os.path.basename(path)
-        corrs.append(corr)
-        times.append(time)
 
-    return corrs, times
+    im01 = load_image(paths[i0])[100:150, 370:420]
+    im02 = load_image(paths[i0])[100:160, 95:155]
+    t0 = int(float(os.path.basename(paths[i0])[:-4])) / 60
+
+    corrs1 = []
+    corrs2 = []
+    times = []
+
+    for path in paths[i0::10]:
+        im1 = load_image(path)[100:150, 370:420]
+        im2 = load_image(path)[100:160, 95:155]
+        corr1 = get_correlation(im01, im1)
+        corr2 = get_correlation(im02, im2)
+        t = float(os.path.basename(path)[:-4]) / 60
+        corrs1.append(corr1)
+        corrs2.append(corr2)
+        times.append(t-t0)
+
+    fig, ax = plt.subplots()
+    ax.plot(times, corrs1, label='H pol')
+    ax.plot(times, corrs2, label='V pol')
+    ax.set_xlabel('time (min)')
+    ax.set_ylabel('PCC')
+    ax.legend()
+    fig.show()
+
+    # return corrs1, corrs2, times
 
 
 if __name__ == "__main__":
