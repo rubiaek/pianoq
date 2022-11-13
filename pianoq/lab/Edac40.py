@@ -33,10 +33,10 @@ class Edac40(object):
                                    25])  # Analog outputs 21-40 (left connector)
 
     # Fixes empirically: 0<->1
-    EDAC_PHYS_CHANNELS = np.array([6, 7, 4, 5, 2, 3, 1, 0, 22, 23, 20, 21, 18, 19, 16, 17, 14, 15, 12, 13,
+    EDAC_PHYS_CHANNELS = np.array([7, 6, 5, 4, 3, 2, 1, 0, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12,
                                    # Analog outputs 1-20 (right connector)
-                                   10, 11, 8, 9, 38, 39, 36, 37, 34, 35, 32, 33, 30, 31, 28, 29, 26, 27, 24,
-                                   25])  # Analog outputs 21-40 (left connector)
+                                   11, 10, 9, 8, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25,
+                                   24])  # Analog outputs 21-40 (left connector)
 
     SET_DAC_VALUE_CMDID = 0
     SET_OFFSET_CMDID = 1

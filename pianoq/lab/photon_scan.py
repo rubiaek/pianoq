@@ -149,12 +149,12 @@ def whole_scan(name='whole_area', integration_time=5):
 
 
 def middle_scan(name='middle_area', integration_time=20):
-    start_x = 15.65
-    start_y = 15.8
-    x_pixels = 12
-    y_pixels = 12
-    pixel_size_x = 0.05
-    pixel_size_y = 0.05
+    start_x = 15.7
+    start_y = 15.75
+    x_pixels = 20
+    y_pixels = 20
+    pixel_size_x = 0.025
+    pixel_size_y = 0.025
 
     scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
                             run_name=name)
@@ -195,7 +195,7 @@ if __name__ == '__main__':
     best_y = 16.9
     best_z = 10  # Not very accurate, but seems OK
 
-    middle_scan(integration_time=5)
+    middle_scan(integration_time=3)
     # small_scan(integration_time=1)
     # whole_scan(integration_time=3)
     # scan_1D(integration_time=0.5)
