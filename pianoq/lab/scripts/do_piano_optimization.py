@@ -71,6 +71,15 @@ def reference():
     po.close()
 
 
+def coincidence():
+    po = PianoOptimization(saveto_path=None, initial_exposure_time=3,
+                           cost_function=lambda x: -x, cam_type='SPCM')
+    po.optimize_my_pso(n_pop=20, n_iterations=20, stop_after_n_const_iters=5, reduce_at_iterations=(3,))
+    # po.optimize_my_pso(n_pop=25, n_iterations=150, stop_after_n_const_iters=5, reduce_at_iterations=(2, 10))
+    po.close()
+
+
+
 def get_cost_function_LP():
 
     profiles = get_modes_FG010LDA(npoints=75)
@@ -100,4 +109,4 @@ def get_cost_function_LP():
 
 
 if __name__ == "__main__":
-    focus_singles()
+    coincidence()

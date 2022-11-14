@@ -1,6 +1,7 @@
 import time
 import datetime
 import numpy as np
+from pianoq.lab.photon_counter import PhotonCounter
 
 from pianoq.lab.asi_cam import ASICam
 from pianoq.misc.borders import Borders
@@ -18,15 +19,20 @@ class PianoOptimization(object):
 
     def __init__(self, initial_exposure_time=450, saveto_path=None, roi=None, cost_function=None, cam_type='vimba'):
         ##########   CAREFULL CHANGING THIS VOLTAGE!!! #########
-        self.dac = Edac40(max_piezo_voltage=160, ip=Edac40.DEFAULT_IP)
+        self.dac = Edac40(max_piezo_voltage=120, ip=Edac40.DEFAULT_IP)
 
         self.cam_type = cam_type
         if self.cam_type == 'vimba':
             self.cam = VimbaCamera(DEFAULT_CAM_NO, exposure_time=initial_exposure_time)
         elif self.cam_type == 'ASI':
-            self.dac.SLEEP_AFTER_SEND = 0.2  # wait a bit less since the exposure is so long...
+            self.dac.SLEEP_AFTER_SEND = 0.3  # wait a bit less since the exposure is so long...
             self.cam = ASICam(exposure=0.7, binning=3, image_bits=16, roi=(1065, 700, 96, 96))
             self.cam.set_gain(400)
+        elif self.cam_type == 'SPCM':
+            self.dac.SLEEP_AFTER_SEND = 0.3  # wait a bit less since the exposure is so long...
+            print('getting photon counter...')
+            self.cam = PhotonCounter(integration_time=initial_exposure_time)
+            print('Done')
 
         self.initial_exposure_time = initial_exposure_time
         self.scaling_exposure_factor = 1
@@ -85,6 +91,8 @@ class PianoOptimization(object):
         time_per_iteration = self.dac.SLEEP_AFTER_SEND
         if self.cam_type == 'ASI':
             time_per_iteration += self.cam.get_exposure_time()
+        elif self.cam_type == 'SPCM':
+            time_per_iteration += self.cam.integration_time
 
         print(f"Actual amount of iterations is: {self.optimizer.amount_of_micro_iterations()}.\n"
               f"It should take {self.optimizer.amount_of_micro_iterations() * time_per_iteration / 60} minutes")
@@ -120,11 +128,23 @@ class PianoOptimization(object):
         real_amps[self.good_piezo_indexes] = amps
         self.dac.set_amplitudes(real_amps)
 
-        im = self.cam.get_image()
-        cost = self.cost_function(im)
-        print(f"{self.current_micro_iter}. cost: {cost:.5f}")
-        self.current_micro_iter += 1
+        if self.cam_type in ['ASI', 'vimba']:
+            im = self.cam.get_image()
+            cost = self.cost_function(im)
+            print(f"{self.current_micro_iter}. cost: {cost:.3f}")
+        elif self.cam_type == 'SPCM':
+            datas, stds, actual_exp_time = self.cam.read()
+            datas = datas/actual_exp_time
+            single1, single2, coincidence = datas[0], datas[1], datas[4]
 
+            accidentals = single1 * single2 * 2 * self.cam.coin_window
+            real_coin = coincidence - accidentals
+            real_coin_std = (np.sqrt(coincidence * actual_exp_time)) / actual_exp_time
+            cost = -real_coin
+            im = None
+            print(f"{self.current_micro_iter}. cost: {cost:.2f}+-{real_coin_std:.2f}")
+
+        self.current_micro_iter += 1
         self._fix_exposure(im)
 
         return cost, im
