@@ -8,6 +8,7 @@ from pianoq.lab.piano_optimization import PianoOptimization
 from pianoq.lab.thorlabs_motor import ThorlabsKcubeStepper, ThorlabsKcubeDC
 from pianoq.simulations.calc_fiber_modes import get_modes_FG010LDA
 from pianoq.lab.Edac40 import Edac40
+from pianoq.misc.misc import retry_if_exception
 
 LOGS_DIR = 'C:\\temp'
 
@@ -20,11 +21,12 @@ class OptimizationExperiment(object):
         os.mkdir(self.dir_path)
         print(f"Results will be saved in Here: {self.dir_path}")
         self.po = None
+        self.optimization_no = 1
 
     def run(self):
         print('waiting a bit for motors...')
         time.sleep(10)
-        self.set_motors()
+        # self.set_motors()
         print('Letting motors rest...')
         time.sleep(10)
         self.piano_optimization()
@@ -32,6 +34,7 @@ class OptimizationExperiment(object):
         time.sleep(10)
         self.scan_optimized()
 
+    @retry_if_exception(max_retries=10)
     def set_motors(self):
         x_motor = ThorlabsKcubeStepper()
         y_motor = ThorlabsKcubeDC()
@@ -46,7 +49,19 @@ class OptimizationExperiment(object):
 
 
     def piano_optimization(self):
-        self.po = PianoOptimization(saveto_path=f'{self.dir_path}\\{self.timestamp}.pqoptimizer',
+        self._single_optimization()
+        while True:
+            self.optimization_no += 1
+
+            # self.po will change in each iteration to currnet / last optimization try
+            if np.abs(self.po.res.costs).max() > 450:  # TODO: move the "450" figure to config
+                break
+
+            self._single_optimization()
+
+    @retry_if_exception(max_retries=5)
+    def _single_optimization(self):
+        self.po = PianoOptimization(saveto_path=f'{self.dir_path}\\{self.timestamp}_{self.optimization_no}.pqoptimizer',
                                initial_exposure_time=self.config['initial_exposure_time'],
                                cost_function=lambda x: -x,
                                cam_type=self.config['cam_type'])
@@ -54,11 +69,12 @@ class OptimizationExperiment(object):
                            n_iterations=self.config['n_iterations'],
                            stop_after_n_const_iters=self.config['stop_after_n_const_iters'],
                            reduce_at_iterations=self.config['reduce_at_iterations'])
-        # po.optimize_my_pso(n_pop=15, n_iterations=25, stop_after_n_const_iters=4, reduce_at_iterations=(3,))
         self.po.dac.set_amplitudes(self.po.res.amplitudes[-1])
         self.po.cam.close()
 
+    @retry_if_exception(max_retries=5)
     def scan_optimized(self):
+        # TODO: scan spiral
         scanner = PhotonScanner(self.config['scan_integration_time'],
                                 self.config['start_x'],
                                 self.config['start_y'],
@@ -80,16 +96,16 @@ if __name__ == "__main__":
 
         # piano_optimization params
         'initial_exposure_time': 4,
-        'n_pop': 15,
-        'n_iterations': 25,
-        'stop_after_n_const_iters': 4,
+        'n_pop': 25,
+        'n_iterations': 30,
+        'stop_after_n_const_iters': 6,
         'reduce_at_iterations': (3,),
         'cam_type': 'SPCM',
 
         # scan_optimized_params
         'scan_integration_time' : 4,
-        'start_x' : 15.85,
-        'start_y': 15.85,
+        'start_x' : 15.75,
+        'start_y': 15.8,
         'x_pixels': 10,
         'y_pixels': 10,
         'pix_size': 0.05

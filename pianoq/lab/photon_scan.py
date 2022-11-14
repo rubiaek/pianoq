@@ -41,7 +41,7 @@ class PhotonScanner(object):
         self.result = ScanResult(X=self.X, Y=self.Y, integration_time=self.integration_time)
         self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
 
-    def scan(self):
+    def scan(self, spiral=False):
         print('getting photon counter...')
         ph = PhotonCounter(integration_time=self.integration_time)
 
@@ -49,62 +49,55 @@ class PhotonScanner(object):
         x_motor = ThorlabsKcubeStepper()
         y_motor = ThorlabsKcubeDC()
 
-        print('Moving to starting position...')
-        x_motor.move_absolute(self.start_x)
-        y_motor.move_absolute(self.start_y)
-
         try:
-            print('starting scan')
-            count = 0
-            start_time = time.time()
-            for i in range(self.y_pixels):
-                for j in range(self.x_pixels):
-                    x_motor.move_relative(self.pixel_size_x)
-                    self.single1s[i, j], self.single2s[i, j], self.coincidences[i, j] = ph.read_interesting()
-                    duration_till_now = time.time() - start_time
-                    print(f'dur: {int(duration_till_now)}. pix: {i}, {j}. Singles1: {self.single1s[i, j]:2f}. '
-                          f'Singles2: {self.single2s[i, j]:2f}. Coincidence: {self.coincidences[i, j]:2f}.')
-
-                    count += 1
-                    if count % 5 == 0:
-                        self.result.coincidences = self.coincidences
-                        self.result.single1s = self.single1s
-                        self.result.single2s = self.single2s
-                        self._save_result()
-
-                    # In case you want it tp flash once in a while... Better to just look at result file with
-                    # another ipython so it will be interactive and not "not responding"...
-                    if count % 40000 == 0:
-                        plt.close(1338)
-                        fig, ax = plt.subplots(num=1338)
-                        my_mesh(self.X, self.Y, self.coincidences, ax)
-                        fig.show()
-                        fig.savefig(f"C:\\temp\\{self.timestamp}coincidence.png")
-                    plt.pause(0.03)  # Have plot interact a bit on every move
-
-                y_motor.move_relative(self.pixel_size_y)
-                x_motor.move_absolute(self.start_x)
-
-            self.result.coincidences = self.coincidences
-            self.result.single1s = self.single1s
-            self.result.single2s = self.single2s
-            self._save_result(final=True)
+            if not spiral:
+                self._linear(x_motor, y_motor, ph)
 
         except Exception as e:
             print('Exception occurred')
             print(e)
             import traceback
             traceback.print_exc()
+
         x_motor.close()
         y_motor.close()
         ph.close()
 
         return self.single1s, self.single2s, self.coincidences
 
-    def _save_result(self, final=False):
-        BAK = ''  # if final else '.BAK'
-        saveto_path = self.saveto_path or f"{LOGS_DIR}\\{self.timestamp}_scan_{self.run_name}{BAK}.scan"
-        print(f'saving result final={final}, path = {saveto_path}')
+    def _spiral(self):
+        middle_x = self.start_x + (self.pixel_size_x*self.x_pixels / 2)
+        middle_y = self.start_y + (self.pixel_size_y*self.y_pixels / 2)
+
+        pass
+
+    def _linear(self, x_motor, y_motor, ph):
+        print('Moving to starting position...')
+        x_motor.move_absolute(self.start_x)
+        y_motor.move_absolute(self.start_y)
+
+        print('starting scan')
+        count = 0
+        self.start_time = time.time()
+        for i in range(self.y_pixels):
+            for j in range(self.x_pixels):
+                x_motor.move_relative(self.pixel_size_x)
+                self.single1s[i, j], self.single2s[i, j], self.coincidences[i, j] = ph.read_interesting()
+                self._save_result()
+
+            y_motor.move_relative(self.pixel_size_y)
+            x_motor.move_absolute(self.start_x)
+
+    def _save_result(self):
+        duration_till_now = time.time() - self.start_time
+        # print(f'dur: {int(duration_till_now)}. pix: {i}, {j}. Singles1: {self.single1s[i, j]:2f}. '
+        #   f'Singles2: {self.single2s[i, j]:2f}. Coincidence: {self.coincidences[i, j]:2f}.')
+
+        self.result.coincidences = self.coincidences
+        self.result.single1s = self.single1s
+        self.result.single2s = self.single2s
+        saveto_path = self.saveto_path or f"{LOGS_DIR}\\{self.timestamp}_scan_{self.run_name}.scan"
+        print(f'saving result, path = {saveto_path}')
         self.result.saveto(saveto_path)
 
     def plot(self, mat):
@@ -149,7 +142,7 @@ def whole_scan(name='whole_area', integration_time=5):
 
 
 def middle_scan(name='middle_area', integration_time=20):
-    pix_size = 0.025
+    pix_size = 0.05
     if pix_size == 0.025:
         start_x = 15.85
         start_y = 15.85
@@ -157,8 +150,8 @@ def middle_scan(name='middle_area', integration_time=20):
         y_pixels = 20
 
     elif pix_size == 0.05:
-        start_x = 15.85
-        start_y = 15.85
+        start_x = 15.75
+        start_y = 15.8
         x_pixels = 10
         y_pixels = 10
 
@@ -201,7 +194,7 @@ if __name__ == '__main__':
     best_y = 16.9
     best_z = 10  # Not very accurate, but seems OK
 
-    middle_scan(integration_time=3)
+    middle_scan(integration_time=4)
     # small_scan(integration_time=1)
     # whole_scan(integration_time=3)
     # scan_1D(integration_time=0.5)
