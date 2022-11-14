@@ -47,7 +47,7 @@ class Edac40(object):
     DEFAULT_IP = '169.254.124.204'
 
     def __init__(self, max_piezo_voltage=30, ip='169.254.124.204'):
-        assert max_piezo_voltage < 161, 'Voltage too high!!'
+        assert max_piezo_voltage < 121, 'Voltage too high!!'
         self.max_piezo_voltage = max_piezo_voltage
         self.max_dac_voltage = self.max_piezo_voltage / self.AMP_GAIN
         assert 0 < self.max_dac_voltage < 12, "DAC max voltage must be between 0V and 12V"

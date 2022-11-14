@@ -149,14 +149,20 @@ def whole_scan(name='whole_area', integration_time=5):
 
 
 def middle_scan(name='middle_area', integration_time=20):
-    start_x = 15.7
-    start_y = 15.75
-    x_pixels = 20
-    y_pixels = 20
-    pixel_size_x = 0.025
-    pixel_size_y = 0.025
+    pix_size = 0.025
+    if pix_size == 0.025:
+        start_x = 15.85
+        start_y = 15.85
+        x_pixels = 20
+        y_pixels = 20
 
-    scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
+    elif pix_size == 0.05:
+        start_x = 15.85
+        start_y = 15.85
+        x_pixels = 10
+        y_pixels = 10
+
+    scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pix_size, pix_size,
                             run_name=name)
     single1s, single2s, coincidences = scanner.scan()
     # scanner.plot_coincidence(name)

@@ -1,5 +1,6 @@
 import numpy as np
 import clr
+import time
 
 try:
     import py_thorlabs_ctrl.kinesis
@@ -64,25 +65,38 @@ class ThorlabsKcubeDC(KCubeDCServo):
     def __init__(self, serial_number=None):
         serial_number = serial_number or self.SERIAL_1
         super().__init__(serial_number=serial_number)
-        for i in range(4):
+
+        success = False
+        for i in range(7):
             try:
                 self.create()
                 self.enable()
-                break
+                if self.device.IsEnabled:
+                    success = True
+                    break
             except Exception:
                 print(f'not able to connect to motor, trying again...')
-                if i ==3:
+                time.sleep(1)
+                if i == 6:
                     raise
 
-    def move_relative(self, mm, timeout=10000):
+    def move_relative(self, mm, timeout=30000):
         """ timeout in ms. send 0 for non-blocking. It is important to send float, and not some other np type..."""
         device = self.get_device()
+        if not device.IsEnabled:
+            self.create()
+            self.enable()
+
         device.SetMoveRelativeDistance(Decimal(float(mm)))
         device.MoveRelative(timeout)
 
-    def move_absolute(self, mm, timeout=20000):
+    def move_absolute(self, mm, timeout=30000):
         """ timeout in ms. send 0 for non-blocking. It is important to send float, and not some other np type..."""
         device = self.get_device()
+        if not device.IsEnabled:
+            self.create()
+            self.enable()
+
         device.MoveTo(Decimal(mm), timeout)
 
     def close(self):
@@ -97,23 +111,37 @@ class ThorlabsKcubeStepper(KCubeStepper):
         serial_number = serial_number or self.SERIAL_1
         super().__init__(serial_number=serial_number)
 
-        for i in range(4):
+        success = False
+        for i in range(7):
             try:
                 self.create()
                 self.enable()
+                success = True
                 break
             except Exception:
                 print(f'not able to connect to motor, trying again...')
+                time.sleep(1)
+                if i == 6:
+                   raise
 
-    def move_relative(self, mm, timeout=10000):
+
+    def move_relative(self, mm, timeout=30000):
         """ timeout in ms. send 0 for non-blocking. It is important to send float, and not some other np type..."""
         device = self.get_device()
+        if not device.IsEnabled:
+            self.create()
+            self.enable()
+
         device.SetMoveRelativeDistance(Decimal(float(mm)))
         device.MoveRelative(timeout)
 
-    def move_absolute(self, mm, timeout=20000):
+    def move_absolute(self, mm, timeout=30000):
         """ timeout in ms. send 0 for non-blocking. It is important to send float, and not some other np type..."""
         device = self.get_device()
+        if not device.IsEnabled:
+            self.create()
+            self.enable()
+
         device.MoveTo(Decimal(mm), timeout)
 
     def close(self):

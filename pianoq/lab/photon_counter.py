@@ -8,6 +8,7 @@ class PhotonCounter(object):
     PKT_LEN = 41
     PKT_PER_SEC = 10
     SEC_PER_PKT = 0.1
+    coin_window = 4e-9
 
     W = np.zeros((8, 41))
     for j in range(0, 8):
@@ -24,7 +25,7 @@ class PhotonCounter(object):
 
     def open_serial(self):
         success = False
-        for i in range(4):
+        for i in range(7):
             try:
                 ser = serial.Serial(baudrate=19200, timeout=2)
                 ser.set_buffer_size(self.buffer_size)
@@ -35,8 +36,8 @@ class PhotonCounter(object):
                 break
             except Exception:
                 print(f'not able to open port {self.serial_port}, trying again...')
-                time.sleep(0.2)
-                if i == 3:
+                time.sleep(1)
+                if i == 6:
                     raise
         return ser
 
