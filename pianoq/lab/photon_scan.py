@@ -69,7 +69,12 @@ class PhotonScanner(object):
         middle_x = self.start_x + (self.pixel_size_x*self.x_pixels / 2)
         middle_y = self.start_y + (self.pixel_size_y*self.y_pixels / 2)
 
-        pass
+        print('Moving to starting position...')
+        x_motor.move_absolute(self.start_x)
+        y_motor.move_absolute(self.start_y)
+
+        # TODO: we need to follow both the absulote value in mm, and also the relevant discreet index in matrix
+
 
     def _linear(self, x_motor, y_motor, ph):
         print('Moving to starting position...')
