@@ -23,13 +23,13 @@ class OptimizationExperiment(object):
 
     def run(self):
         print('waiting a bit for motors...')
-        time.sleep(5)
+        time.sleep(10)
         self.set_motors()
         print('Letting motors rest...')
-        time.sleep(5)
+        time.sleep(10)
         self.piano_optimization()
         print('Letting serial rest...')
-        time.sleep(5)
+        time.sleep(10)
         self.scan_optimized()
 
     def set_motors(self):
@@ -55,7 +55,7 @@ class OptimizationExperiment(object):
                            stop_after_n_const_iters=self.config['stop_after_n_const_iters'],
                            reduce_at_iterations=self.config['reduce_at_iterations'])
         # po.optimize_my_pso(n_pop=15, n_iterations=25, stop_after_n_const_iters=4, reduce_at_iterations=(3,))
-        self.po.dac.set_amplitudes(po.res.amplitudes[-1])
+        self.po.dac.set_amplitudes(self.po.res.amplitudes[-1])
         self.po.cam.close()
 
     def scan_optimized(self):
