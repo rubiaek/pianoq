@@ -17,9 +17,9 @@ LOGS_DIR = 'C:\\temp'
 
 class PianoOptimization(object):
 
-    def __init__(self, initial_exposure_time=450, saveto_path=None, roi=None, cost_function=None, cam_type='vimba'):
+    def __init__(self, initial_exposure_time=450, saveto_path=None, roi=None, cost_function=None, cam_type='vimba', dac=None, cam=None):
         ##########   CAREFULL CHANGING THIS VOLTAGE!!! #########
-        self.dac = Edac40(max_piezo_voltage=120, ip=Edac40.DEFAULT_IP)
+        self.dac = dac or Edac40(max_piezo_voltage=120, ip=Edac40.DEFAULT_IP)
 
         self.cam_type = cam_type
         if self.cam_type == 'vimba':
@@ -29,10 +29,7 @@ class PianoOptimization(object):
             self.cam = ASICam(exposure=0.7, binning=3, image_bits=16, roi=(1065, 700, 96, 96))
             self.cam.set_gain(400)
         elif self.cam_type == 'SPCM':
-            self.dac.SLEEP_AFTER_SEND = 0.3  # wait a bit less since the exposure is so long...
-            print('getting photon counter...')
-            self.cam = PhotonCounter(integration_time=initial_exposure_time)
-            print('Done')
+            self.cam = cam or PhotonCounter(integration_time=initial_exposure_time)
 
         self.initial_exposure_time = initial_exposure_time
         self.scaling_exposure_factor = 1
