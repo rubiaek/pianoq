@@ -30,7 +30,6 @@ class PhotonCounter(object):
                 ser = serial.Serial(baudrate=19200, timeout=2)
                 ser.set_buffer_size(self.buffer_size)
                 ser.setPort(self.serial_port)
-
                 ser.open()
                 success = True
                 break

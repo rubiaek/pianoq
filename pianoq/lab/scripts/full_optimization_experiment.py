@@ -2,7 +2,9 @@ import os
 import time
 import numpy as np
 import datetime
+import json
 
+from pianoq.lab.elliptec_stage import ElliptecSwitcher
 from pianoq.lab.photon_counter import PhotonCounter
 from pianoq.lab.asi_cam import ASICam
 from pianoq.lab.photon_scan import PhotonScanner
@@ -25,34 +27,52 @@ class OptimizationExperiment(object):
         print(f"Results will be saved in Here: {self.dir_path}")
 
         # Hardware
+        self.switcher = ElliptecSwitcher()
+        print('got elliptec switcher')
         self.x_motor = ThorlabsKcubeStepper()
+        print('got x_motor')
         self.y_motor = ThorlabsKcubeDC()
+        print('got y_motor')
         self.dac = Edac40(max_piezo_voltage=self.config['DAC_max_piezo_voltage'])
+        print('got DAC')
         self.dac.SLEEP_AFTER_SEND = self.config['DAC_SLEEP_AFTER_SEND']
-        # self.asi_cam = ASICam(exposure=self.config['ASI_exposure'], binning=1, image_bits=16, roi=(None, None, None, None))
-        # self.asi_cam.set_gain(0)
+        self.asi_cam = ASICam(exposure=self.config['ASI_exposure'], binning=2, image_bits=16, roi=(None, None, None, None))
+        print('got ASI camera')
+        self.asi_cam.set_gain(0)
+        # self.asi_cam.set_roi(*self.config['ASI_ROI']) # the elliptec stage moves the correct place to look at
         self.photon_counter = PhotonCounter(integration_time=self.config['ph_integration_time'])
+        print('got photon counter')
 
         # Technical
         self.optimization_no = 1
 
-    def run(self):
+    def run(self, comment=''):
+        self.save_config(comment)
         self.take_asi_pic('singles_before')
+        self.scan_coincidence('speckles')
         self.set_motors()
         self.piano_optimization()
         self.take_asi_pic('singles_after_optimization')
-        self.scan_optimized()
+        self.scan_coincidence('optimized')
         self.take_asi_pic('singles_after_scan')
 
-    # @retry_if_exception(max_retries=10)
+    def save_config(self, comment=''):
+        config_path = f'{self.dir_path}\\{self.timestamp}_config.json'
+        self.config['comment'] = comment
+        open(config_path, 'w').write(json.dumps(self.config, indent=3))
+
     def set_motors(self):
         print(f'### Moving motors to optimization position: {self.config["optimized_xy"]} ###')
         self.x_motor.move_absolute(self.config['optimized_xy'][0])
         self.y_motor.move_absolute(self.config['optimized_xy'][1])
 
-    def take_asi_pic(mirror_in_place):
-        pass
-        # TODO: use the motor with mirror to: 1) move mirror to place. 2) take picture. 3) return mirror.
+    def take_asi_pic(self, title=''):
+        self.switcher.backwards()
+        time.sleep(0.5)
+        image_path = f'{self.dir_path}\\{self.timestamp}_{title}.fits'
+        self.asi_cam.save_image(image_path, comment=title)
+        self.switcher.forwards()
+        time.sleep(0.5)
 
     def piano_optimization(self):
         print('### Running piano optimization ###')
@@ -62,11 +82,12 @@ class OptimizationExperiment(object):
             if np.abs(po.res.costs).max() > self.config['least_optimization_res']:
                 break
             print('!## optimization not good enough - trying again ##!')
+            print(f'{np.abs(po.res.costs).max()} < {self.config["least_optimization_res"]}!')
             self._single_optimization()
 
-    # @retry_if_exception(max_retries=5)
     def _single_optimization(self):
-        po = PianoOptimization(saveto_path=f'{self.dir_path}\\{self.timestamp}_{self.optimization_no}.pqoptimizer',
+        saveto_path = f'{self.dir_path}\\{self.timestamp}_{self.optimization_no}.pqoptimizer'
+        po = PianoOptimization(saveto_path=saveto_path,
                                initial_exposure_time=self.config['ph_integration_time'],
                                cost_function=lambda x: -x,
                                cam_type=self.config['cam_type'],  # SPCM or timetagger
@@ -80,10 +101,10 @@ class OptimizationExperiment(object):
         po.dac.set_amplitudes(po.res.amplitudes[-1])
         return po
 
-    # @retry_if_exception(max_retries=5)
-    def scan_optimized(self):
-        print('### Scanning optimized two-photon speckle ###')
+    def scan_coincidence(self, title=''):
+        print(f'### Scanning {title} two-photon speckle ###')
         # TODO: scan spiral
+        saveto_path=f"{self.dir_path}\\{self.timestamp}_{title}.scan"
         scanner = PhotonScanner(self.config['ph_integration_time'],
                                 self.config['start_x'],
                                 self.config['start_y'],
@@ -91,7 +112,7 @@ class OptimizationExperiment(object):
                                 self.config['y_pixels'],
                                 self.config['pix_size'],
                                 self.config['pix_size'],
-                                saveto_path=f"{self.dir_path}\\{self.timestamp}.scan")
+                                saveto_path=saveto_path)
         single1s, single2s, coincidences = scanner.scan(ph=self.photon_counter,
                                                         x_motor=self.x_motor,
                                                         y_motor=self.y_motor)
@@ -101,7 +122,7 @@ class OptimizationExperiment(object):
         self.x_motor.close()
         self.y_motor.close()
         self.photon_counter.close()
-        self.asi_cam.close()
+        # self.asi_cam.close()
 
 
 if __name__ == "__main__":
@@ -128,10 +149,21 @@ if __name__ == "__main__":
 
         # hardware params
         'ASI_exposure': 2,
+        'ASI_ROI': (2900, 1800, 600, 600),
         'DAC_max_piezo_voltage': 120,
         'DAC_SLEEP_AFTER_SEND' : 0.3,
-        'ph_integration_time' : 3,
+        'ph_integration_time' : 3, # TODO: different integration times for different parts
     }
+
+    is_test = True
+    if is_test:
+        config['ph_integration_time'] = 1
+        config['x_pixels'] = 3
+        config['y_pixels'] = 3
+        config['n_pop'] = 3
+        config['n_iterations'] = 3
+        config['least_optimization_res'] = 150
+
 
     oe = OptimizationExperiment(config)
     oe.run()

@@ -1,5 +1,5 @@
 import serial
-
+import time
 
 class ElliptecMotor(object):
     _PULS_PER_MM = 398  # Got this magic number from the GUI under "details"
@@ -130,3 +130,48 @@ class ElliptecMotor(object):
         # Due to the protocol, X must be in upper case
         hex_str = format(val, '08X')  # Hex length 8
         return hex_str
+
+
+class ElliptecSwitcher(object):
+    def __init__(self, serial_port='COM4'):
+        self.serial_port = serial_port
+        self.ser = self.open_serial()
+        self.cur_pos = None
+
+    def open_serial(self):
+        success = False
+        for i in range(7):
+            try:
+                ser = serial.Serial(self.serial_port)
+                success = True
+                break
+            except Exception:
+                print(f'not able to open port {self.serial_port}, trying again...')
+                time.sleep(1.5)
+                if i == 6:
+                    raise
+        return ser
+
+    def backwards(self):
+        """ yes mirror """
+        self.ser.write('0bw'.encode())
+        _, response_type, data = self._recv()
+        self.cur_pos = int(data, 16)
+
+    def forwards(self):
+        """ no mirror """
+        self.ser.write('0fw'.encode())
+        _, response_type, data = self._recv()
+        self.cur_pos = int(data, 16)
+
+    def _recv(self):
+        ans = self.ser.read_until().decode()
+        address = int(ans[0])
+        response_type = ans[1:3]
+        data = ans[3:].strip()
+        assert response_type == 'PO'
+        print("OK")
+        return address, response_type, data
+
+    def close(self):
+        self.ser.close()
