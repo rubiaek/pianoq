@@ -24,6 +24,7 @@ class Swarm(object):
         self.best_particle = None
 
         self.iterations_since_restart_occured = 0
+        self.end_now = False
 
     def populate_particles(self):
         for i in range(self.n_pop):
@@ -59,6 +60,10 @@ class Swarm(object):
             else:
                 particle.evolve()
             particle.evaluate()
+
+            if self.end_now:
+                self.optimizer.log('I need to STOP NOW')
+                break
 
         self.iterations_since_restart_occured += 1
         if restart_occurred:
@@ -139,6 +144,9 @@ class Particle(object):
             self.swarm.update_best_particle(self)
             self.swarm.optimizer.new_best_callback(self.swarm.global_best_cost, self.swarm.global_best_positions, im)
 
+            if self.swarm.optimizer.success_cost is not None and np.abs(self.cost) > np.abs(self.swarm.optimizer.success_cost):
+                self.swarm.end_now = True
+
 
 class MyPSOOptimizer(object):
     """ We try to MINIMIZE the cost function """
@@ -146,7 +154,7 @@ class MyPSOOptimizer(object):
                  w=1, wdamp=0.99, c1=1.5, c2=2,
                  timeout=np.inf, stop_early=True, stop_after_n_const_iter=8,
                  vary_popuation=True, reduce_at_iterations=None, sample_func=None,
-                 quiet=False):
+                 quiet=False, success_cost=None):
 
         self.cost_function = cost_function
         self.n_iterations = n_iterations
@@ -156,6 +164,7 @@ class MyPSOOptimizer(object):
 
         self.stop_early = stop_early
         self.stop_after_n_const_iter = stop_after_n_const_iter
+        self.success_cost = success_cost
 
         self.vary_popuation = vary_popuation
         self.reduce_at_iterations = reduce_at_iterations or (4, 7)
@@ -200,6 +209,10 @@ class MyPSOOptimizer(object):
                 if n_const_iter >= self.stop_after_n_const_iter:
                     self.log(f"Stopping because I am stuck at cost = {self.best_cost} for {n_const_iter} "
                              f"iterations already!")
+                    break
+
+                if self.success_cost is not None and np.abs(self.swarm.global_best_cost) > np.abs(self.success_cost):
+                    self.log(f'Achieved success cost: {np.abs(self.swarm.global_best_cost)} > {np.abs(self.success_cost)}')
                     break
 
             if (time.time() - self.start_time) > self.timeout:

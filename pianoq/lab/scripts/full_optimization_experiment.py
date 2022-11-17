@@ -20,17 +20,18 @@ class OptimizationExperiment(object):
     def __init__(self, config=None):
         self.config = config
 
-        # dirs and paths
-        self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-        self.dir_path = f"{LOGS_DIR}\\{self.timestamp}"
-        os.mkdir(self.dir_path)
-        print(f"Results will be saved in Here: {self.dir_path}")
+        self.get_hardware()
+        # Technical
+        self.optimization_no = 1
 
+    def get_hardware(self):
         # Hardware
         self.switcher = ElliptecSwitcher()
         print('got elliptec switcher')
         self.x_motor = ThorlabsKcubeStepper()
         print('got x_motor')
+        # TODO: there is a pesky bug with the KcubeDC motor, which I wasn't quite able to solve.
+        # TODO: we might at some point move to pylablib, but there I don't completely understand the scale and coudn't make it actually work...
         self.y_motor = ThorlabsKcubeDC()
         print('got y_motor')
         self.dac = Edac40(max_piezo_voltage=self.config['DAC_max_piezo_voltage'])
@@ -40,21 +41,53 @@ class OptimizationExperiment(object):
         print('got ASI camera')
         self.asi_cam.set_gain(0)
         # self.asi_cam.set_roi(*self.config['ASI_ROI']) # the elliptec stage moves the correct place to look at
-        self.photon_counter = PhotonCounter(integration_time=self.config['ph_integration_time'])
+        self.photon_counter = PhotonCounter(integration_time=self.config['piano_integration_time'])
         print('got photon counter')
 
-        # Technical
-        self.optimization_no = 1
+
+    def make_dir(self):
+        # dirs and paths
+        self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+        self.dir_path = f"{LOGS_DIR}\\{self.timestamp}"
+        os.mkdir(self.dir_path)
+        print(f"Results will be saved in Here: {self.dir_path}")
+
 
     def run(self, comment=''):
+        self.optimization_no = 1
+        self.make_dir()
         self.save_config(comment)
+
+        self.randomize_dac()
         self.take_asi_pic('singles_before')
-        self.scan_coincidence('speckles')
+
+        if self.config['should_scan_speckles']:
+            self.set_photon_integration_time(self.config['speckle_scan_integration_time'])
+            self.scan_coincidence('speckles')
+
         self.set_motors()
+        self.set_photon_integration_time(self.config['piano_integration_time'])
         self.piano_optimization()
         self.take_asi_pic('singles_after_optimization')
+
+        self.set_photon_integration_time(self.config['focus_scan_integration_time'])
         self.scan_coincidence('optimized')
         self.take_asi_pic('singles_after_scan')
+
+    def set_photon_integration_time(self, time_sec):
+        if hasattr(self, 'photon_counter'):
+            if self.photon_counter.integration_time == time_sec:
+                return
+            else:
+                self.photon_counter.close()
+                time.sleep(1)
+
+        self.photon_counter = PhotonCounter(integration_time=time_sec)
+
+    def randomize_dac(self):
+        amps = np.random.rand(40)
+        self.dac.set_amplitudes(amps)
+        time.sleep(2)
 
     def save_config(self, comment=''):
         config_path = f'{self.dir_path}\\{self.timestamp}_config.json'
@@ -92,12 +125,14 @@ class OptimizationExperiment(object):
                                cost_function=lambda x: -x,
                                cam_type=self.config['cam_type'],  # SPCM or timetagger
                                dac=self.dac,
-                               cam=self.photon_counter)
+                               cam=self.photon_counter,
+                               good_piezo_indexes=self.config['good_piezo_indexes'])
 
         po.optimize_my_pso(n_pop=self.config['n_pop'],
                            n_iterations=self.config['n_iterations'],
                            stop_after_n_const_iters=self.config['stop_after_n_const_iters'],
-                           reduce_at_iterations=self.config['reduce_at_iterations'])
+                           reduce_at_iterations=self.config['reduce_at_iterations'],
+                           success_cost=self.config['success_cost'])
         po.dac.set_amplitudes(po.res.amplitudes[-1])
         return po
 
@@ -127,44 +162,59 @@ class OptimizationExperiment(object):
 
 if __name__ == "__main__":
 
+
+    good_piezzos = np.array([0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
+                             10, 11, 12, 13, 14, 15,     17, 18,
+                                 21, 22, 23, 24, 25, 26, 27, 28, 29,
+                             30, 31, 32, 33, 34, 35, 36, 37, 38, 39])
     config = {
-        # set_motors params
+        # general params
         'optimized_xy': (16.4, 16.2),
+        'should_scan_speckles' : False,
 
         # piano_optimization params
-        'n_pop': 15,
-        'n_iterations': 25,
-        'stop_after_n_const_iters': 6,
+        'n_pop': 25,
+        'n_iterations': 50,
+        'stop_after_n_const_iters': 10,
         'reduce_at_iterations': (2,),
         'cam_type': 'SPCM',
+        'good_piezo_indexes': good_piezzos[:],  # TODO: choose only a subset
         'least_optimization_res': 450,
+        'piano_integration_time': 3,
+        'success_cost' : 700,
 
         # scan_optimized params
         'start_x' : 16.2,
-        'start_y': 15.9,
-        'x_pixels': 20,
-        'y_pixels': 20,
-        'pix_size': 0.025,
+        'start_y': 16.0,
+        'x_pixels': 10,
+        'y_pixels': 10,
+        'pix_size': 0.05,
         # TODO: timetagger option
+        # TODO: maybe after stuck so search again for a 90% percent of record and stop when you get there
 
         # hardware params
         'ASI_exposure': 2,
         'ASI_ROI': (2900, 1800, 600, 600),
         'DAC_max_piezo_voltage': 120,
-        'DAC_SLEEP_AFTER_SEND' : 0.3,
-        'ph_integration_time' : 3, # TODO: different integration times for different parts
+        'DAC_SLEEP_AFTER_SEND' : 0.5,
+        'speckle_scan_integration_time': 4,
+        'focus_scan_integration_time': 4,
     }
 
-    is_test = True
+    is_test = False
     if is_test:
-        config['ph_integration_time'] = 1
+        config['should_scan_speckles'] = True
+        config['focus_scan_integration_time'] = 1
+        config['speckle_scan_integration_time'] = 1
+        config['piano_integration_time'] = 1
         config['x_pixels'] = 3
         config['y_pixels'] = 3
         config['n_pop'] = 3
         config['n_iterations'] = 3
         config['least_optimization_res'] = 150
+        config['success_cost'] = 190
 
 
     oe = OptimizationExperiment(config)
-    oe.run()
+    oe.run('wednesday from home IV')
     oe.close()

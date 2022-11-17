@@ -75,7 +75,7 @@ class ThorlabsKcubeDC(KCubeDCServo):
                     success = True
                     break
             except Exception:
-                print(f'not able to connect to motor, trying again...')
+                print(f'not able to connect to ThorlabsKcubeDC motor, trying again...')
                 time.sleep(1)
                 if i == 6:
                     raise

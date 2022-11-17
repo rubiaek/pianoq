@@ -17,7 +17,8 @@ LOGS_DIR = 'C:\\temp'
 
 class PianoOptimization(object):
 
-    def __init__(self, initial_exposure_time=450, saveto_path=None, roi=None, cost_function=None, cam_type='vimba', dac=None, cam=None):
+    def __init__(self, initial_exposure_time=450, saveto_path=None, roi=None, cost_function=None, cam_type='vimba', dac=None, cam=None,
+                 good_piezo_indexes=np.arange(40)):
         ##########   CAREFULL CHANGING THIS VOLTAGE!!! #########
         self.dac = dac or Edac40(max_piezo_voltage=120, ip=Edac40.DEFAULT_IP)
 
@@ -55,7 +56,7 @@ class PianoOptimization(object):
         # self.good_piezo_indexes = [2, 3, 4, 6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
         # self.good_piezo_indexes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
         #                            20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37]
-        self.good_piezo_indexes = np.arange(40)
+        self.good_piezo_indexes = good_piezo_indexes
         # self.good_piezo_indexes = [0, 1, 3, 5, 9, 10, 11, 12, 13, 14, 15, 16, 17,
         #                                                        23, 24, 25, 28, 30, 32, 33, 35, 36]
         self.num_good_piezos = len(self.good_piezo_indexes)
@@ -69,7 +70,7 @@ class PianoOptimization(object):
         self.res.roi = self.roi
         self.res.cam_type = self.cam_type
 
-    def optimize_my_pso(self, n_pop, n_iterations, stop_after_n_const_iters, reduce_at_iterations=()):
+    def optimize_my_pso(self, n_pop, n_iterations, stop_after_n_const_iters, reduce_at_iterations=(), success_cost=None):
         self.optimizer = MyPSOOptimizer(self.cost_function_callback, n_pop=n_pop, n_var=self.num_good_piezos,
                                         n_iterations=n_iterations,
                                         new_best_callback=self.new_best_callback,
@@ -77,7 +78,8 @@ class PianoOptimization(object):
                                         w=1, wdamp=0.97, c1=1.5, c2=2.2,
                                         timeout=60*60*2,
                                         stop_early=True, stop_after_n_const_iter=stop_after_n_const_iters,
-                                        vary_popuation=True, reduce_at_iterations=reduce_at_iterations)
+                                        vary_popuation=True, reduce_at_iterations=reduce_at_iterations,
+                                        success_cost=success_cost)
 
         self.res.random_average_cost = self.optimizer.random_average_cost
         self.res.n_pop = n_pop
