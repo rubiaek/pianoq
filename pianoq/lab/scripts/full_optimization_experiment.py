@@ -30,8 +30,6 @@ class OptimizationExperiment(object):
         print('got elliptec switcher')
         self.x_motor = ThorlabsKcubeStepper()
         print('got x_motor')
-        # TODO: there is a pesky bug with the KcubeDC motor, which I wasn't quite able to solve.
-        # TODO: we might at some point move to pylablib, but there I don't completely understand the scale and coudn't make it actually work...
         self.y_motor = ThorlabsKcubeDC()
         print('got y_motor')
         self.dac = Edac40(max_piezo_voltage=self.config['DAC_max_piezo_voltage'])
@@ -121,7 +119,7 @@ class OptimizationExperiment(object):
     def _single_optimization(self):
         saveto_path = f'{self.dir_path}\\{self.timestamp}_{self.optimization_no}.pqoptimizer'
         po = PianoOptimization(saveto_path=saveto_path,
-                               initial_exposure_time=self.config['ph_integration_time'],
+                               initial_exposure_time=self.config['piano_integration_time'],
                                cost_function=lambda x: -x,
                                cam_type=self.config['cam_type'],  # SPCM or timetagger
                                dac=self.dac,
@@ -133,14 +131,17 @@ class OptimizationExperiment(object):
                            stop_after_n_const_iters=self.config['stop_after_n_const_iters'],
                            reduce_at_iterations=self.config['reduce_at_iterations'],
                            success_cost=self.config['success_cost'])
-        po.dac.set_amplitudes(po.res.amplitudes[-1])
+
+        amps = np.ones(40) * self.dac.REST_AMP
+        amps[po.res.good_piezo_indexes] = po.res.amplitudes[-1]
+        po.dac.set_amplitudes(amps)
         return po
 
     def scan_coincidence(self, title=''):
         print(f'### Scanning {title} two-photon speckle ###')
         # TODO: scan spiral
         saveto_path=f"{self.dir_path}\\{self.timestamp}_{title}.scan"
-        scanner = PhotonScanner(self.config['ph_integration_time'],
+        scanner = PhotonScanner(self.photon_counter.integration_time,
                                 self.config['start_x'],
                                 self.config['start_y'],
                                 self.config['x_pixels'],
@@ -155,18 +156,20 @@ class OptimizationExperiment(object):
     def close(self):
         self.dac.close()
         self.x_motor.close()
-        self.y_motor.close()
+        # TODO: there is a pesky bug with the KcubeDC motor, which I wasn't quite able to solve.
+        # TODO: we might at some point move to pylablib, but there I don't completely understand the scale and coudn't make it actually work...
+        # self.y_motor.close()
         self.photon_counter.close()
-        # self.asi_cam.close()
+        self.asi_cam.close()
 
 
 if __name__ == "__main__":
 
 
-    good_piezzos = np.array([0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
+    good_piezzos = [0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
                              10, 11, 12, 13, 14, 15,     17, 18,
                                  21, 22, 23, 24, 25, 26, 27, 28, 29,
-                             30, 31, 32, 33, 34, 35, 36, 37, 38, 39])
+                             30, 31, 32, 33, 34, 35, 36, 37, 38, 39]
     config = {
         # general params
         'optimized_xy': (16.4, 16.2),
@@ -201,18 +204,18 @@ if __name__ == "__main__":
         'focus_scan_integration_time': 4,
     }
 
-    is_test = False
+    is_test = True
     if is_test:
         config['should_scan_speckles'] = True
         config['focus_scan_integration_time'] = 1
-        config['speckle_scan_integration_time'] = 1
+        config['speckle_scan_integration_time'] = 1.5
         config['piano_integration_time'] = 1
         config['x_pixels'] = 3
         config['y_pixels'] = 3
-        config['n_pop'] = 3
-        config['n_iterations'] = 3
+        config['n_pop'] = 10
+        config['n_iterations'] = 5
         config['least_optimization_res'] = 150
-        config['success_cost'] = 190
+        config['success_cost'] = 170
 
 
     oe = OptimizationExperiment(config)
