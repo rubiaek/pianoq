@@ -172,7 +172,7 @@ if __name__ == "__main__":
                              30, 31, 32, 33, 34, 35, 36, 37, 38, 39]
     config = {
         # general params
-        'optimized_xy': (16.4, 16.2),
+        'optimized_xy': (16.4, 16.1),
         'should_scan_speckles' : False,
 
         # piano_optimization params
@@ -182,16 +182,16 @@ if __name__ == "__main__":
         'reduce_at_iterations': (2,),
         'cam_type': 'SPCM',
         'good_piezo_indexes': good_piezzos[:],  # TODO: choose only a subset
-        'least_optimization_res': 450,
+        'least_optimization_res': 500,
         'piano_integration_time': 3,
         'success_cost' : 700,
 
         # scan_optimized params
         'start_x' : 16.2,
-        'start_y': 16.0,
-        'x_pixels': 10,
-        'y_pixels': 10,
-        'pix_size': 0.05,
+        'start_y': 15.9,
+        'x_pixels': 20,
+        'y_pixels': 20,
+        'pix_size': 0.025,
         # TODO: timetagger option
         # TODO: maybe after stuck so search again for a 90% percent of record and stop when you get there
 
@@ -199,12 +199,12 @@ if __name__ == "__main__":
         'ASI_exposure': 2,
         'ASI_ROI': (2900, 1800, 600, 600),
         'DAC_max_piezo_voltage': 120,
-        'DAC_SLEEP_AFTER_SEND' : 0.5,
+        'DAC_SLEEP_AFTER_SEND' : 0.3,
         'speckle_scan_integration_time': 4,
         'focus_scan_integration_time': 4,
     }
 
-    is_test = True
+    is_test = False
     if is_test:
         config['should_scan_speckles'] = True
         config['focus_scan_integration_time'] = 1
@@ -219,5 +219,5 @@ if __name__ == "__main__":
 
 
     oe = OptimizationExperiment(config)
-    oe.run('wednesday from home IV')
+    oe.run('With piano stop at 700')
     oe.close()
