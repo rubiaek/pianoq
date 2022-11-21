@@ -114,7 +114,7 @@ class OptimizationExperiment(object):
                 break
             print('!## optimization not good enough - trying again ##!')
             print(f'{np.abs(po.res.costs).max()} < {self.config["least_optimization_res"]}!')
-            self._single_optimization()
+            po = self._single_optimization()
 
     def _single_optimization(self):
         saveto_path = f'{self.dir_path}\\{self.timestamp}_{self.optimization_no}.pqoptimizer'
@@ -173,18 +173,18 @@ if __name__ == "__main__":
     config = {
         # general params
         'optimized_xy': (16.4, 16.1),
-        'should_scan_speckles' : False,
+        'should_scan_speckles' : True,
 
         # piano_optimization params
         'n_pop': 25,
-        'n_iterations': 50,
+        'n_iterations': 120,
         'stop_after_n_const_iters': 10,
         'reduce_at_iterations': (2,),
         'cam_type': 'SPCM',
         'good_piezo_indexes': good_piezzos[:],  # TODO: choose only a subset
-        'least_optimization_res': 500,
-        'piano_integration_time': 3,
-        'success_cost' : 700,
+        'least_optimization_res': 600,
+        'piano_integration_time': 1,
+        'success_cost' : 850,
 
         # scan_optimized params
         'start_x' : 16.2,
@@ -200,7 +200,7 @@ if __name__ == "__main__":
         'ASI_ROI': (2900, 1800, 600, 600),
         'DAC_max_piezo_voltage': 120,
         'DAC_SLEEP_AFTER_SEND' : 0.3,
-        'speckle_scan_integration_time': 4,
+        'speckle_scan_integration_time': 7,
         'focus_scan_integration_time': 4,
     }
 
