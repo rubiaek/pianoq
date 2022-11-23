@@ -6,6 +6,7 @@ from pianoq.lab.photon_counter import PhotonCounter
 
 import numpy as np
 import matplotlib.pyplot as plt
+from pianoq.lab.time_tagger import QPTimeTagger
 
 from pianoq_results.scan_result import ScanResult
 from pianoq.misc.mplt import my_mesh
@@ -17,7 +18,7 @@ class PhotonScanner(object):
     best_y = 16.9
 
     def __init__(self, integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
-                 run_name='_scan', saveto_path=None):
+                 run_name='_scan', saveto_path=None, coin_window=4e-9, is_timetagger=False):
         self.start_x = start_x or self.best_x - ((x_pixels-1)*pixel_size_x) / 2
         self.start_y = start_y or self.best_y - ((y_pixels-1)*pixel_size_y) / 2
 
@@ -29,6 +30,8 @@ class PhotonScanner(object):
         self.integration_time = integration_time
         self.run_name = run_name
         self.saveto_path = saveto_path
+        self.coin_window = coin_window
+        self.is_timetagger = is_timetagger
 
         self.X = np.linspace(self.start_x, self.start_x+(self.x_pixels-1)*self.pixel_size_x, self.x_pixels)
         self.Y = np.linspace(self.start_y, self.start_y+(self.y_pixels-1)*self.pixel_size_y, self.y_pixels)
@@ -39,16 +42,21 @@ class PhotonScanner(object):
         self.coincidences = np.zeros((self.y_pixels, self.x_pixels))
 
         self.result = ScanResult(X=self.X, Y=self.Y, integration_time=self.integration_time)
+        self.result.coin_window = self.coin_window
+        self.result.is_timetagger = self.is_timetagger
         self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
         self.start_time = time.time()
 
     def scan(self, spiral=False, ph=None , x_motor=None, y_motor=None):
         if ph is None:
             print('getting photon counter...')
-            ph = PhotonCounter(integration_time=self.integration_time)
+            if self.is_timetagger:
+                ph = QPTimeTagger(integration_time=self.integration_time, coin_window=self.coin_window)
+            else:
+                ph = PhotonCounter(integration_time=self.integration_time)
             close_ph = True
         else:
-            assert isinstance(ph, PhotonCounter)
+            assert isinstance(ph, [PhotonCounter, QPTimeTagger])
             self.integration_time = ph.integration_time
             close_ph = False
 
@@ -79,7 +87,8 @@ class PhotonScanner(object):
         if close_x_motor:
             x_motor.close()
         if close_y_motor:
-            y_motor.close()
+            pass # pesky y_motor closing bug
+            # y_motor.close()
         if close_ph:
             ph.close()
 
@@ -165,22 +174,23 @@ def whole_scan(name='whole_area', integration_time=5):
     single1s, single2s, coincidences = scanner.scan()
 
 
-def middle_scan(name='middle_area', integration_time=20):
-    pix_size = 0.05
+def middle_scan(name='middle_area', integration_time=20, is_timetagger=False, coin_window=4e-9):
+    pix_size = 0.025
     if pix_size == 0.025:
         start_x = 16.2
-        start_y = 16.0
-        x_pixels = 30
-        y_pixels = 30
+        start_y = 15.9
+        x_pixels = 20
+        y_pixels = 20
 
     elif pix_size == 0.05:
-        start_x = 16.1
-        start_y = 15.8
-        x_pixels = 15
-        y_pixels = 15
+        start_x = 16.2
+        start_y = 15.9
+        x_pixels = 10
+        y_pixels = 10
 
     scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pix_size, pix_size,
-                            run_name=name)
+                            coin_window=coin_window, is_timetagger=is_timetagger, run_name=name)
+
     single1s, single2s, coincidences = scanner.scan()
     # scanner.plot_coincidence(name)
 
@@ -218,7 +228,7 @@ if __name__ == '__main__':
     best_y = 16.9
     best_z = 10  # Not very accurate, but seems OK
 
-    middle_scan(integration_time=5)
+    middle_scan(integration_time=3, name='TimeTagger_filter=10nm', is_timetagger=True, coin_window=1e-9)
     # small_scan(integration_time=1)
     # whole_scan(integration_time=3)
     # scan_1D(integration_time=0.5)
