@@ -29,9 +29,24 @@ class SpeckleStatisticsResult(QPPickleResult):
     def real_coin(self):
         return self.coincidences - self.accidentals
 
-    def get_contrast(self):
+    def _get_contrast(self, V):
         self.reload()
-        return self.real_coin.std() / self.real_coin.mean()
+        contrast = V.std() / V.mean()
+        N = V.size
+        contrast_err = contrast * np.sqrt(1/(2*N-2) + (contrast**2)/N)
+        return contrast, contrast_err
+
+    def _contrast_to_N_speckles(self, contrast):
+        return 1/contrast**2
+
+    def print_contrasts(self):
+        cc, cdc = self._get_contrast(self.real_coin)
+        s1c, s1dc = self._get_contrast(self.single1s)
+        s2c, s2dc = self._get_contrast(self.single2s)
+
+        print(f'Contrast for coincidence: {cc:.2f}+-{cdc:.2f} ~ {self._contrast_to_N_speckles(cc):.1f} speckle patterns')
+        print(f'Contrast for single1s: {s1c:.2f}+-{s1dc:.2f} ~ {self._contrast_to_N_speckles(s1c):.1f} speckle patterns')
+        print(f'Contrast for single2s: {s2c:.2f}+-{s2dc:.2f} ~ {self._contrast_to_N_speckles(s2c):.1f} speckle patterns')
 
     def histogram(self):
         self.reload()
@@ -39,13 +54,6 @@ class SpeckleStatisticsResult(QPPickleResult):
         ax_hist.hist(self.real_coin, bins=100) #, range=(0, 500))
         # ax_hist.set_ylim(0, 8)
         fig_hist.show()
-
-    def get_singles_contrast(self, second=False):
-        self.reload()
-        if not second:
-            return self.single1s.std() / self.single1s.mean()
-        else:
-            return self.single2s.std() / self.single2s.mean()
 
     def singles_histogram(self, second=False):
         self.reload()
@@ -108,4 +116,4 @@ def main(is_timetagger=True, integration_time=5, coin_window=1e-9, saveto_path=N
             res.saveto(saveto_path)
 
 if __name__ == "__main__":
-    main(is_timetagger=False, integration_time=5, coin_window=4e-9, saveto_path=None, run_name='filter=10nm_no_ND')
+    main(is_timetagger=False, integration_time=10, coin_window=4e-9, saveto_path=None, run_name='filter=3nm_no_ND')
