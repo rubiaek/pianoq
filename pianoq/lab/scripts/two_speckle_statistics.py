@@ -105,7 +105,7 @@ def main(is_timetagger=True, integration_time=5, coin_window=1e-9, saveto_path=N
         dac.set_amplitudes(amps)
 
         s1, s2, coin = ph.read_interesting()
-        print(f'{s1}, {s2}, {coin}')
+        print(f'{s1:.1f}, {s2:.1f}, {coin:.1f}')
         single1s.append(s1)
         single2s.append(s2)
         coincidences.append(coin)
