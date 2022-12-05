@@ -6,7 +6,7 @@ from pianoq.lab.Edac40 import Edac40
 from pianoq.lab.time_tagger import QPTimeTagger
 from pianoq_results.QPPickleResult import QPPickleResult
 
-LOGS_DIR = "C:\\temp"
+LOGS_DIR = r"G:\My Drive\Projects\Quantum Piano\Results\temp"
 
 
 class SpeckleStatisticsResult(QPPickleResult):
@@ -48,10 +48,11 @@ class SpeckleStatisticsResult(QPPickleResult):
         print(f'Contrast for single1s: {s1c:.2f}+-{s1dc:.2f} ~ {self._contrast_to_N_speckles(s1c):.1f} speckle patterns')
         print(f'Contrast for single2s: {s2c:.2f}+-{s2dc:.2f} ~ {self._contrast_to_N_speckles(s2c):.1f} speckle patterns')
 
-    def histogram(self):
+    def histogram(self, normalized=True):
         self.reload()
         fig_hist, ax_hist = plt.subplots()
-        ax_hist.hist(self.real_coin, bins=100) #, range=(0, 500))
+        coin = self.real_coin / self.real_coin.mean() if normalized else self.real_coin
+        ax_hist.hist(coin, bins=100, density=True) #, range=(0, 500))
         # ax_hist.set_ylim(0, 8)
         fig_hist.show()
 
@@ -116,4 +117,4 @@ def main(is_timetagger=True, integration_time=5, coin_window=1e-9, saveto_path=N
             res.saveto(saveto_path)
 
 if __name__ == "__main__":
-    main(is_timetagger=False, integration_time=10, coin_window=4e-9, saveto_path=None, run_name='filter=3nm_no_ND')
+    main(is_timetagger=False, integration_time=7, coin_window=4e-9, saveto_path=None, run_name='filter=10nm_no_ND_heralded_D=105um')

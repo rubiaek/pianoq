@@ -175,6 +175,7 @@ def whole_scan(name='whole_area', integration_time=5):
 
 
 def middle_scan(name='middle_area', integration_time=20, is_timetagger=False, coin_window=4e-9):
+    # pix_size = 0.05
     pix_size = 0.025
     if pix_size == 0.025:
         start_x = 16.2
@@ -228,7 +229,8 @@ if __name__ == '__main__':
     best_y = 16.9
     best_z = 10  # Not very accurate, but seems OK
 
-    middle_scan(integration_time=3, name='TimeTagger_filter=10nm', is_timetagger=True, coin_window=1e-9)
+    # middle_scan(integration_time=3, name='Heralding_filter=10nm', is_timetagger=True, coin_window=1e-9)
+    middle_scan(integration_time=7, name='Heralding_filter=10nm_D=105um', is_timetagger=False, coin_window=4e-9)
     # small_scan(integration_time=1)
     # whole_scan(integration_time=3)
     # scan_1D(integration_time=0.5)

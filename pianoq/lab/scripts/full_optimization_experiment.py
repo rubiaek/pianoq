@@ -173,25 +173,25 @@ if __name__ == "__main__":
     config = {
         # general params
         'optimized_xy': (16.4, 16.1),
-        'should_scan_speckles' : False,
+        'should_scan_speckles' : True,
 
         # piano_optimization params
-        'n_pop': 25,
+        'n_pop': 30,
         'n_iterations': 120,
         'stop_after_n_const_iters': 10,
         'reduce_at_iterations': (2,),
         'cam_type': 'SPCM',
         'good_piezo_indexes': good_piezzos[:],  # TODO: choose only a subset
         'least_optimization_res': 320,
-        'piano_integration_time': 2,
+        'piano_integration_time': 3,
         'success_cost' : 320,
 
         # scan_optimized params
         'start_x' : 16.2,
         'start_y': 15.9,
-        'x_pixels': 10,
-        'y_pixels': 10,
-        'pix_size': 0.05,
+        'x_pixels': 20,
+        'y_pixels': 20,
+        'pix_size': 0.025,
         # TODO: timetagger option
         # TODO: maybe after stuck so search again for a 90% percent of record and stop when you get there
 
@@ -219,14 +219,14 @@ if __name__ == "__main__":
 
 
     oe = OptimizationExperiment(config)
-    oe.run('filter=80nm')
-    config['x_pixels'] = 20
-    config['y_pixels'] = 20
-    config['pix_size'] = 0.025
-    oe.run('filter=80nm')
+    oe.run('filter=3nm')
+    # config['x_pixels'] = 20
+    # config['y_pixels'] = 20
+    # config['pix_size'] = 0.025
+    # oe.run('filter=80nm')
 
-    config['should_scan_speckles'] = True
-    oe.run('filter=80nm')
+    # config['should_scan_speckles'] = True
+    # oe.run('filter=80nm')
 
     # config['focus_scan_integration_time'] = 4
     # oe.run('filter=80nm')
