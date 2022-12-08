@@ -24,7 +24,7 @@ def main(interval=60):
         print(f'i: {(time.time()-start_time):2f}')
 
 
-def analyse(dir_path=rf'G:\My Drive\Projects\Quantum Piano\Results\Calibrations\Stability\2\*.cam', i0=20):
+def analyse(dir_path=rf'G:\My Drive\Projects\Quantum Piano\Results\Calibrations\Stability\3\*.cam', i0=0, skip_every=1):
     paths = glob.glob(dir_path)
 
     im01 = load_image(paths[i0])[100:150, 370:420]
@@ -35,7 +35,7 @@ def analyse(dir_path=rf'G:\My Drive\Projects\Quantum Piano\Results\Calibrations\
     corrs2 = []
     times = []
 
-    for path in paths[i0::10]:
+    for path in paths[i0::skip_every]:
         im1 = load_image(path)[100:150, 370:420]
         im2 = load_image(path)[100:160, 95:155]
         corr1 = get_correlation(im01, im1)

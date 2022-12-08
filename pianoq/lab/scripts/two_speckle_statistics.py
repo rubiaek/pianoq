@@ -36,17 +36,22 @@ class SpeckleStatisticsResult(QPPickleResult):
         contrast_err = contrast * np.sqrt(1/(2*N-2) + (contrast**2)/N)
         return contrast, contrast_err
 
-    def _contrast_to_N_speckles(self, contrast):
-        return 1/contrast**2
+    def _contrast_to_N_speckles(self, contrast, d_contrast):
+        err = d_contrast*2*contrast**(-3)
+        return 1/contrast**2, err
 
     def print_contrasts(self):
         cc, cdc = self._get_contrast(self.real_coin)
         s1c, s1dc = self._get_contrast(self.single1s)
         s2c, s2dc = self._get_contrast(self.single2s)
 
-        print(f'Contrast for coincidence: {cc:.2f}+-{cdc:.2f} ~ {self._contrast_to_N_speckles(cc):.1f} speckle patterns')
-        print(f'Contrast for single1s: {s1c:.2f}+-{s1dc:.2f} ~ {self._contrast_to_N_speckles(s1c):.1f} speckle patterns')
-        print(f'Contrast for single2s: {s2c:.2f}+-{s2dc:.2f} ~ {self._contrast_to_N_speckles(s2c):.1f} speckle patterns')
+        Nsc, dNsc = self._contrast_to_N_speckles(cc, cdc)
+        Nss1, dNss1 = self._contrast_to_N_speckles(s1c, s1dc)
+        Nss2, dNss2 = self._contrast_to_N_speckles(s2c, s2dc)
+
+        print(f'Contrast for coincidence: {cc:.2f}+-{cdc:.2f} ~ {Nsc:.1f}+-{dNsc:.1f} speckle patterns')
+        print(f'Contrast for single1s: {s1c:.2f}+-{s1dc:.2f} ~ {Nss1:.1f}+-{dNss1:.1f} speckle patterns')
+        print(f'Contrast for single2s: {s2c:.2f}+-{s2dc:.2f} ~ {Nss2:.1f}+-{dNss2:.1f} speckle patterns')
 
     def histogram(self, normalized=True):
         self.reload()
