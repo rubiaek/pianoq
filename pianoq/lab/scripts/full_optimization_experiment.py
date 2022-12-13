@@ -10,6 +10,7 @@ from pianoq.lab.asi_cam import ASICam
 from pianoq.lab.photon_scan import PhotonScanner
 from pianoq.lab.piano_optimization import PianoOptimization
 from pianoq.lab.thorlabs_motor import ThorlabsKcubeStepper, ThorlabsKcubeDC
+from pianoq.lab.time_tagger import QPTimeTagger
 from pianoq.simulations.calc_fiber_modes import get_modes_FG010LDA
 from pianoq.lab.Edac40 import Edac40
 from pianoq.misc.misc import retry_if_exception
@@ -39,9 +40,12 @@ class OptimizationExperiment(object):
         print('got ASI camera')
         self.asi_cam.set_gain(0)
         # self.asi_cam.set_roi(*self.config['ASI_ROI']) # the elliptec stage moves the correct place to look at
-        self.photon_counter = PhotonCounter(integration_time=self.config['piano_integration_time'])
+        if self.config['is_time_tagger']:
+            self.photon_counter = QPTimeTagger(integration_time=self.config['speckle_scan_integration_time'],
+                                               coin_window=self.config['coin_window'])
+        else:
+            self.photon_counter = PhotonCounter(integration_time=self.config['piano_integration_time'])
         print('got photon counter')
-
 
     def make_dir(self):
         # dirs and paths
@@ -49,7 +53,6 @@ class OptimizationExperiment(object):
         self.dir_path = f"{LOGS_DIR}\\{self.timestamp}"
         os.mkdir(self.dir_path)
         print(f"Results will be saved in Here: {self.dir_path}")
-
 
     def run(self, comment=''):
         self.optimization_no = 1
@@ -80,7 +83,12 @@ class OptimizationExperiment(object):
                 self.photon_counter.close()
                 time.sleep(1)
 
-        self.photon_counter = PhotonCounter(integration_time=time_sec)
+        if self.config['is_time_tagger']:
+            self.photon_counter = QPTimeTagger(integration_time=self.config['speckle_scan_integration_time'],
+                                               coin_window=self.config['coin_window'])
+        else:
+            self.photon_counter = PhotonCounter(integration_time=time_sec)
+
 
     def randomize_dac(self):
         amps = np.random.rand(40)
@@ -107,14 +115,18 @@ class OptimizationExperiment(object):
 
     def piano_optimization(self):
         print('### Running piano optimization ###')
-        po = self._single_optimization()
+        po, is_interupt = self._single_optimization()
         while True:
+            if is_interupt:
+                break
+
             self.optimization_no += 1
             if np.abs(po.res.costs).max() > self.config['least_optimization_res']:
                 break
             print('!## optimization not good enough - trying again ##!')
             print(f'{np.abs(po.res.costs).max()} < {self.config["least_optimization_res"]}!')
-            po = self._single_optimization()
+
+            po, is_interupt = self._single_optimization()
 
     def _single_optimization(self):
         saveto_path = f'{self.dir_path}\\{self.timestamp}_{self.optimization_no}.pqoptimizer'
@@ -126,16 +138,22 @@ class OptimizationExperiment(object):
                                cam=self.photon_counter,
                                good_piezo_indexes=self.config['good_piezo_indexes'])
 
-        po.optimize_my_pso(n_pop=self.config['n_pop'],
-                           n_iterations=self.config['n_iterations'],
-                           stop_after_n_const_iters=self.config['stop_after_n_const_iters'],
-                           reduce_at_iterations=self.config['reduce_at_iterations'],
-                           success_cost=self.config['success_cost'])
+        try:
+            po.optimize_my_pso(n_pop=self.config['n_pop'],
+                               n_iterations=self.config['n_iterations'],
+                               stop_after_n_const_iters=self.config['stop_after_n_const_iters'],
+                               reduce_at_iterations=self.config['reduce_at_iterations'],
+                               success_cost=self.config['success_cost'])
+        except KeyboardInterrupt:
+            amps = np.ones(40) * self.dac.REST_AMP
+            amps[po.res.good_piezo_indexes] = po.res.amplitudes[-1]
+            po.dac.set_amplitudes(amps)
+            return po, True
 
         amps = np.ones(40) * self.dac.REST_AMP
         amps[po.res.good_piezo_indexes] = po.res.amplitudes[-1]
         po.dac.set_amplitudes(amps)
-        return po
+        return po, False
 
     def scan_coincidence(self, title=''):
         print(f'### Scanning {title} two-photon speckle ###')
@@ -165,7 +183,6 @@ class OptimizationExperiment(object):
 
 if __name__ == "__main__":
 
-
     good_piezzos = [0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
                              10, 11, 12, 13, 14, 15,     17, 18,
                                  21, 22, 23, 24, 25, 26, 27, 28, 29,
@@ -173,34 +190,35 @@ if __name__ == "__main__":
     config = {
         # general params
         'optimized_xy': (16.4, 16.1),
-        'should_scan_speckles' : True,
+        'should_scan_speckles': False,
 
         # piano_optimization params
-        'n_pop': 30,
+        'n_pop': 20,
         'n_iterations': 120,
         'stop_after_n_const_iters': 10,
         'reduce_at_iterations': (2,),
         'cam_type': 'SPCM',
         'good_piezo_indexes': good_piezzos[:],  # TODO: choose only a subset
-        'least_optimization_res': 320,
-        'piano_integration_time': 3,
-        'success_cost' : 320,
+        'least_optimization_res': 80,
+        'piano_integration_time': 2,
+        'success_cost': 150,
 
         # scan_optimized params
-        'start_x' : 16.2,
+        'start_x': 16.2,
         'start_y': 15.9,
-        'x_pixels': 20,
-        'y_pixels': 20,
-        'pix_size': 0.025,
-        # TODO: timetagger option
+        'x_pixels': 10,
+        'y_pixels': 10,
+        'pix_size': 0.05,
+        'is_time_tagger': False,
+        'coin_window': 1,
         # TODO: maybe after stuck so search again for a 90% percent of record and stop when you get there
 
         # hardware params
         'ASI_exposure': 2,
-        'ASI_ROI': (2900, 1800, 600, 600),
+        'ASI_ROI': (1400, 780, 400, 500),
         'DAC_max_piezo_voltage': 120,
         'DAC_SLEEP_AFTER_SEND' : 0.3,
-        'speckle_scan_integration_time': 10,
+        'speckle_scan_integration_time': 6,
         'focus_scan_integration_time': 4,
     }
 
@@ -217,9 +235,8 @@ if __name__ == "__main__":
         config['least_optimization_res'] = 150
         config['success_cost'] = 170
 
-
     oe = OptimizationExperiment(config)
-    oe.run('filter=3nm')
+    oe.run('filter=3nm_heralded')
     # config['x_pixels'] = 20
     # config['y_pixels'] = 20
     # config['pix_size'] = 0.025
