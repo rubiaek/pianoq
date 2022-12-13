@@ -56,7 +56,7 @@ class PhotonScanner(object):
                 ph = PhotonCounter(integration_time=self.integration_time)
             close_ph = True
         else:
-            assert isinstance(ph, [PhotonCounter, QPTimeTagger])
+            assert isinstance(ph, (PhotonCounter, QPTimeTagger))
             self.integration_time = ph.integration_time
             close_ph = False
 

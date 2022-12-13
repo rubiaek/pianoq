@@ -116,5 +116,6 @@ def main(is_timetagger=True, integration_time=5, coin_window=1e-9, saveto_path=N
             res.coincidences = coincidences
             res.saveto(saveto_path)
 
+
 if __name__ == "__main__":
-    main(is_timetagger=False, integration_time=7, coin_window=4e-9, saveto_path=None, run_name='filter=10nm_no_ND_heralded_D=105um')
+    main(is_timetagger=False, integration_time=5, coin_window=4e-9, saveto_path=None, run_name='filter=10nm_no_ND_heralded_D=105um')
