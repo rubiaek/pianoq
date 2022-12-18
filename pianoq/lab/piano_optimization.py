@@ -4,6 +4,7 @@ import numpy as np
 from pianoq.lab.photon_counter import PhotonCounter
 
 from pianoq.lab.asi_cam import ASICam
+from pianoq.lab.time_tagger import QPTimeTagger
 from pianoq.misc.borders import Borders
 from pianoq.lab.Edac40 import Edac40
 from pianoq.lab.VimbaCamera import VimbaCamera
@@ -31,6 +32,11 @@ class PianoOptimization(object):
             self.cam.set_gain(400)
         elif self.cam_type == 'SPCM':
             self.cam = cam or PhotonCounter(integration_time=initial_exposure_time)
+        elif self.cam_type == 'timetagger':
+            if cam:
+                self.cam = cam or QPTimeTagger(integration_time=initial_exposure_time)
+            else:
+                PhotonCounter(integration_time=initial_exposure_time)
 
         self.initial_exposure_time = initial_exposure_time
         self.scaling_exposure_factor = 1
@@ -82,6 +88,7 @@ class PianoOptimization(object):
                                         success_cost=success_cost)
 
         self.res.random_average_cost = self.optimizer.random_average_cost
+        self.res.n_for_average_cost = self.optimizer.n_for_average_cost
         self.res.n_pop = n_pop
         self.res.n_iterations = n_iterations
         self.res.stop_after_n_const_iters = stop_after_n_const_iters
@@ -90,7 +97,7 @@ class PianoOptimization(object):
         time_per_iteration = self.dac.SLEEP_AFTER_SEND
         if self.cam_type == 'ASI':
             time_per_iteration += self.cam.get_exposure_time()
-        elif self.cam_type == 'SPCM':
+        elif self.cam_type in ('SPCM', 'timetagger'):
             time_per_iteration += self.cam.integration_time
 
         print(f"Actual amount of iterations is: {self.optimizer.amount_of_micro_iterations()}.\n"
@@ -126,11 +133,13 @@ class PianoOptimization(object):
         real_amps = np.ones(40) * self.dac.REST_AMP
         real_amps[self.good_piezo_indexes] = amps
         self.dac.set_amplitudes(real_amps)
+        cost = 0; im = None; real_coin_std = 0
 
         if self.cam_type in ['ASI', 'vimba']:
             im = self.cam.get_image()
             cost = self.cost_function(im)
             print(f"{self.current_micro_iter}. cost: {cost:.3f}")
+
         elif self.cam_type == 'SPCM':
             datas, stds, actual_exp_time = self.cam.read()
             datas = datas/actual_exp_time
@@ -142,11 +151,24 @@ class PianoOptimization(object):
             cost = -real_coin
             im = None
             print(f"{self.current_micro_iter}. cost: {cost:.2f}+-{real_coin_std:.2f}")
+        elif self.cam_type == 'timetagger':
+            single1, single2, coincidence = self.cam.read_interesting()
+            accidentals = single1 * single2 * 2 * self.cam.coin_window
+            real_coin = coincidence - accidentals
+            real_coin_std = (np.sqrt(coincidence * self.cam.integration_time)) / self.cam.integration_time
+            cost = -real_coin
+            im = None
+            print(f"{self.current_micro_iter}. cost: {cost:.2f}+-{real_coin_std:.2f}")
+
+        self.res.all_costs.append(cost)
+        self.res.all_costs_std.append(real_coin_std)
+        self.res.all_amplitudes.append(amps)
+        self._save_result()
 
         self.current_micro_iter += 1
         self._fix_exposure(im)
 
-        return cost, im
+        return cost, real_coin_std, im
 
     def cost_function_roi(self, im):
         im = im[self.roi]
@@ -178,12 +200,13 @@ class PianoOptimization(object):
         else:
             pass
 
-    def new_best_callback(self, global_best_cost, global_best_positions, im):
+    def new_best_callback(self, global_best_cost, cost_std, global_best_positions, im):
         now = datetime.datetime.now()
         delta = now - self.start_time
         self.res.timestamps.append(delta.total_seconds())
 
         self.res.costs.append(global_best_cost)
+        self.res.costs_std.append(cost_std)
         self.res.amplitudes.append(global_best_positions)
         self.res.images.append(im)
 
