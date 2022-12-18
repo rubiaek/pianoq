@@ -90,8 +90,8 @@ class OptimizationExperiment(object):
             self.photon_counter = PhotonCounter(integration_time=time_sec)
 
     def randomize_dac(self):
-        amps = np.random.rand(40)
-        self.dac.set_amplitudes(amps)
+        # amps = np.random.rand(40)
+        self.dac.set_amplitudes(0.5)
         time.sleep(2)
 
     def save_config(self, comment=''):
@@ -196,16 +196,16 @@ if __name__ == "__main__":
         'stop_after_n_const_iters': 10,
         'reduce_at_iterations': (1,),
         'good_piezo_indexes': good_piezzos[:],  # TODO: choose only a subset
-        'start_x': 16.3,
+        'start_x': 16.25,
         'start_y': 16,
         'ASI_ROI': (1400, 780, 400, 500),
         'DAC_max_piezo_voltage': 120,
         'DAC_SLEEP_AFTER_SEND': 0.3,
 
         # optimization
-        'optimized_xy': (16.55, 16.25),
-        'least_optimization_res': 200,
-        'success_cost': 280,
+        'optimized_xy': (16.575, 16.25),
+        'least_optimization_res': 250,
+        'success_cost': 300,
 
         # Resolution
         'x_pixels': 20,
