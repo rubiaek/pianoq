@@ -89,7 +89,6 @@ class OptimizationExperiment(object):
         else:
             self.photon_counter = PhotonCounter(integration_time=time_sec)
 
-
     def randomize_dac(self):
         amps = np.random.rand(40)
         self.dac.set_amplitudes(amps)
@@ -107,11 +106,11 @@ class OptimizationExperiment(object):
 
     def take_asi_pic(self, title=''):
         self.switcher.backwards()
-        time.sleep(0.5)
+        time.sleep(1)
         image_path = f'{self.dir_path}\\{self.timestamp}_{title}.fits'
         self.asi_cam.save_image(image_path, comment=title)
         self.switcher.forwards()
-        time.sleep(0.5)
+        time.sleep(1)
 
     def piano_optimization(self):
         print('### Running piano optimization ###')
@@ -130,10 +129,12 @@ class OptimizationExperiment(object):
 
     def _single_optimization(self):
         saveto_path = f'{self.dir_path}\\{self.timestamp}_{self.optimization_no}.pqoptimizer'
+        cam_type = 'timetagger' if self.config['is_time_tagger'] else 'SPCM'
+
         po = PianoOptimization(saveto_path=saveto_path,
                                initial_exposure_time=self.config['piano_integration_time'],
                                cost_function=lambda x: -x,
-                               cam_type=self.config['cam_type'],  # SPCM or timetagger
+                               cam_type=cam_type,
                                dac=self.dac,
                                cam=self.photon_counter,
                                good_piezo_indexes=self.config['good_piezo_indexes'])
@@ -166,7 +167,8 @@ class OptimizationExperiment(object):
                                 self.config['y_pixels'],
                                 self.config['pix_size'],
                                 self.config['pix_size'],
-                                saveto_path=saveto_path)
+                                saveto_path=saveto_path,
+                                coin_window=self.photon_counter.coin_window)
         single1s, single2s, coincidences = scanner.scan(ph=self.photon_counter,
                                                         x_motor=self.x_motor,
                                                         y_motor=self.y_motor)
@@ -184,42 +186,45 @@ class OptimizationExperiment(object):
 if __name__ == "__main__":
 
     good_piezzos = [0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
-                             10, 11, 12, 13, 14, 15,     17, 18,
-                                 21, 22, 23, 24, 25, 26, 27, 28, 29,
-                             30, 31, 32, 33, 34, 35, 36, 37, 38, 39]
+                    10, 11, 12, 13, 14, 15,     17, 18,
+                        21, 22, 23, 24, 25, 26, 27, 28, 29,
+                    30, 31, 32, 33, 34, 35, 36, 37, 38, 39]
     config = {
-        # general params
-        'optimized_xy': (16.4, 16.1),
-        'should_scan_speckles': False,
-
-        # piano_optimization params
+        # uninteresting params
         'n_pop': 20,
         'n_iterations': 120,
         'stop_after_n_const_iters': 10,
-        'reduce_at_iterations': (2,),
-        'cam_type': 'SPCM',
+        'reduce_at_iterations': (1,),
         'good_piezo_indexes': good_piezzos[:],  # TODO: choose only a subset
-        'least_optimization_res': 80,
-        'piano_integration_time': 2,
-        'success_cost': 150,
-
-        # scan_optimized params
-        'start_x': 16.2,
-        'start_y': 15.9,
-        'x_pixels': 10,
-        'y_pixels': 10,
-        'pix_size': 0.05,
-        'is_time_tagger': False,
-        'coin_window': 1,
-        # TODO: maybe after stuck so search again for a 90% percent of record and stop when you get there
-
-        # hardware params
-        'ASI_exposure': 2,
+        'start_x': 16.3,
+        'start_y': 16,
         'ASI_ROI': (1400, 780, 400, 500),
         'DAC_max_piezo_voltage': 120,
-        'DAC_SLEEP_AFTER_SEND' : 0.3,
-        'speckle_scan_integration_time': 6,
-        'focus_scan_integration_time': 4,
+        'DAC_SLEEP_AFTER_SEND': 0.3,
+
+        # optimization
+        'optimized_xy': (16.55, 16.25),
+        'least_optimization_res': 200,
+        'success_cost': 280,
+
+        # Resolution
+        'x_pixels': 20,
+        'y_pixels': 20,
+        'pix_size': 0.025,
+        # 'x_pixels': 10,
+        # 'y_pixels': 10,
+        # 'pix_size': 0.05,
+
+        # Integration times
+        'should_scan_speckles': True,
+        'piano_integration_time': 2,
+        'speckle_scan_integration_time': 5,
+        'focus_scan_integration_time': 3,
+        'ASI_exposure': 6,
+
+        # Timetagger
+        'is_time_tagger': True,
+        'coin_window': 1e-9,
     }
 
     is_test = False
@@ -234,9 +239,10 @@ if __name__ == "__main__":
         config['n_iterations'] = 5
         config['least_optimization_res'] = 150
         config['success_cost'] = 170
+        config['is_time_tagger'] = True
 
     oe = OptimizationExperiment(config)
-    oe.run('filter=3nm_heralded')
+    oe.run('filter=3nm_heralded_timetagger')
     # config['x_pixels'] = 20
     # config['y_pixels'] = 20
     # config['pix_size'] = 0.025

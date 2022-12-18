@@ -25,6 +25,15 @@ class QPTimeTagger(object):
         self.counter = TimeTagger.Counter(tagger=self.tagger, channels=[1, 2, self.coin_virtual_channel.getChannel()],
                                           binwidth=self.integration_time * 1e12, n_values=1)
 
+    def read(self):
+        # This is so it will have the same API as the regular photon counter
+        self.counter.clear()
+        time.sleep(0.1)  # Need to sleep a bit more than him so the data will get here
+        time.sleep(self.integration_time)
+        data = self.counter.getDataNormalized()
+        single1, single2, coin = data
+        return [single1[0], single2[0], None, None, coin[0], None, None, None]
+
     def read_interesting(self):
         self.counter.clear()
         time.sleep(0.1)  # Need to sleep a bit more than him so the data will get here
@@ -35,3 +44,4 @@ class QPTimeTagger(object):
 
     def close(self):
         TimeTagger.freeTimeTagger(self.tagger)
+        time.sleep(0.2)

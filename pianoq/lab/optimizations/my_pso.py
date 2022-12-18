@@ -19,8 +19,8 @@ class Swarm(object):
 
         self.particles = []
         self.global_best_positions = ((self.upper_bound - self.lower_bound) / 2) * np.ones(self.n_var)
-        self.global_best_cost, im = cost_func(self.global_best_positions)
-        self.optimizer.new_best_callback(self.global_best_cost, self.global_best_positions, im)
+        self.global_best_cost, cost_std, im = cost_func(self.global_best_positions)
+        self.optimizer.new_best_callback(self.global_best_cost, cost_std, self.global_best_positions, im)
         self.best_particle = None
 
         self.iterations_since_restart_occured = 0
@@ -132,7 +132,7 @@ class Particle(object):
         self.positions = np.clip(self.positions, self.swarm.lower_bound, self.swarm.upper_bound)
 
     def evaluate(self):
-        cost, im = self.swarm.cost_func(self.positions)
+        cost, cost_std, im = self.swarm.cost_func(self.positions)
         self.cost = cost
         if self.cost < self.best_cost:
             self.best_cost = self.cost
@@ -142,7 +142,7 @@ class Particle(object):
             self.swarm.global_best_cost = self.best_cost
             self.swarm.global_best_positions = self.best_positions
             self.swarm.update_best_particle(self)
-            self.swarm.optimizer.new_best_callback(self.swarm.global_best_cost, self.swarm.global_best_positions, im)
+            self.swarm.optimizer.new_best_callback(self.swarm.global_best_cost, cost_std, self.swarm.global_best_positions, im)
 
             if self.swarm.optimizer.success_cost is not None and np.abs(self.cost) > np.abs(self.swarm.optimizer.success_cost):
                 self.swarm.end_now = True
@@ -154,7 +154,7 @@ class MyPSOOptimizer(object):
                  w=1, wdamp=0.99, c1=1.5, c2=2,
                  timeout=np.inf, stop_early=True, stop_after_n_const_iter=8,
                  vary_popuation=True, reduce_at_iterations=None, sample_func=None,
-                 quiet=False, success_cost=None):
+                 quiet=False, success_cost=None, n_for_average_cost=30):
 
         self.cost_function = cost_function
         self.n_iterations = n_iterations
@@ -180,6 +180,7 @@ class MyPSOOptimizer(object):
                            w=w, wdamp=wdamp, c1=c1, c2=c2,
                            sample_func=sample_func)
 
+        self.n_for_average_cost = n_for_average_cost
         self.random_average_cost = self.get_random_average_cost()
 
     def optimize(self):
@@ -222,13 +223,13 @@ class MyPSOOptimizer(object):
     def get_random_average_cost(self):
         self.log(f'Initializing random average cost')
         cost = 0
-        n = 20
-        for i in range(n):
+
+        for i in range(self.n_for_average_cost):
             amps = self.swarm.sample_func(self.swarm.n_var)
-            costt, im = self.swarm.cost_func(amps)
+            costt, cost_std, im = self.swarm.cost_func(amps)
             cost += costt
 
-        return cost / n
+        return cost / self.n_for_average_cost
 
     def amount_of_micro_iterations(self):
         if len(self.reduce_at_iterations) == 0:
