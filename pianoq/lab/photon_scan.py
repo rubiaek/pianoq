@@ -121,7 +121,7 @@ class PhotonScanner(object):
                 print(f'dur: {int(duration_till_now)}. pix: {i}, {j}. Singles1: {self.single1s[i, j]:.0f}. '
                       f'Singles2: {self.single2s[i, j]:.0f}. Coincidence: {self.coincidences[i, j]:.0f}.')
 
-            self._save_result()
+                self._save_result()
 
             y_motor.move_relative(self.pixel_size_y)
             x_motor.move_absolute(self.start_x)

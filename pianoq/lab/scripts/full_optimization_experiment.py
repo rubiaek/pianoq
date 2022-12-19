@@ -84,7 +84,7 @@ class OptimizationExperiment(object):
                 time.sleep(1)
 
         if self.config['is_time_tagger']:
-            self.photon_counter = QPTimeTagger(integration_time=self.config['speckle_scan_integration_time'],
+            self.photon_counter = QPTimeTagger(integration_time=time_sec,
                                                coin_window=self.config['coin_window'])
         else:
             self.photon_counter = PhotonCounter(integration_time=time_sec)
@@ -196,30 +196,30 @@ if __name__ == "__main__":
         'stop_after_n_const_iters': 10,
         'reduce_at_iterations': (1,),
         'good_piezo_indexes': good_piezzos[:],  # TODO: choose only a subset
-        'start_x': 16.25,
-        'start_y': 16,
+        'start_x': 16.1,
+        'start_y': 15.875,
         'ASI_ROI': (1400, 780, 400, 500),
         'DAC_max_piezo_voltage': 120,
         'DAC_SLEEP_AFTER_SEND': 0.3,
 
         # optimization
-        'optimized_xy': (16.575, 16.25),
-        'least_optimization_res': 250,
-        'success_cost': 300,
+        'optimized_xy': (16.475, 16.25),
+        'least_optimization_res': 290,
+        'success_cost': 360,
 
         # Resolution
-        'x_pixels': 20,
-        'y_pixels': 20,
+        'x_pixels': 30,
+        'y_pixels': 30,
         'pix_size': 0.025,
         # 'x_pixels': 10,
         # 'y_pixels': 10,
         # 'pix_size': 0.05,
 
         # Integration times
-        'should_scan_speckles': True,
+        'should_scan_speckles': False,
         'piano_integration_time': 2,
-        'speckle_scan_integration_time': 5,
-        'focus_scan_integration_time': 3,
+        'speckle_scan_integration_time': 2,
+        'focus_scan_integration_time': 2,
         'ASI_exposure': 6,
 
         # Timetagger
@@ -242,7 +242,8 @@ if __name__ == "__main__":
         config['is_time_tagger'] = True
 
     oe = OptimizationExperiment(config)
-    oe.run('filter=3nm_heralded_timetagger')
+    oe.run('filter=3nm_not_heralded_timetagger')
+
     # config['x_pixels'] = 20
     # config['y_pixels'] = 20
     # config['pix_size'] = 0.025
