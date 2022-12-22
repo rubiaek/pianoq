@@ -204,8 +204,8 @@ if __name__ == "__main__":
 
         # optimization
         'optimized_xy': (16.475, 16.25),
-        'least_optimization_res': 290,
-        'success_cost': 360,
+        'least_optimization_res': 50,
+        'success_cost': 90,
 
         # Resolution
         'x_pixels': 30,
@@ -216,10 +216,10 @@ if __name__ == "__main__":
         # 'pix_size': 0.05,
 
         # Integration times
-        'should_scan_speckles': False,
-        'piano_integration_time': 2,
-        'speckle_scan_integration_time': 2,
-        'focus_scan_integration_time': 2,
+        'should_scan_speckles': True,
+        'piano_integration_time': 7,
+        'speckle_scan_integration_time': 7,
+        'focus_scan_integration_time': 7,
         'ASI_exposure': 6,
 
         # Timetagger
@@ -252,7 +252,6 @@ if __name__ == "__main__":
     # config['should_scan_speckles'] = True
     # oe.run('filter=80nm')
 
-    # config['focus_scan_integration_time'] = 4
     # oe.run('filter=80nm')
     # config['x_pixels'] = 10
     # config['y_pixels'] = 10
