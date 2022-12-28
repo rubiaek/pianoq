@@ -41,8 +41,14 @@ class OptimizationExperiment(object):
         self.asi_cam.set_gain(0)
         # self.asi_cam.set_roi(*self.config['ASI_ROI']) # the elliptec stage moves the correct place to look at
         if self.config['is_time_tagger']:
-            self.photon_counter = QPTimeTagger(integration_time=self.config['speckle_scan_integration_time'],
-                                               coin_window=self.config['coin_window'])
+            if not self.config['is_double_spot']:
+                self.photon_counter = QPTimeTagger(integration_time=self.config['speckle_scan_integration_time'],
+                                                   coin_window=self.config['coin_window'])
+            else:
+                self.photon_counter = QPTimeTagger(integration_time=self.config['speckle_scan_integration_time'],
+                                                   coin_window=self.config['coin_window'],
+                                                   single_channels=(1, 2, 4),
+                                                   coin_channels=((1, 2), (1, 4)))
         else:
             self.photon_counter = PhotonCounter(integration_time=self.config['speckle_scan_integration_time'])
         print('got photon counter')
@@ -176,7 +182,8 @@ class OptimizationExperiment(object):
                                 self.config['pix_size'],
                                 self.config['pix_size'],
                                 saveto_path=saveto_path,
-                                coin_window=self.photon_counter.coin_window)
+                                coin_window=self.photon_counter.coin_window,
+                                is_double_spot=self.config['is_double_spot'])
         single1s, single2s, coincidences = scanner.scan(ph=self.photon_counter,
                                                         x_motor=self.x_motor,
                                                         y_motor=self.y_motor)
@@ -214,6 +221,7 @@ if __name__ == "__main__":
         'optimized_xy': (16.475, 16.25),
         'least_optimization_res': 95,
         'success_cost': 110,
+        'is_double_spot': False,
 
         # Resolution
         'x_pixels': 30,

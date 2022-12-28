@@ -61,6 +61,12 @@ class QPTimeTagger(object):
         data = [i[0] for i in data]
         return data
 
+    def read_double_spot(self):
+        # This here assumes that whoever created the timetagger instance created it with the correct channels
+        # (e.g. 3 single counts, and two coincidence counters), so what we expect to return here is:
+        # s1, s2, s3, c1, c2
+        return self.read_interesting()
+
     def close(self):
         TimeTagger.freeTimeTagger(self.tagger)
         time.sleep(0.2)

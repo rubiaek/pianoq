@@ -18,7 +18,7 @@ class PhotonScanner(object):
     best_y = 16.9
 
     def __init__(self, integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
-                 run_name='_scan', saveto_path=None, coin_window=4e-9, is_timetagger=False):
+                 run_name='_scan', saveto_path=None, coin_window=4e-9, is_timetagger=False, is_double_spot=False):
         self.start_x = start_x or self.best_x - ((x_pixels-1)*pixel_size_x) / 2
         self.start_y = start_y or self.best_y - ((y_pixels-1)*pixel_size_y) / 2
 
@@ -32,6 +32,7 @@ class PhotonScanner(object):
         self.saveto_path = saveto_path
         self.coin_window = coin_window
         self.is_timetagger = is_timetagger
+        self.is_double_spot = is_double_spot
 
         self.X = np.linspace(self.start_x, self.start_x+(self.x_pixels-1)*self.pixel_size_x, self.x_pixels)
         self.Y = np.linspace(self.start_y, self.start_y+(self.y_pixels-1)*self.pixel_size_y, self.y_pixels)
@@ -39,11 +40,14 @@ class PhotonScanner(object):
 
         self.single1s = np.zeros((self.y_pixels, self.x_pixels))
         self.single2s = np.zeros((self.y_pixels, self.x_pixels))
+        self.single3s = np.zeros((self.y_pixels, self.x_pixels))
         self.coincidences = np.zeros((self.y_pixels, self.x_pixels))
+        self.coincidences2 = np.zeros((self.y_pixels, self.x_pixels))
 
         self.result = ScanResult(X=self.X, Y=self.Y, integration_time=self.integration_time)
         self.result.coin_window = self.coin_window
         self.result.is_timetagger = self.is_timetagger
+        self.result.is_double_spot = self.is_double_spot
         self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
         self.start_time = time.time()
 
@@ -104,7 +108,6 @@ class PhotonScanner(object):
 
         # TODO: we need to follow both the absulote value in mm, and also the relevant discreet index in matrix
 
-
     def _linear(self, x_motor, y_motor, ph):
         print('Moving to starting position...')
         x_motor.move_absolute(self.start_x)
@@ -116,7 +119,12 @@ class PhotonScanner(object):
         for i in range(self.y_pixels):
             for j in range(self.x_pixels):
                 x_motor.move_relative(self.pixel_size_x)
-                self.single1s[i, j], self.single2s[i, j], self.coincidences[i, j] = ph.read_interesting()
+                if not self.is_double_spot:
+                    self.single1s[i, j], self.single2s[i, j], self.coincidences[i, j] = ph.read_interesting()
+                else:
+                    self.single1s[i, j], self.single2s[i, j], self.single3s[i, j], \
+                        self.coincidences[i, j], self.coincidences2[i, j] = ph.read_double_spot()
+
                 duration_till_now = time.time() - self.start_time
                 print(f'dur: {int(duration_till_now)}. pix: {i}, {j}. Singles1: {self.single1s[i, j]:.0f}. '
                       f'Singles2: {self.single2s[i, j]:.0f}. Coincidence: {self.coincidences[i, j]:.0f}.')
@@ -128,8 +136,10 @@ class PhotonScanner(object):
 
     def _save_result(self):
         self.result.coincidences = self.coincidences
+        self.result.coincidences2 = self.coincidences2
         self.result.single1s = self.single1s
         self.result.single2s = self.single2s
+        self.result.single3s = self.single3s
         saveto_path = self.saveto_path or f"{LOGS_DIR}\\{self.timestamp}_scan_{self.run_name}.scan"
         self.result.saveto(saveto_path)
 

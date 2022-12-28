@@ -47,6 +47,13 @@ class PhotonCounter(object):
 
         return single1, single2, coincidence
 
+    def read_double_spot(self):
+        datas, stds, actual_exp_time = self.read()
+        datas = datas/actual_exp_time
+        single1, single2, single3, coincidence, coincidence2 = datas[0], datas[1], datas[2], datas[4], datas[6] # TODO: is it really 6?
+
+        return single1, single2, single3, coincidence, coincidence2
+
     def read(self):
         """returns:
         Format of raw: \xff - 40 bytes of pkt - \xff - 40 bytes of pkt etc.
