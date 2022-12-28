@@ -105,7 +105,7 @@ def main(is_timetagger=True, integration_time=5, coin_window=1e-9, saveto_path=N
     coincidences = []
     stds = []
 
-    for i in range(1000):
+    for i in range(5000):
         amps = np.random.rand(40)
         dac.set_amplitudes(amps)
 
@@ -123,4 +123,4 @@ def main(is_timetagger=True, integration_time=5, coin_window=1e-9, saveto_path=N
 
 
 if __name__ == "__main__":
-    main(is_timetagger=False, integration_time=5, coin_window=4e-9, saveto_path=None, run_name='filter=10nm_no_ND_heralded_D=105um')
+    main(is_timetagger=True, integration_time=8, coin_window=1e-9, saveto_path=None, run_name='filter=3nm_not_heralded_integration_8s')

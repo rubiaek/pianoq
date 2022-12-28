@@ -44,7 +44,7 @@ class OptimizationExperiment(object):
             self.photon_counter = QPTimeTagger(integration_time=self.config['speckle_scan_integration_time'],
                                                coin_window=self.config['coin_window'])
         else:
-            self.photon_counter = PhotonCounter(integration_time=self.config['piano_integration_time'])
+            self.photon_counter = PhotonCounter(integration_time=self.config['speckle_scan_integration_time'])
         print('got photon counter')
 
     def make_dir(self):
@@ -75,6 +75,13 @@ class OptimizationExperiment(object):
         self.scan_coincidence('optimized')
         self.take_asi_pic('singles_after_scan')
 
+    def only_speckles(self, num, amps=None):
+        self.randomize_dac(amps=amps)
+        self.take_asi_pic(f'{num}_singles_before')
+
+        self.set_photon_integration_time(self.config['speckle_scan_integration_time'])
+        self.scan_coincidence(f'{num}_speckles')
+
     def set_photon_integration_time(self, time_sec):
         if hasattr(self, 'photon_counter'):
             if self.photon_counter.integration_time == time_sec:
@@ -89,9 +96,10 @@ class OptimizationExperiment(object):
         else:
             self.photon_counter = PhotonCounter(integration_time=time_sec)
 
-    def randomize_dac(self):
-        # amps = np.random.rand(40)
-        self.dac.set_amplitudes(0.5)
+    def randomize_dac(self, amps=None):
+        if amps is None:
+            amps = np.random.rand(40)
+        self.dac.set_amplitudes(amps)
         time.sleep(2)
 
     def save_config(self, comment=''):
@@ -204,8 +212,8 @@ if __name__ == "__main__":
 
         # optimization
         'optimized_xy': (16.475, 16.25),
-        'least_optimization_res': 50,
-        'success_cost': 90,
+        'least_optimization_res': 95,
+        'success_cost': 110,
 
         # Resolution
         'x_pixels': 30,
@@ -217,10 +225,10 @@ if __name__ == "__main__":
 
         # Integration times
         'should_scan_speckles': True,
-        'piano_integration_time': 7,
-        'speckle_scan_integration_time': 7,
-        'focus_scan_integration_time': 7,
-        'ASI_exposure': 6,
+        'speckle_scan_integration_time': 10,
+        'piano_integration_time': 8,
+        'focus_scan_integration_time': 8,
+        'ASI_exposure': 8,
 
         # Timetagger
         'is_time_tagger': True,
@@ -237,12 +245,54 @@ if __name__ == "__main__":
         config['y_pixels'] = 3
         config['n_pop'] = 10
         config['n_iterations'] = 5
-        config['least_optimization_res'] = 150
-        config['success_cost'] = 170
+        config['least_optimization_res'] = 30
+        config['success_cost'] = 30
         config['is_time_tagger'] = True
 
     oe = OptimizationExperiment(config)
-    oe.run('filter=3nm_not_heralded_timetagger')
+    oe.make_dir()
+    oe.save_config('filter=3nm_not_heralded_timetagger')
+
+    amps1 = np.array([0.83357994, 0.39224408, 0.41441308, 0.15516689, 0.70036006, 0.98088613, 0.88474672, 0.78113352,
+                      0.59242347, 0.98887676, 0.8706055 , 0.15708818, 0.24602039, 0.73411619, 0.03548199, 0.30846987,
+                      0.75455282, 0.31262412, 0.02826436, 0.98762586, 0.98371481, 0.10334449, 0.64105051, 0.8740824 ,
+                      0.95068944, 0.6359265 , 0.88492005, 0.60217885, 0.85960322, 0.36179254,  0.66965264, 0.03358464,
+                      0.38582211, 0.12157797, 0.39859201, 0.15876357, 0.74726248, 0.14177746, 0.66688881, 0.08410164])
+    oe.only_speckles(1, amps=amps1)
+
+    amps2 = np.array([0.17929963, 0.91725948, 0.62837971, 0.35926421, 0.52457445,
+                      0.50032346, 0.52360799, 0.63298814, 0.48991985, 0.25620117,
+                      0.23564381, 0.37759127, 0.59253443, 0.50767685, 0.71647513,
+                      0.23795071, 0.45647334, 0.95398713, 0.03241427, 0.93438695,
+                      0.20218884, 0.47123774, 0.39669371, 0.67793616, 0.69133092,
+                      0.90560646, 0.06747508, 0.15943738, 0.83506727, 0.30725371,
+                      0.51799586, 0.64538923, 0.38107098, 0.80742625, 0.64344902,
+                      0.37524358, 0.44895057, 0.32343932, 0.52464174, 0.06689943])
+    oe.only_speckles(2, amps=amps2)
+
+    amps3 = np.array([0.90369999, 0.4031239 , 0.70083991, 0.38862438, 0.05666885,
+                      0.26967297, 0.19852826, 0.44878666, 0.19850756, 0.48808331,
+                      0.86223603, 0.19982284, 0.44465241, 0.6487792 , 0.98987301,
+                      0.69554603, 0.5944291 , 0.49792435, 0.60744561, 0.74755432,
+                      0.93073472, 0.41079206, 0.60459128, 0.93759566, 0.64214034,
+                      0.52651186, 0.44846987, 0.56886534, 0.59470532, 0.38818707,
+                      0.23841548, 0.61289309, 0.60313843, 0.41053302, 0.98560365,
+                      0.03785898, 0.82316767, 0.77067456, 0.34004361, 0.1706042 ])
+
+    oe.only_speckles(3, amps=amps3)
+
+    oe.only_speckles(4)
+    oe.only_speckles(5)
+    oe.only_speckles(6)
+    oe.only_speckles(7)
+    oe.only_speckles(8)
+
+    # oe.run('filter=3nm_not_heralded_timetagger')
+
+    # config['speckle_scan_integration_time'] = 12
+    # config['piano_integration_time'] = 12
+    # config['focus_scan_integration_time'] = 12
+    # oe.run('filter=3nm_not_heralded_timetagger')
 
     # config['x_pixels'] = 20
     # config['y_pixels'] = 20
