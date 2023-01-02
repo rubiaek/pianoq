@@ -222,8 +222,8 @@ if __name__ == "__main__":
 
         # optimization
         'optimized_xy': (16.475, 16.25),
-        'least_optimization_res': 95,
-        'success_cost': 110,
+        'least_optimization_res': 290,
+        'success_cost': 340,
         'is_double_spot': False,
 
         # Resolution
@@ -237,8 +237,8 @@ if __name__ == "__main__":
         # Integration times
         'should_scan_speckles': True,
         'speckle_scan_integration_time': 5,
-        'piano_integration_time': 8,
-        'focus_scan_integration_time': 8,
+        'piano_integration_time': 5,
+        'focus_scan_integration_time': 5,
         'ASI_exposure': 8,
 
         # Timetagger
@@ -261,21 +261,28 @@ if __name__ == "__main__":
         config['is_time_tagger'] = True
 
     oe = OptimizationExperiment(config)
-    oe.make_dir()
-    oe.save_config('filter=3nm_heralded_timetagger_many_speckles')
 
-    oe.only_speckles(1)
-    oe.only_speckles(2)
-    oe.only_speckles(3)
-    oe.only_speckles(4)
-    oe.only_speckles(5)
-    oe.only_speckles(6)
-    oe.only_speckles(7)
-    oe.only_speckles(8)
-    oe.only_speckles(9)
-    oe.only_speckles(10)
+    # oe.make_dir()
+    # oe.save_config('filter=3nm_heralded_timetagger_many_speckles')
 
-    # oe.run('filter=3nm_not_heralded_timetagger')
+    # oe.only_speckles(1)
+    # oe.only_speckles(2)
+    # oe.only_speckles(3)
+    # oe.only_speckles(4)
+    # oe.only_speckles(5)
+    # oe.only_speckles(6)
+    # oe.only_speckles(7)
+    # oe.only_speckles(8)
+    # oe.only_speckles(9)
+    # oe.only_speckles(10)
+
+    oe.run('filter=3nm_heralded_timetagger')
+    oe.run('filter=3nm_heralded_timetagger')
+    oe.run('filter=3nm_heralded_timetagger')
+    oe.run('filter=3nm_heralded_timetagger')
+    oe.run('filter=3nm_heralded_timetagger')
+    oe.run('filter=3nm_heralded_timetagger')
+    oe.run('filter=3nm_heralded_timetagger')
 
     # config['speckle_scan_integration_time'] = 12
     # config['piano_integration_time'] = 12
