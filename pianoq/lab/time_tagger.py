@@ -1,5 +1,8 @@
 import time
-import TimeTagger
+try:
+    import TimeTagger
+except ImportError:
+    print('can\'t import TimeTagger')
 import numpy as np
 
 
