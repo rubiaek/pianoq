@@ -153,7 +153,8 @@ class OptimizationExperiment(object):
                                cam_type=cam_type,
                                dac=self.dac,
                                cam=self.photon_counter,
-                               good_piezo_indexes=self.config['good_piezo_indexes'])
+                               good_piezo_indexes=self.config['good_piezo_indexes'],
+                               is_double_spot=self.config['is_double_spot'])
 
         try:
             po.optimize_my_pso(n_pop=self.config['n_pop'],

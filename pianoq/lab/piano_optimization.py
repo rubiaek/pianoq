@@ -19,11 +19,12 @@ LOGS_DIR = 'C:\\temp'
 class PianoOptimization(object):
 
     def __init__(self, initial_exposure_time=450, saveto_path=None, roi=None, cost_function=None, cam_type='vimba', dac=None, cam=None,
-                 good_piezo_indexes=np.arange(40)):
+                 good_piezo_indexes=np.arange(40), is_double_spot=False):
         ##########   CAREFULL CHANGING THIS VOLTAGE!!! #########
         self.dac = dac or Edac40(max_piezo_voltage=120, ip=Edac40.DEFAULT_IP)
 
         self.cam_type = cam_type
+        self.is_double_spot = is_double_spot
         if self.cam_type == 'vimba':
             self.cam = VimbaCamera(DEFAULT_CAM_NO, exposure_time=initial_exposure_time)
         elif self.cam_type == 'ASI':
@@ -133,7 +134,7 @@ class PianoOptimization(object):
         real_amps = np.ones(40) * self.dac.REST_AMP
         real_amps[self.good_piezo_indexes] = amps
         self.dac.set_amplitudes(real_amps)
-        cost = 0; im = None; real_coin_std = 0
+        cost = 0; im = None; cost_std = 0
 
         if self.cam_type in ['ASI', 'vimba']:
             im = self.cam.get_image()
@@ -148,27 +149,48 @@ class PianoOptimization(object):
             accidentals = single1 * single2 * 2 * self.cam.coin_window
             real_coin = coincidence - accidentals
             real_coin_std = (np.sqrt(coincidence * actual_exp_time)) / actual_exp_time
+            cost_std = real_coin_std
             cost = -real_coin
             im = None
-            print(f"{self.current_micro_iter}. cost: {cost:.2f}+-{real_coin_std:.2f}")
+            print(f"{self.current_micro_iter}. cost: {cost:.2f}+-{cost_std:.2f}")
         elif self.cam_type == 'timetagger':
-            single1, single2, coincidence = self.cam.read_interesting()
-            accidentals = single1 * single2 * 2 * self.cam.coin_window
-            real_coin = coincidence - accidentals
-            real_coin_std = (np.sqrt(coincidence * self.cam.integration_time)) / self.cam.integration_time
-            cost = -real_coin
-            im = None
-            print(f"{self.current_micro_iter}. cost: {cost:.2f}+-{real_coin_std:.2f}")
+            if not self.is_double_spot:
+                single1, single2, coincidence = self.cam.read_interesting()
+                accidentals = single1 * single2 * 2 * self.cam.coin_window
+                real_coin = coincidence - accidentals
+                real_coin_std = (np.sqrt(coincidence * self.cam.integration_time)) / self.cam.integration_time
+                cost_std = real_coin_std
+                cost = -real_coin
+                im = None
+                print(f"{self.current_micro_iter}. cost: {cost:.2f}+-{cost_std:.2f}")
+            else:  # double spot
+                single1, single2, single4, coincidence12, coincidence14 = self.cam.read_interesting()
+                accidentals12 = single1 * single2 * 2 * self.cam.coin_window
+                accidentals14 = single1 * single4 * 2 * self.cam.coin_window
+                real_coin12 = coincidence12 - accidentals12
+                real_coin14 = coincidence14 - accidentals14
+                real_coin12_std = (np.sqrt(coincidence12 * self.cam.integration_time)) / self.cam.integration_time
+                real_coin14_std = (np.sqrt(coincidence14 * self.cam.integration_time)) / self.cam.integration_time
+
+                cost = np.sqrt(real_coin12) + np.sqrt(real_coin14)
+
+                cost_std1 = 0.5*real_coin12**(-0.5)*real_coin12_std
+                cost_std2 = 0.5*real_coin14**(-0.5)*real_coin14_std
+                cost_std = np.sqrt(cost_std1**2 + cost_std2**2)
+                cost = -cost
+
+                im = None
+                print(f"{self.current_micro_iter}. cost: {cost:.2f}+-{cost_std:.2f}")
 
         self.res.all_costs.append(cost)
-        self.res.all_costs_std.append(real_coin_std)
+        self.res.all_costs_std.append(cost_std)
         self.res.all_amplitudes.append(amps)
         self._save_result()
 
         self.current_micro_iter += 1
         self._fix_exposure(im)
 
-        return cost, real_coin_std, im
+        return cost, cost_std, im
 
     def cost_function_roi(self, im):
         im = im[self.roi]
