@@ -119,15 +119,18 @@ class PhotonScanner(object):
         for i in range(self.y_pixels):
             for j in range(self.x_pixels):
                 x_motor.move_relative(self.pixel_size_x)
+                duration_till_now = time.time() - self.start_time
+
                 if not self.is_double_spot:
                     self.single1s[i, j], self.single2s[i, j], self.coincidences[i, j] = ph.read_interesting()
+                    print(f'dur: {int(duration_till_now)}. pix: {i}, {j}. Singles1: {self.single1s[i, j]:.0f}. '
+                          f'Singles2: {self.single2s[i, j]:.0f}. Coincidence: {self.coincidences[i, j]:.0f}.')
                 else:
                     self.single1s[i, j], self.single2s[i, j], self.single3s[i, j], \
                         self.coincidences[i, j], self.coincidences2[i, j] = ph.read_double_spot()
-
-                duration_till_now = time.time() - self.start_time
-                print(f'dur: {int(duration_till_now)}. pix: {i}, {j}. Singles1: {self.single1s[i, j]:.0f}. '
-                      f'Singles2: {self.single2s[i, j]:.0f}. Coincidence: {self.coincidences[i, j]:.0f}.')
+                    print(f'dur: {int(duration_till_now)}. pix: {i}, {j}. Singles1: {self.single1s[i, j]:.0f}. '
+                          f'Singles2: {self.single2s[i, j]:.0f}. Singles3: {self.single3s[i, j]:.0f}. '
+                          f'Coincidence: {self.coincidences[i, j]:.0f}. Coincidence2: {self.coincidences2[i, j]:.0f}.')
 
                 self._save_result()
 
