@@ -7,6 +7,7 @@ try:
     _KINESIS_PATH = r'C:\Program Files\Thorlabs\Kinesis'
     py_thorlabs_ctrl.kinesis.init(_KINESIS_PATH)
     from py_thorlabs_ctrl.kinesis.motor import KCubeDCServo, KCubeStepper
+    # https://github.com/rwalle/py_thorlabs_ctrl
     from System import Decimal
 except ImportError:
     print('cant use py_thorlabs_ctrl.kinesis')
