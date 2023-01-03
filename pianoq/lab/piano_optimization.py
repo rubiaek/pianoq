@@ -172,6 +172,9 @@ class PianoOptimization(object):
                 real_coin12_std = (np.sqrt(coincidence12 * self.cam.integration_time)) / self.cam.integration_time
                 real_coin14_std = (np.sqrt(coincidence14 * self.cam.integration_time)) / self.cam.integration_time
 
+                # to avoid NANs
+                real_coin12 = max(real_coin12, 0.1)
+                real_coin14 = max(real_coin14, 0.1)
                 cost = np.sqrt(real_coin12) + np.sqrt(real_coin14)
 
                 cost_std1 = 0.5*real_coin12**(-0.5)*real_coin12_std
@@ -180,6 +183,7 @@ class PianoOptimization(object):
                 cost = -cost
 
                 im = None
+                print(f'real_coin12: {real_coin12:.2f}; real_coin14: {real_coin14:.2f}')
                 print(f"{self.current_micro_iter}. cost: {cost:.2f}+-{cost_std:.2f}")
 
         self.res.all_costs.append(cost)
