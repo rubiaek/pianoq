@@ -257,7 +257,7 @@ class MyPSOOptimizer(object):
     def best_positions(self):
         return self.swarm.global_best_positions
 
-    def default_new_best_callback(self, global_best_cost, global_best_positions, im=None):
+    def default_new_best_callback(self, global_best_cost, global_best_cost_std, global_best_positions, im=None):
         self.log(f'{self.curr_iteration}.\t cost: {global_best_cost}\t time: {(time.time()-self.start_time):2f} seconds')
 
     def log(self, msg):

@@ -21,7 +21,7 @@ class PianoPopoffSimulation(object):
         self.normalize_cost_to_tot_power = normalize_cost_to_tot_power
         self.prop_random_phases = prop_random_phases
 
-        self.pop = PopoffPRXResult(path=PopoffPRXResult.DEFAULT_PATH2)
+        self.pop = PopoffPRXResult(path=PopoffPRXResult.DEFAULT_PATH)
 
         self.pop.set_Nmodes(Nmodes)
         self.pop.normalize_TMs(method=normalize_TMs_method)  # 'svd1'
@@ -106,7 +106,6 @@ class PianoPopoffSimulation(object):
         self.n_pop = n_pop
         self.optimizer = MyPSOOptimizer(cost_function, n_pop=n_pop, n_var=self.piezo_num,
                                         n_iterations=n_iterations,
-                                        post_iteration_callback=self.post_iteration_callback,
                                         w=1, wdamp=0.99, c1=1.5, c2=2,
                                         timeout=30*60,
                                         stop_early=True, stop_after_n_const_iter=stop_after_n_const_iters,
@@ -188,7 +187,7 @@ class PianoPopoffSimulation(object):
             cost = -self._power_at_area(pix1) / tot_power
         else:
             cost = -self._power_at_area(pix1)
-        return cost
+        return cost, None, None
 
     def cost_function_pol2(self, amps):
         pix1, pix2 = self.get_pixels(amps)
@@ -345,14 +344,14 @@ class PianoPopoffSimulation(object):
 
 
 if __name__ == "__main__":
-    piano_sim = PianoPopoffSimulation(piezo_num=70, N_bends='fiber1',
-                                      normalize_cost_to_tot_power=True, prop_random_phases=True,
-                                      Nmodes=6, normalize_TMs_method='svd1')
+    piano_sim = PianoPopoffSimulation(piezo_num=37, N_bends='fiber1',
+                                      normalize_cost_to_tot_power=False, prop_random_phases=True,
+                                      Nmodes=30, normalize_TMs_method='svd1')
 
     # piano_sim.run(n_pop=60, n_iterations=500, cost_function=piano_sim.cost_function_focus, stop_after_n_const_iters=30)
     # TODO: play with this. and maybe make a func that does amps->DOP, for external usage also
     # TODO: make also a show script + registry file
-    piano_sim.run(n_pop=40, n_iterations=1000, cost_function=piano_sim.cost_function_contrast, stop_after_n_const_iters=50)
+    piano_sim.run(n_pop=40, n_iterations=1000, stop_after_n_const_iters=50)
     piano_sim.show_before_after(seperate_pols=True)
     piano_sim.show_before_after(seperate_pols=False)
     plt.show()
