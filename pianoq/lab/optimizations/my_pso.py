@@ -91,7 +91,7 @@ class Particle(object):
         self.dim = self.swarm.n_var
         self.positions = None
         self.velocities = None
-        self.cost = None
+        self.cost = 0
         self.best_positions = None
         self.best_cost = np.inf
 
@@ -130,8 +130,13 @@ class Particle(object):
         self.velocities[are_outside_indexes] = -self.velocities[are_outside_indexes]
 
         self.positions = np.clip(self.positions, self.swarm.lower_bound, self.swarm.upper_bound)
+        self.positions = np.nan_to_num(self.positions)
 
     def evaluate(self):
+        if not (np.all(-0.05 <= self.positions) and np.all(self.positions <= 1.05)):
+            print('percentages must be between 0 and 1!!')
+            print(self.positions)
+        self.positions = np.clip(self.positions, 0, 1)
         cost, cost_std, im = self.swarm.cost_func(self.positions)
         self.cost = cost
         if self.cost < self.best_cost:

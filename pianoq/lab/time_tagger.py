@@ -50,7 +50,7 @@ class QPTimeTagger(object):
     def read(self):
         # This is so it will have the same API as the regular photon counter
         self.counter.clear()
-        time.sleep(0.1)  # Need to sleep a bit more than him so the data will get here
+        time.sleep(0.15)  # Need to sleep a bit more than him so the data will get here
         time.sleep(self.integration_time)
         data = self.counter.getDataNormalized()
         single1, single2, coin = data

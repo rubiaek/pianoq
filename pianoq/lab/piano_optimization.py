@@ -172,10 +172,17 @@ class PianoOptimization(object):
                 real_coin12_std = (np.sqrt(coincidence12 * self.cam.integration_time)) / self.cam.integration_time
                 real_coin14_std = (np.sqrt(coincidence14 * self.cam.integration_time)) / self.cam.integration_time
 
+                # TEMP REMOVE ME
+                # cost_std = real_coin14_std
+                # cost = -real_coin14
+
                 # to avoid NANs
                 real_coin12 = max(real_coin12, 0.1)
                 real_coin14 = max(real_coin14, 0.1)
                 cost = np.sqrt(real_coin12) + np.sqrt(real_coin14)
+
+                too_different_fine = np.abs(real_coin12 - real_coin14) / 20  # Reduce "1" cost for every difference in 30 real_coin counts
+                cost = cost - too_different_fine
 
                 cost_std1 = 0.5*real_coin12**(-0.5)*real_coin12_std
                 cost_std2 = 0.5*real_coin14**(-0.5)*real_coin14_std
