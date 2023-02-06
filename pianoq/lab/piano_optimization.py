@@ -33,7 +33,7 @@ class PianoOptimization(object):
             self.cam.set_gain(400)
         elif self.cam_type == 'SPCM':
             self.cam = cam or PhotonCounter(integration_time=initial_exposure_time)
-        elif self.cam_type == 'timetagger':
+        elif self.cam_type == 'timetagger' or self.cam_type == 'timetagger_singles':
             if cam:
                 self.cam = cam or QPTimeTagger(integration_time=initial_exposure_time)
             else:
@@ -78,6 +78,8 @@ class PianoOptimization(object):
         self.res.cam_type = self.cam_type
 
     def optimize_my_pso(self, n_pop, n_iterations, stop_after_n_const_iters, reduce_at_iterations=(), success_cost=None):
+        vary_population = False if reduce_at_iterations == () else True
+
         self.optimizer = MyPSOOptimizer(self.cost_function_callback, n_pop=n_pop, n_var=self.num_good_piezos,
                                         n_iterations=n_iterations,
                                         new_best_callback=self.new_best_callback,
@@ -85,7 +87,7 @@ class PianoOptimization(object):
                                         w=1, wdamp=0.97, c1=1.5, c2=2.2,
                                         timeout=60*60*2,
                                         stop_early=True, stop_after_n_const_iter=stop_after_n_const_iters,
-                                        vary_popuation=True, reduce_at_iterations=reduce_at_iterations,
+                                        vary_popuation=vary_population, reduce_at_iterations=reduce_at_iterations,
                                         success_cost=success_cost)
 
         self.res.random_average_cost = self.optimizer.random_average_cost
@@ -153,7 +155,7 @@ class PianoOptimization(object):
             cost = -real_coin
             im = None
             print(f"{self.current_micro_iter}. cost: {cost:.2f}+-{cost_std:.2f}")
-        elif self.cam_type == 'timetagger':
+        elif self.cam_type == 'timetagger' or self.cam_type == 'timetagger_singles':
             if not self.is_double_spot:
                 single1, single2, coincidence = self.cam.read_interesting()
                 accidentals = single1 * single2 * 2 * self.cam.coin_window
@@ -162,6 +164,9 @@ class PianoOptimization(object):
                 cost_std = real_coin_std
                 cost = -real_coin
                 im = None
+                if self.cam_type == 'timetagger_singles':
+                    cost = -single2
+                    cost_std = (np.sqrt(single2 * self.cam.integration_time)) / self.cam.integration_time
                 print(f"{self.current_micro_iter}. cost: {cost:.2f}+-{cost_std:.2f}")
             else:  # double spot
                 single1, single2, single4, coincidence12, coincidence14 = self.cam.read_interesting()
