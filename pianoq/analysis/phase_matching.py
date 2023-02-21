@@ -17,6 +17,8 @@ T_FOR_365_MW = 91.8  # C (This way we are collinear, but also loose some signal)
 
 
 def image(s, e, normalize=False):
+    # This image plane is after f=200 and f=300 I think, so the width of sigma=30.7 pixels translates to
+    # 30.7*2*3.76*200/300 = ~155um (fit to gaussian of x^2/s^2 in intensity, at 28.2 degrees)
     dir_path = r'G:\My Drive\Projects\Quantum Piano\Results\Calibrations\SPDC\PPKTP\New-2022-10\f=250_before\Temperature\Image\*.fit'
     paths = glob.glob(dir_path)
 
@@ -58,6 +60,8 @@ def farfield(s, e, skip=1, smoothing=5):
 
 
 if __name__ == "__main__":
-    # image()
+    image(0, -1, True)
     # farfield(7, 9, 20)
     pass
+
+plt.show()
