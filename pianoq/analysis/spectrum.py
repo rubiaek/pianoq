@@ -94,6 +94,8 @@ if __name__ == "__main__":
     show_spc_dir(path)
     """
 
-    plot_new_pump_gaussian_fit()
-    plt.show()
+    # plot_new_pump_gaussian_fit()
+    # plt.show()
 
+    show_spc_dir(r'G:\My Drive\Projects\Quantum Piano\Results\SLD\Different spectral speckles with SLD and spectrometer')
+    plt.show()
