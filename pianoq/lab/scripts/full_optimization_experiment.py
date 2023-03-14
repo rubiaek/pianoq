@@ -336,7 +336,7 @@ if __name__ == "__main__":
         'success_cost': 1.1e6,
         'is_double_spot': False,
         'n_random_configurations' : 80,
-        'optimize_single_counts' : True,
+        'optimize_single_counts' : False,
 
         # Resolution
         'x_pixels': 30,
@@ -376,10 +376,10 @@ if __name__ == "__main__":
 
     # Just run full experiment
     oe.make_dir()
-    oe.save_config('filter=3nm_heralded_timetagger_direct_to_SM_fiber_optimize_singles')
+    oe.save_config('filter=3nm_heralded_timetagger_direct_to_SM_fiber_with_polarizer')
     # oe.only_speckles(1)
 
-    oe.only_optimization('filter=3nm_heralded_timetagger_direct_to_SM_fiber_optimize_singles')
+    oe.only_optimization()
 
     # oe.config['start_y'] = 16.00
     # oe.config['x_pixels'] = 30

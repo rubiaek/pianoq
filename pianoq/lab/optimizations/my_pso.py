@@ -159,7 +159,7 @@ class MyPSOOptimizer(object):
                  w=1, wdamp=0.99, c1=1.5, c2=2,
                  timeout=np.inf, stop_early=True, stop_after_n_const_iter=8,
                  vary_popuation=True, reduce_at_iterations=None, sample_func=None,
-                 quiet=False, success_cost=None, n_for_average_cost=30):
+                 quiet=False, success_cost=None, n_for_average_cost=60):
 
         self.cost_function = cost_function
         self.n_iterations = n_iterations
