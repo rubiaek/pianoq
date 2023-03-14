@@ -55,7 +55,7 @@ class PhotonScanner(object):
         if ph is None:
             print('getting photon counter...')
             if self.is_timetagger:
-                ph = QPTimeTagger(integration_time=self.integration_time, coin_window=self.coin_window)
+                ph = QPTimeTagger(integration_time=self.integration_time, coin_window=self.coin_window, single_channel_delays=(14000, 0))
             else:
                 ph = PhotonCounter(integration_time=self.integration_time)
             close_ph = True
@@ -187,18 +187,18 @@ def whole_scan(name='whole_area', integration_time=5):
     single1s, single2s, coincidences = scanner.scan()
 
 
-def middle_scan(name='middle_area', integration_time=20, is_timetagger=False, coin_window=4e-9):
+def middle_scan(name='middle_area', integration_time=5, is_timetagger=False, coin_window=4e-9):
     # pix_size = 0.05
     pix_size = 0.025
     if pix_size == 0.025:
-        start_x = 16.2
-        start_y = 15.9
-        x_pixels = 20
-        y_pixels = 20
+        start_x = 15.775
+        start_y = 16.2
+        x_pixels = 18
+        y_pixels = 18
 
     elif pix_size == 0.05:
-        start_x = 16.2
-        start_y = 15.9
+        start_x = 16.275
+        start_y = 16.05
         x_pixels = 10
         y_pixels = 10
 
@@ -243,7 +243,7 @@ if __name__ == '__main__':
     best_z = 10  # Not very accurate, but seems OK
 
     # middle_scan(integration_time=3, name='Heralding_filter=10nm', is_timetagger=True, coin_window=1e-9)
-    middle_scan(integration_time=7, name='Heralding_filter=10nm_D=105um', is_timetagger=False, coin_window=4e-9)
+    middle_scan(integration_time=8, name='fast_random_speckles_mean', is_timetagger=True, coin_window=1e-9)
     # small_scan(integration_time=1)
     # whole_scan(integration_time=3)
     # scan_1D(integration_time=0.5)

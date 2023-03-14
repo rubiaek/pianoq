@@ -1,5 +1,8 @@
 import os
+import sys
 import time
+import traceback
+
 import numpy as np
 import datetime
 import json
@@ -14,12 +17,15 @@ from pianoq.lab.time_tagger import QPTimeTagger
 from pianoq.simulations.calc_fiber_modes import get_modes_FG010LDA
 from pianoq.lab.Edac40 import Edac40
 from pianoq.misc.misc import retry_if_exception
+from pianoq.misc.flushing_file import FlushingPrintingFile
 
 LOGS_DIR = r'G:\My Drive\Projects\Quantum Piano\Results\temp'
 
 class OptimizationExperiment(object):
     def __init__(self, config=None):
         self.config = config
+        self.log_file = None
+        self.orig_stdout = sys.stdout
 
         self.get_hardware()
         # Technical
@@ -44,13 +50,13 @@ class OptimizationExperiment(object):
             if not self.config['is_double_spot']:
                 self.photon_counter = QPTimeTagger(integration_time=self.config['speckle_scan_integration_time'],
                                                    coin_window=self.config['coin_window'],
-                                                   single_channel_delays=[400, 0])  # TODO: this is in the case of heralding
+                                                   single_channel_delays=[11500, 0])
             else:
                 self.photon_counter = QPTimeTagger(integration_time=self.config['speckle_scan_integration_time'],
                                                    coin_window=self.config['coin_window'],
                                                    single_channels=(1, 2, 4),
                                                    coin_channels=((1, 2), (1, 4)),
-                                                   single_channel_delays=[400, 0, 0])  # TODO: this is in the case of heralding)
+                                                   single_channel_delays=[0, -600, 0])
         else:
             self.photon_counter = PhotonCounter(integration_time=self.config['speckle_scan_integration_time'])
         print('got photon counter')
@@ -62,26 +68,40 @@ class OptimizationExperiment(object):
         os.mkdir(self.dir_path)
         print(f"Results will be saved in Here: {self.dir_path}")
 
+    def redirect_stdout(self):
+        log_path = f'{self.dir_path}\\{self.timestamp}_log.txt'
+        self.log_file = FlushingPrintingFile(log_path, 'w', self.orig_stdout)
+        sys.stdout = self.log_file
+
     def run(self, comment=''):
-        self.optimization_no = 1
-        self.make_dir()
-        self.save_config(comment)
+        try:
+            self.optimization_no = 1
+            self.make_dir()
+            self.save_config(comment)
+            self.redirect_stdout()
 
-        self.randomize_dac()
-        self.take_asi_pic('singles_before')
+            self.randomize_dac()
+            self.take_asi_pic('singles_before')
 
-        if self.config['should_scan_speckles']:
-            self.set_photon_integration_time(self.config['speckle_scan_integration_time'])
-            self.scan_coincidence('speckles')
+            if self.config['should_scan_speckles']:
+                self.set_photon_integration_time(self.config['speckle_scan_integration_time'])
+                self.scan_coincidence('speckles')
 
-        self.set_motors()
-        self.set_photon_integration_time(self.config['piano_integration_time'])
-        self.piano_optimization()
-        self.take_asi_pic('singles_after_optimization')
+            self.set_motors()
+            if self.config['is_double_spot'] or self.config['optimize_single_counts']:
+                self.random_configurations()
 
-        self.set_photon_integration_time(self.config['focus_scan_integration_time'])
-        self.scan_coincidence('optimized')
-        self.take_asi_pic('singles_after_scan')
+            self.set_photon_integration_time(self.config['piano_integration_time'])
+            self.piano_optimization()
+            self.take_asi_pic('singles_after_optimization')
+
+            self.set_photon_integration_time(self.config['focus_scan_integration_time'])
+            self.scan_coincidence('optimized')
+            self.take_asi_pic('singles_after_scan')
+        except Exception as e:
+            print('Exception!!!')
+            print(e)
+            traceback.print_exc()
 
     def only_speckles(self, num, amps=None):
         self.randomize_dac(amps=amps)
@@ -91,16 +111,34 @@ class OptimizationExperiment(object):
         self.scan_coincidence(f'{num}_speckles')
 
     def only_optimization(self, comment=''):
-        self.make_dir()
-        self.save_config(comment)
+        # self.make_dir()
+        # self.save_config(comment)
 
         self.randomize_dac()
-        # self.take_asi_pic(f'singles_before')
+        # self.take_asi_pic(f'singles_before_{self.optimization_no}')
 
         self.set_motors()
-        # self.set_photon_integration_time(self.config['piano_integration_time'])
+        if self.config['optimize_single_counts']:
+            self.set_photon_integration_time(self.config['speckle_scan_integration_time'])
+            self.random_configurations()
+
+        self.set_photon_integration_time(self.config['piano_integration_time'])
         self.piano_optimization()
-        # self.take_asi_pic('singles_after_optimization')
+
+        if self.config['optimize_single_counts']:
+            self.set_photon_integration_time(self.config['focus_scan_integration_time'])
+            saveto_path = f'{self.dir_path}\\{self.timestamp}_final_{self.optimization_no}.randz'
+            f = open(saveto_path, 'wb')
+            s1, s2, c1 = self.photon_counter.read_interesting()
+            np.savez(f,
+                     single1s=s1,
+                     single2s=s2,
+                     single3s=0,
+                     coin1s=c1,
+                     coin2s=0)
+            f.close()
+
+        # self.take_asi_pic(f'singles_after_optimization_{self.optimization_no}')
 
 
     def set_photon_integration_time(self, time_sec):
@@ -110,11 +148,19 @@ class OptimizationExperiment(object):
             else:
                 print("NOOOOOOO I'm recreating the time tagger but without the correct parameters!!!")
                 self.photon_counter.close()
-                time.sleep(1)
+                time.sleep(2)
 
         if self.config['is_time_tagger']:
             self.photon_counter = QPTimeTagger(integration_time=time_sec,
-                                               coin_window=self.config['coin_window'])
+                                               coin_window=self.config['coin_window'],
+                                               single_channel_delays=[11500, 0])
+
+            # self.photon_counter = QPTimeTagger(integration_time=time_sec,
+            #                                    coin_window=self.config['coin_window'],
+            #                                    single_channels=(1, 2, 4),
+            #                                    coin_channels=((1, 2), (1, 4)),
+            #                                    single_channel_delays=[0, -600, 0])
+
         else:
             self.photon_counter = PhotonCounter(integration_time=time_sec)
 
@@ -144,6 +190,7 @@ class OptimizationExperiment(object):
 
     def piano_optimization(self):
         print('### Running piano optimization ###')
+        self.optimization_no += 1
         po, is_interupt = self._single_optimization()
         while True:
             if is_interupt:
@@ -157,9 +204,54 @@ class OptimizationExperiment(object):
 
             po, is_interupt = self._single_optimization()
 
+    def random_configurations(self):
+        print('random configurations for double spot')
+
+        single1s = []
+        single2s = []
+        single3s = []
+        coin1s = []
+        coin2s = []
+        for i in range(self.config['n_random_configurations']):
+            amps = np.random.rand(40)
+            self.dac.set_amplitudes(amps)
+
+            if self.config['is_double_spot']:
+                s1, s2, s3, c1, c2 = self.photon_counter.read_double_spot()
+            else:
+                s1, s2, c1 = self.photon_counter.read_interesting()
+                s3 = 0
+                c2 = 0
+
+            single1s.append(s1)
+            single2s.append(s2)
+            single3s.append(s3)
+            coin1s.append(c1)
+            coin2s.append(c2)
+
+        saveto_path = f'{self.dir_path}\\{self.timestamp}_N={self.config["n_random_configurations"]}_{self.optimization_no}.randz'
+        f = open(saveto_path, 'wb')
+        np.savez(f,
+                 single1s=single1s,
+                 single2s=single2s,
+                 single3s=single3s,
+                 coin1s=coin1s,
+                 coin2s=coin2s,)
+        f.close()
+
     def _single_optimization(self):
         saveto_path = f'{self.dir_path}\\{self.timestamp}_{self.optimization_no}.pqoptimizer'
         cam_type = 'timetagger' if self.config['is_time_tagger'] else 'SPCM'
+        cam = self.photon_counter
+        roi = None
+
+        if self.config['optimize_single_counts']:
+            cam_type = 'timetagger_singles'
+            # cam_type = 'ASI'
+            # cam = self.asi_cam
+            # window_size = 3
+            # roi = np.index_exp[150 - window_size: 150 + window_size,
+            #       150 - window_size: 150 + window_size]  # TODO: real ROI
 
         po = PianoOptimization(saveto_path=saveto_path,
                                initial_exposure_time=self.config['piano_integration_time'],
@@ -168,7 +260,8 @@ class OptimizationExperiment(object):
                                dac=self.dac,
                                cam=self.photon_counter,
                                good_piezo_indexes=self.config['good_piezo_indexes'],
-                               is_double_spot=self.config['is_double_spot'])
+                               is_double_spot=self.config['is_double_spot'],
+                               roi=roi)
 
         try:
             po.optimize_my_pso(n_pop=self.config['n_pop'],
@@ -213,46 +306,51 @@ class OptimizationExperiment(object):
         # self.y_motor.close()
         self.photon_counter.close()
         self.asi_cam.close()
+        if self.log_file:
+            self.log_file.close()
 
 
 if __name__ == "__main__":
 
     good_piezzos = [0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
                     10, 11, 12, 13, 14, 15,     17, 18,
-                        21, 22, 23, 24, 25, 26, 27, 28, 29,
+                            22, 23, 24, 25, 26, 27, 28, 29,
                     30, 31, 32, 33, 34, 35, 36, 37, 38, 39]
     config = {
         # uninteresting params
         'n_pop': 20,
         'n_iterations': 120,
-        'stop_after_n_const_iters': 10,
-        'reduce_at_iterations': (1,),
+        'stop_after_n_const_iters': 12,
+        'reduce_at_iterations': (),
         'good_piezo_indexes': good_piezzos[:],  # TODO: choose only a subset
-        'start_x': 16.1,
-        'start_y': 16.05,
+        'start_x': 16.2,
+        'start_y': 16.025,
         'ASI_ROI': (1400, 780, 400, 500),
         'DAC_max_piezo_voltage': 120,
         'DAC_SLEEP_AFTER_SEND': 0.3,
 
         # optimization
-        'optimized_xy': (16.45, 16.275),
-        'least_optimization_res': 31,
-        'success_cost': 32.4,
-        'is_double_spot': True,
+        # 'optimized_xy': (16.45, 16.4),
+        'optimized_xy': (16.55, 16.4),
+        'least_optimization_res': 200,
+        'success_cost': 1.1e6,
+        'is_double_spot': False,
+        'n_random_configurations' : 80,
+        'optimize_single_counts' : False,
 
         # Resolution
-        # 'x_pixels': 30,
-        # 'y_pixels': 30,
-        # 'pix_size': 0.025,
-        'x_pixels': 15,
-        'y_pixels': 15,
-        'pix_size': 0.05,
+        'x_pixels': 30,
+        'y_pixels': 30,
+        'pix_size': 0.025,
+        # 'x_pixels': 15,
+        # 'y_pixels': 15,
+        # 'pix_size': 0.05,
 
         # Integration times
         'should_scan_speckles': False,
-        'speckle_scan_integration_time': 1,
-        'piano_integration_time': 1,
-        'focus_scan_integration_time': 1,
+        'speckle_scan_integration_time': 2,
+        'piano_integration_time': 0.5,
+        'focus_scan_integration_time': 5,
         'ASI_exposure': 8,
 
         # Timetagger
@@ -277,25 +375,26 @@ if __name__ == "__main__":
     oe = OptimizationExperiment(config)
 
     # Just run full experiment
-    oe.run('filter=3nm_heralded_timetagger_two_spots')
-    oe.config['start_y'] = 16.00
-    oe.run('filter=3nm_heralded_timetagger_two_spots')
+    oe.make_dir()
+    oe.save_config('filter=3nm_heralded_timetagger_direct_to_SM_fiber_with_polarizer')
+    # oe.only_speckles(1)
 
-    oe.config['x_pixels'] = 30
-    oe.config['y_pixels'] = 30
-    oe.config['pix_size'] = 0.025
-    oe.run('filter=3nm_heralded_timetagger_two_spots')
-    oe.config['start_y'] = 16.05
-    oe.run('filter=3nm_heralded_timetagger_two_spots')
-    oe.config['start_y'] = 16.10
-    oe.run('filter=3nm_heralded_timetagger_two_spots')
-    oe.run('filter=3nm_heralded_timetagger_two_spots')
-    oe.run('filter=3nm_heralded_timetagger_two_spots')
+    oe.only_optimization()
+
+    # oe.config['start_y'] = 16.00
+    # oe.config['x_pixels'] = 30
+    # oe.config['y_pixels'] = 30
+    # oe.config['pix_size'] = 0.025
+    # oe.run('filter=3nm_heralded_timetagger_two_spots')
 
     # Only speckles
     # oe.make_dir()
-    # oe.save_config('filter=3nm_heralded_timetagger_many_speckles')
+    # oe.save_config('filter=3nm_heralded_timetagger_two_spots_100um_fiber_bundle')
     # oe.only_speckles(1)
+    # oe.only_speckles(2)
+    # oe['speckle_scan_integration_time'] = 2
+    # oe.only_speckles(3)
+    # oe.only_speckles(4)
 
     # only optimization
     # oe.only_optimization('filter=3nm_heralded_timetagger_two_spots')
