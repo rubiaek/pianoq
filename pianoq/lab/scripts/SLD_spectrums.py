@@ -13,6 +13,7 @@ class SLDSpectrumResult(QPPickleResult):
         self.integration_time = 0
         self.wavelengths = np.array([])
         self.data = []
+        self.comment = ''
 
     def show_spectrum(self, index):
         fig, ax = plt.subplots()
@@ -24,7 +25,7 @@ class SLDSpectrumResult(QPPickleResult):
         fig.show()
 
 
-def main(run_name='test', integration_time=60e-3):
+def main(run_name='test', integration_time=3e-3):
     timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
 
     saveto_path = f"G:\\My Drive\\Projects\\Quantum Piano\\Results\\SLD\\{timestamp}_SLD_statistics_{run_name}.sldqp"
@@ -33,6 +34,7 @@ def main(run_name='test', integration_time=60e-3):
     dac = Edac40(max_piezo_voltage=120)
     res = SLDSpectrumResult()
     res.integration_time = integration_time
+    res.comment = 'SLD 180mA, V polarized, single speckle, ND1.0, integration 3ms'
 
     wl, a = s.get_data()
     wl, a = wl[2400: -700], a[2400: -700]
