@@ -56,7 +56,7 @@ class SLDSpectrumResult(QPPickleResult):
         return v.std() / v.mean()
 
     def contrast_per_bandwidth(self):
-        filters = np.linspace(1, 15, 15)
+        filters = np.linspace(0.1, 15, 30)
         contrasts = np.zeros_like(filters)
         for i, x_nm in enumerate(filters):
             slc = self.get_slice_x_nm_filter(x_nm)
@@ -124,4 +124,5 @@ if __name__ == "__main__":
     # main()
 
 sr = SLDSpectrumResult()
-sr.loadfrom(r"G:\My Drive\Projects\Quantum Piano\Results\SLD\2023_03_14_16_30_19_SLD_statistics_test.sldqp")
+sr.loadfrom(r"G:\My Drive\Projects\Quantum Piano\Results\SLD\2023_03_15_10_04_05_SLD_statistics_test_good.sldqp")
+sr.show_conrast_per_bandwidth()
