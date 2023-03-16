@@ -49,5 +49,5 @@ class Spectrometer(object):
         plt.grid(True)
         plt.show()
 
-    def close():
+    def close(self):
         self.lib.tlccs_close (self.ccs_handle)
