@@ -38,7 +38,16 @@ class YokogawaSpectrometer(object):
         return wl, amp
 
     def get_data(self):
-        return self.sweep()
+        succes = False
+        while not succes:
+            try:
+                wl, amps = self.sweep()
+                succes = True
+            except Exception as e:
+                print("ERROR getting data from Yokagawa!!")
+                print(e)
+        return wl, amps
+
 
     def close(self):
         self.instr.close()
