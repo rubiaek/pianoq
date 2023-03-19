@@ -57,7 +57,7 @@ class SLDSpectrumResult(QPPickleResult):
         return v.std() / v.mean()
 
     def contrast_per_bandwidth(self):
-        filters = np.linspace(0.02, 15, 50)
+        filters = np.linspace(0.02, 25, 150)
         contrasts = np.zeros_like(filters)
         for i, x_nm in enumerate(filters):
             slc = self.get_slice_x_nm_filter(x_nm)
@@ -66,6 +66,32 @@ class SLDSpectrumResult(QPPickleResult):
             contrasts[i] = self._contrast(mean_of_filter)
 
         return filters, contrasts
+
+    def fourier_check(self, amps, threshold=1):
+        fig, axes = plt.subplots(2, 2)
+        axes[0, 0].set_title('original')
+        axes[0, 0].plot(sr.wavelengths, amps)
+        axes[0, 0].set_xlabel('wavelength (nm)')
+
+        amps = sr.data[0, :]
+        fourier = np.fft.fftshift(np.fft.fft(np.fft.fftshift(amps)))
+        fourier_X = np.fft.fftshift(np.fft.fftfreq(len(amps), np.diff(self.wavelengths)[0]))
+
+        axes[0, 1].plot(fourier_X, fourier)
+        axes[0, 1].set_title('fourier space')
+
+        mask = np.where(np.abs(fourier_X) > threshold)
+        fourier2 = fourier
+        fourier2[mask] = 0
+
+        filtered_amps = np.fft.ifftshift(np.fft.ifft(np.fft.ifftshift(fourier2)))
+        axes[1, 0].plot(sr.wavelengths, filtered_amps)
+        axes[1, 0].set_title('filtered signal')
+
+        axes[1, 1].plot(fourier_X, fourier2)
+        axes[1, 1].set_title('filtered fourier')
+
+        fig.show()
 
     def show_conrast_per_bandwidth(self):
         filters, contrasts = self.contrast_per_bandwidth()
@@ -81,6 +107,7 @@ class SLDSpectrumResult(QPPickleResult):
         ax2.set_ylabel('N modes', color=color)
         ax2.plot(filters, 1/contrasts**2, '*', color=color)
         ax2.tick_params(axis='y', labelcolor=color)
+        ax2.set_ylim(1)
 
         fig.show()
 
@@ -139,8 +166,8 @@ if __name__ == "__main__":
     # TODO: look with camera that piezos do what we ant them
     # TODO: repeat with light closed
     # TODO: try some kind of better parameters in spectrometer (resolution etc.)
-    main()
+    # main()
 
-# sr = SLDSpectrumResult()
+sr = SLDSpectrumResult()
 # sr.loadfrom(r"G:\My Drive\Projects\Quantum Piano\Results\SLD\2023_03_15_10_04_05_SLD_statistics_test_good.sldqp")
 # sr.show_conrast_per_bandwidth()
