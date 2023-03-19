@@ -57,7 +57,7 @@ class SLDSpectrumResult(QPPickleResult):
         return v.std() / v.mean()
 
     def contrast_per_bandwidth(self):
-        filters = np.linspace(0.1, 15, 30)
+        filters = np.linspace(0.02, 15, 50)
         contrasts = np.zeros_like(filters)
         for i, x_nm in enumerate(filters):
             slc = self.get_slice_x_nm_filter(x_nm)
@@ -88,6 +88,10 @@ class SLDSpectrumResult(QPPickleResult):
         super().loadfrom(path)
         self._clean_zeros()
         self.delta_wl = np.diff(self.wavelengths)[0]
+        self.wavelengths = np.array(self.wavelengths)
+        if self.wavelengths.min() < 1e-3:  # Means this is in [m] and I want it in [nm]
+            self.wavelengths = self.wavelengths * 1e9
+
 
 
 def main(run_name='first_long_yokagawa', integration_time=3e-3, yokogawa=True):
