@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pianoq.lab import Edac40
 from pianoq.lab.spectrometer_ccs import Spectrometer
+from pianoq.lab.spectrometer_yokogawa import YokogawaSpectrometer
 from pianoq_results.QPPickleResult import QPPickleResult
 
 
@@ -89,31 +90,41 @@ class SLDSpectrumResult(QPPickleResult):
         self.delta_wl = np.diff(self.wavelengths)[0]
 
 
-def main(run_name='test', integration_time=3e-3):
+def main(run_name='first_long_yokagawa', integration_time=3e-3, yokogawa=True):
     timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
 
     saveto_path = f"G:\\My Drive\\Projects\\Quantum Piano\\Results\\SLD\\{timestamp}_SLD_statistics_{run_name}.sldqp"
 
-    s = Spectrometer(integration_time=integration_time)
+    if not yokogawa:
+        s = Spectrometer(integration_time=integration_time)
+    else:
+        s = YokogawaSpectrometer()
+
     dac = Edac40(max_piezo_voltage=120)
     res = SLDSpectrumResult()
     res.integration_time = integration_time
     res.comment = 'SLD 180mA, V polarized, single speckle, ND1.0, integration 3ms'
 
     wl, a = s.get_data()
-    wl, a = wl[2400: -700], a[2400: -700]
-    N = 10000
+    if not yokogawa:
+        wl, a = wl[2400: -700], a[2400: -700]
+    N = 4000
     res.data = np.zeros((N, len(a)))
     res.wavelengths = wl
     for i in range(N):
         amps = np.random.rand(40)
         dac.set_amplitudes(amps)
         _, a = s.get_data()
-        res.data[i, :] = a[2400: -700]
+        if not yokogawa:
+            a = a[2400: -700]
+        res.data[i, :] = a
 
         if i % 10 == 0:
             res.saveto(saveto_path)
             print(i, end=' ')
+
+
+    res.saveto(saveto_path)
 
     s.close()
     dac.close()
@@ -121,8 +132,11 @@ def main(run_name='test', integration_time=3e-3):
 
 if __name__ == "__main__":
     pass
-    # main()
+    # TODO: look with camera that piezos do what we ant them
+    # TODO: repeat with light closed
+    # TODO: try some kind of better parameters in spectrometer (resolution etc.)
+    main()
 
-sr = SLDSpectrumResult()
-sr.loadfrom(r"G:\My Drive\Projects\Quantum Piano\Results\SLD\2023_03_15_10_04_05_SLD_statistics_test_good.sldqp")
-sr.show_conrast_per_bandwidth()
+# sr = SLDSpectrumResult()
+# sr.loadfrom(r"G:\My Drive\Projects\Quantum Piano\Results\SLD\2023_03_15_10_04_05_SLD_statistics_test_good.sldqp")
+# sr.show_conrast_per_bandwidth()
