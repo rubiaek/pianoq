@@ -2,6 +2,7 @@ import vxi11
 import time
 
 class YokogawaSpectrometer(object):
+    # SEe also here: https://instrumentkit.readthedocs.io/en/latest/_modules/instruments/yokogawa/yokogawa6370.html
     def __init__(self):
         self.instr = vxi11.Instrument("192.168.1.110")
         assert self.instr.ask('*IDN?') == 'YOKOGAWA,AQ6374,91V714535,01.03'
