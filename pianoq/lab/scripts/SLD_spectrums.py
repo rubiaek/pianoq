@@ -2,6 +2,8 @@ import time
 import datetime
 import numpy as np
 import matplotlib.pyplot as plt
+import numpy.polynomial.polynomial as poly
+from scipy.optimize import curve_fit
 from pianoq.lab import Edac40
 from pianoq.lab.spectrometer_ccs import Spectrometer
 from pianoq.lab.spectrometer_yokogawa import YokogawaSpectrometer
@@ -37,28 +39,35 @@ class SLDSpectrumResult(QPPickleResult):
 
     def _clean_zeros(self):
         means = self.data.mean(axis=1)
-        zero_index = np.where(means == 0)[0][0]
-        self.data = self.data[:zero_index, :]
+        indexes = np.where(means == 0)[0]
+        if indexes.shape == (0,):
+            # No empty lines
+            return
+        else:
+            zero_index = indexes[0]
+            self.data = self.data[:zero_index, :]
 
-    def show_spectrum(self, amps):
+    def show_spectrum(self, amps, title=''):
         fig, ax = plt.subplots()
         ax.plot(self.wavelengths, amps)
         ax.set_xlabel("Wavelength [nm]")
         ax.set_ylabel("Intensity [a.u.]")
+        ax.set_title(title)
         ax.grid(True)
         fig.show()
 
-    def show_mean_spectrum(self, is_filtered):
+    def show_mean_spectrum(self, is_filtered, title=''):
         if is_filtered:
             data = self.filtered_mean_spectrum
         else:
             data = self.mean_spectrum
-        self.show_spectrum(data)
+        self.show_spectrum(data, title=title)
 
     def get_slice_x_nm_filter(self, x_nm):
         indexes = np.where(np.abs(self.wavelengths - self._mean_wl) < x_nm / 2)[0]
+
         slc = np.index_exp[indexes[0]: indexes[-1]]
-        return slc
+        return indexes
 
     def _contrast(self, v):
         return v.std() / v.mean()
@@ -73,11 +82,11 @@ class SLDSpectrumResult(QPPickleResult):
         else:  # not filtered and not normalized
             data = self.data
 
-        filters = np.linspace(0.02, 25, 150)
+        filters = np.linspace(0.03, 25, 150)
         contrasts = np.zeros_like(filters)
         for i, x_nm in enumerate(filters):
-            slc = self.get_slice_x_nm_filter(x_nm)
-            filterd_out = data[:, slc[0]]
+            indexes = self.get_slice_x_nm_filter(x_nm)
+            filterd_out = data[:, indexes]
             mean_of_filter = filterd_out.mean(axis=1)
             contrasts[i] = self._contrast(mean_of_filter)
 
@@ -119,7 +128,18 @@ class SLDSpectrumResult(QPPickleResult):
 
         fig.show()
 
-    def show_contrast_per_bandwidth(self, is_normalized=True, is_filtered=False):
+    def show_few_spectrums(self, indexes=(1, 2, 3), title=''):
+        fig, ax = plt.subplots()
+        for i in indexes:
+            amps = self.data[i]
+            ax.plot(self.wavelengths, amps)
+        ax.set_xlabel("Wavelength [nm]")
+        ax.set_ylabel("Intensity [a.u.]")
+        ax.set_title(title)
+        ax.grid(True)
+        fig.show()
+
+    def show_contrast_per_bandwidth(self, is_normalized=True, is_filtered=False, title=''):
         filters, contrasts = self.contrast_per_bandwidth(is_normalized, is_filtered)
         fig, ax = plt.subplots()
         color = 'tab:red'
@@ -128,14 +148,35 @@ class SLDSpectrumResult(QPPickleResult):
         ax.set_ylabel('contrast', color=color)
         ax.tick_params(axis='y', labelcolor=color)
         ax.set_ylim(None, 1)
+        ax.set_title(title)
 
         ax2 = ax.twinx()
         color = 'tab:blue'
         ax2.set_ylabel('N modes', color=color)
-        ax2.plot(filters, 1/contrasts**2, '*', color=color)
+        N_modes = 1/contrasts**2
+        ax2.plot(filters, N_modes, '*', color=color)
         ax2.tick_params(axis='y', labelcolor=color)
         ax2.set_ylim(1)
 
+        coefs = poly.polyfit(filters, N_modes, 1)
+        ffit = poly.polyval(filters, coefs)
+        ax2.plot(filters, ffit, label=f'fit to 1/{1/coefs[1]:.1f}*x+{coefs[0]:.1f}')
+        ax2.legend()
+
+        fig.show()
+
+    def pointwise_delta_filter_per_wl(self, title='contrast with $\delta$ filter'):
+        delta_contrasts = np.zeros_like(self.wavelengths)
+        for i, wl in enumerate(self.wavelengths):
+            delta_contrasts[i] = self._contrast(self.data[:, i])
+
+        fig, ax = plt.subplots()
+        ax.plot(self.wavelengths, delta_contrasts)
+        ax.set_xlabel("Wavelength [nm]")
+        ax.set_ylabel("contrast")
+        ax.axhline(1, color='g', linestyle='--')
+        ax.axhline(1/np.sqrt(2), color='r', linestyle='--')
+        ax.set_title(title)
         fig.show()
 
     def loadfrom(self, path):
