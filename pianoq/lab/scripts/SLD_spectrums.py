@@ -20,10 +20,19 @@ class SLDSpectrumResult(QPPickleResult):
         self.delta_wl = None
         self._fourier_threshold = 1
 
-    def _init_normzlizations(self):
+    def _init_normzlizations(self, normalize_total_power=False):
         self.mean_spectrum = self.data.mean(axis=0)
         index_mean_wl = self.mean_spectrum.argmax()
         self._mean_wl = self.wavelengths[index_mean_wl]
+
+        # remove DC
+        self.data -= self.data[:, -1].mean()
+
+        # normalize total power of each configuration
+        if normalize_total_power:
+            tot_powers = self.data.sum(axis=1)
+            self.data = self.data / tot_powers[:, np.newaxis]  # (sr.data.T / tot_powers).T
+
         self.normalized_data = self.data / self.mean_spectrum
 
         self.filtered_data = np.zeros_like(self.data)
@@ -63,16 +72,17 @@ class SLDSpectrumResult(QPPickleResult):
             data = self.mean_spectrum
         self.show_spectrum(data, title=title)
 
-    def get_slice_x_nm_filter(self, x_nm):
-        indexes = np.where(np.abs(self.wavelengths - self._mean_wl) < x_nm / 2)[0]
+    def get_slice_x_nm_filter(self, x_nm, center_wavelength=None):
+        center_wavelength = center_wavelength or self._mean_wl
+        indexes = np.where(np.abs(self.wavelengths - center_wavelength) < x_nm / 2)[0]
 
-        slc = np.index_exp[indexes[0]: indexes[-1]]
+        # slc = np.index_exp[indexes[0]: indexes[-1]]
         return indexes
 
     def _contrast(self, v):
         return v.std() / v.mean()
 
-    def contrast_per_bandwidth(self, is_normalized=True, is_filtered=False):
+    def contrast_per_bandwidth(self, is_normalized=True, is_filtered=False, center_wavelength=None, n_filters=150):
         if is_filtered and is_normalized:
             data = self.filterd_normalized_data
         elif is_filtered and not is_normalized:
@@ -82,15 +92,26 @@ class SLDSpectrumResult(QPPickleResult):
         else:  # not filtered and not normalized
             data = self.data
 
-        filters = np.linspace(0.03, 25, 150)
+        filters = np.linspace(0.1, 25, n_filters)
         contrasts = np.zeros_like(filters)
         for i, x_nm in enumerate(filters):
-            indexes = self.get_slice_x_nm_filter(x_nm)
+            indexes = self.get_slice_x_nm_filter(x_nm, center_wavelength=center_wavelength)
             filterd_out = data[:, indexes]
             mean_of_filter = filterd_out.mean(axis=1)
             contrasts[i] = self._contrast(mean_of_filter)
 
         return filters, contrasts
+
+    def contrast_per_bandwidth_mean_centers(self, start_wl, end_wl, samples=50, is_normalized=True, is_filtered=False,
+                                            n_filters=150):
+        centers = np.linspace(start_wl, end_wl, samples)
+        filters = None
+        contrasts = np.zeros((len(centers), n_filters))
+        for i, center in enumerate(centers):
+            filters, contrasts[i, :] = self.contrast_per_bandwidth(is_normalized=is_normalized, is_filtered=is_filtered,
+                                                                   center_wavelength=center, n_filters=n_filters)
+
+        return filters, contrasts.mean(axis=0)
 
     def _filter_fourier(self, amps):
         fourier = np.fft.fftshift(np.fft.fft(np.fft.fftshift(amps)))
@@ -139,8 +160,11 @@ class SLDSpectrumResult(QPPickleResult):
         ax.grid(True)
         fig.show()
 
-    def show_contrast_per_bandwidth(self, is_normalized=True, is_filtered=False, title=''):
-        filters, contrasts = self.contrast_per_bandwidth(is_normalized, is_filtered)
+    def show_contrast_per_bandwidth(self, is_normalized=True, is_filtered=False, title='', start_wl=None, end_wl=None, samples=None):
+        if start_wl is None:
+            filters, contrasts = self.contrast_per_bandwidth(is_normalized, is_filtered)
+        else:
+            filters, contrasts = self.contrast_per_bandwidth_mean_centers(start_wl, end_wl, samples, is_normalized, is_filtered)
         fig, ax = plt.subplots()
         color = 'tab:red'
         ax.plot(filters, contrasts, '*', color=color)
@@ -179,14 +203,14 @@ class SLDSpectrumResult(QPPickleResult):
         ax.set_title(title)
         fig.show()
 
-    def loadfrom(self, path):
+    def loadfrom(self, path, normalize_total_power=False):
         super().loadfrom(path)
         self._clean_zeros()
         self.delta_wl = np.diff(self.wavelengths)[0]
         self.wavelengths = np.array(self.wavelengths)
         if self.wavelengths.min() < 1e-3:  # Means this is in [m] and I want it in [nm]
             self.wavelengths = self.wavelengths * 1e9
-        self._init_normzlizations()
+        self._init_normzlizations(normalize_total_power=normalize_total_power)
 
 
 def main(run_name='first_long_yokagawa', integration_time=3e-3, yokogawa=True):
