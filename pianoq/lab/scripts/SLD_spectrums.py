@@ -213,7 +213,7 @@ class SLDSpectrumResult(QPPickleResult):
         self._init_normzlizations(normalize_total_power=normalize_total_power)
 
 
-def main(run_name='first_long_yokagawa', integration_time=3e-3, yokogawa=True):
+def main(run_name='yokogawa_polarizer_61deg_before_inline_polarizer_after', integration_time=3e-3, yokogawa=True):
     timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
 
     saveto_path = f"G:\\My Drive\\Projects\\Quantum Piano\\Results\\SLD\\{timestamp}_SLD_statistics_{run_name}.sldqp"
@@ -226,7 +226,7 @@ def main(run_name='first_long_yokagawa', integration_time=3e-3, yokogawa=True):
     dac = Edac40(max_piezo_voltage=120)
     res = SLDSpectrumResult()
     res.integration_time = integration_time
-    res.comment = 'SLD 180mA, V polarized, single speckle, ND1.0, integration 3ms'
+    res.comment = 'SLD 180mA, yokogawa_polarizer_61deg_before_inline_polarizer_after'
 
     wl, a = s.get_data()
     if not yokogawa:
@@ -258,8 +258,8 @@ if __name__ == "__main__":
     # TODO: look with camera that piezos do what we want them
     # TODO: repeat with light closed
     # TODO: try some kind of better parameters in spectrometer (resolution etc.)
-    # main()
+    main()
 
-sr = SLDSpectrumResult()
+# sr = SLDSpectrumResult()
 # sr.loadfrom(r"G:\My Drive\Projects\Quantum Piano\Results\SLD\2023_03_15_10_04_05_SLD_statistics_test_good.sldqp")
 # sr.show_conrast_per_bandwidth()

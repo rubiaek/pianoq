@@ -158,6 +158,7 @@ class PianoOptimization(object):
         elif self.cam_type == 'timetagger' or self.cam_type == 'timetagger_singles':
             if not self.is_double_spot:
                 single1, single2, coincidence = self.cam.read_interesting()
+                print(f'single1: {single1}; single2: {single2}; coincidence: {coincidence}')
                 accidentals = single1 * single2 * 2 * self.cam.coin_window
                 real_coin = coincidence - accidentals
                 real_coin_std = (np.sqrt(coincidence * self.cam.integration_time)) / self.cam.integration_time

@@ -21,4 +21,5 @@ class FlushingPrintingFile(object):
         self.f.flush()
 
     def close(self):
+        self.flush()
         self.f.close()

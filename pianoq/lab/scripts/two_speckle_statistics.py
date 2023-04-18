@@ -98,7 +98,7 @@ def main(is_timetagger=True, integration_time=5, coin_window=1e-9, saveto_path=N
         ph = PhotonCounter(integration_time=integration_time)
     else:
         ph = QPTimeTagger(integration_time=integration_time, coin_window=coin_window,
-                          single_channel_delays=[500, 0])
+                          single_channel_delays=[0, 0])
     print('got photon counter')
 
     single1s = []
@@ -124,4 +124,4 @@ def main(is_timetagger=True, integration_time=5, coin_window=1e-9, saveto_path=N
 
 
 if __name__ == "__main__":
-    main(is_timetagger=True, integration_time=5, coin_window=1e-9, saveto_path=None, run_name='filter=3nm_heralded_integration_5s')
+    main(is_timetagger=True, integration_time=3, coin_window=1e-9, saveto_path=None, run_name='filter=10nm_not_heralded_integration_3s')

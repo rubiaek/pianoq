@@ -50,7 +50,7 @@ class OptimizationExperiment(object):
             if not self.config['is_double_spot']:
                 self.photon_counter = QPTimeTagger(integration_time=self.config['speckle_scan_integration_time'],
                                                    coin_window=self.config['coin_window'],
-                                                   single_channel_delays=[11500, 0])
+                                                   single_channel_delays=[11000, 0])
             else:
                 self.photon_counter = QPTimeTagger(integration_time=self.config['speckle_scan_integration_time'],
                                                    coin_window=self.config['coin_window'],
@@ -153,7 +153,7 @@ class OptimizationExperiment(object):
         if self.config['is_time_tagger']:
             self.photon_counter = QPTimeTagger(integration_time=time_sec,
                                                coin_window=self.config['coin_window'],
-                                               single_channel_delays=[11500, 0])
+                                               single_channel_delays=[11000, 0])
 
             # self.photon_counter = QPTimeTagger(integration_time=time_sec,
             #                                    coin_window=self.config['coin_window'],
@@ -333,7 +333,7 @@ if __name__ == "__main__":
         # 'optimized_xy': (16.45, 16.4),
         'optimized_xy': (16.55, 16.4),
         'least_optimization_res': 200,
-        'success_cost': 1.1e6,
+        'success_cost': 3500,
         'is_double_spot': False,
         'n_random_configurations' : 80,
         'optimize_single_counts' : False,
@@ -349,7 +349,7 @@ if __name__ == "__main__":
         # Integration times
         'should_scan_speckles': False,
         'speckle_scan_integration_time': 2,
-        'piano_integration_time': 0.5,
+        'piano_integration_time': 2,
         'focus_scan_integration_time': 5,
         'ASI_exposure': 8,
 
@@ -376,9 +376,13 @@ if __name__ == "__main__":
 
     # Just run full experiment
     oe.make_dir()
+    oe.redirect_stdout()
     oe.save_config('filter=3nm_heralded_timetagger_direct_to_SM_fiber_with_polarizer')
     # oe.only_speckles(1)
 
+    oe.only_optimization()
+    oe.only_optimization()
+    oe.only_optimization()
     oe.only_optimization()
 
     # oe.config['start_y'] = 16.00

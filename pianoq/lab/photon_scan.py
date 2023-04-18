@@ -191,10 +191,10 @@ def middle_scan(name='middle_area', integration_time=5, is_timetagger=False, coi
     # pix_size = 0.05
     pix_size = 0.025
     if pix_size == 0.025:
-        start_x = 15.775
-        start_y = 16.2
-        x_pixels = 18
-        y_pixels = 18
+        start_x = 15.75
+        start_y = 14.9
+        x_pixels = 30
+        y_pixels = 30
 
     elif pix_size == 0.05:
         start_x = 16.275
@@ -243,7 +243,7 @@ if __name__ == '__main__':
     best_z = 10  # Not very accurate, but seems OK
 
     # middle_scan(integration_time=3, name='Heralding_filter=10nm', is_timetagger=True, coin_window=1e-9)
-    middle_scan(integration_time=8, name='fast_random_speckles_mean', is_timetagger=True, coin_window=1e-9)
+    middle_scan(integration_time=5, name='almost_passover', is_timetagger=True, coin_window=1e-9)
     # small_scan(integration_time=1)
     # whole_scan(integration_time=3)
     # scan_1D(integration_time=0.5)
