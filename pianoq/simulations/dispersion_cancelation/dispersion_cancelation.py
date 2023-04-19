@@ -13,7 +13,7 @@ SOLVER_MIN_RADIUS_BC = .5
 
 
 class Fiber(object):
-    def __init__(self, wl=0.808, n1=1.45, NA=0.2, diameter=50, curvature=None, areaSize=None, npoints=2**7, autosolve=True, L=2e6):
+    def __init__(self, wl=0.808, n1=1.453, NA=0.2, diameter=50, curvature=None, areaSize=None, npoints=2**7, autosolve=True, L=2e6):
         """ all in um """
         self.NA = NA
         self.diameter = diameter
@@ -99,14 +99,31 @@ class ManyWavelengthSimulation(object):
         self.Dwl = Dwl
         self.N_wl = N_wl
         self.wls = self._get_wl_range()
-        self.fibers = [Fiber(wl=wl) for wl in self.wls]
-        self.N_modes_cutoff = self.fibers[0].Nmodes  # If N_modes changes with wl - discard last modes
+        self.ns = self._sellmeier_silica(self.wls)
+        self.fibers = []
+        for i, wl in enumerate(self.wls):
+            self.fibers.append(Fiber(wl=wl, n1=self.ns[i]))
+        self.N_modes_cutoff = self.fibers[-1].Nmodes  # If N_modes changes with wl - discard last modes
         self.betas = np.zeros((N_wl, self.N_modes_cutoff))
         self._populate_betas()
 
     def _populate_betas(self):
         for i, f in enumerate(self.fibers):
             self.betas[i, :] = f.modes.betas[:self.N_modes_cutoff]
+
+    def _sellmeier_silica(self, wls):
+        a1 = 0.6961663
+        a2 = 0.4079426
+        a3 = 0.8974794
+        b1 = 0.0684043
+        b2 = 0.1162414
+        b3 = 9.896161
+
+        ns_silica = np.sqrt(1 +
+                      a1 * (wls**2) / (wls**2 - b1**2) +
+                      a2 * (wls**2) / (wls**2 - b2**2) +
+                      a3 * (wls**2) / (wls**2 - b3**2))
+        return ns_silica
 
     def _get_wl_range(self):
         """ in um"""
@@ -117,7 +134,7 @@ class ManyWavelengthSimulation(object):
         df = frange / self.N_wl
         f = f0 + np.arange(-self.N_wl/2, self.N_wl/2)*df
         l = c / f  # um
-        return l
+        return l[::-1]
 
     def show_betas(self):
         fig, ax = plt.subplots()
@@ -135,6 +152,25 @@ class ManyWavelengthSimulation(object):
             ax.set_ylabel(r'Propagation constant $\beta$ (in $\mu$m$^{-1}$)')
             ax.legend()
         fig.show()
+
+    def show_PCC_classical_and_quantum(self):
+        # TODO: different init conditions
+        pccs = np.zeros_like(self.fibers)
+        E_end0 = self.fibers[0].propagate(gaussian=True, sigma=10, shift=(3, 9))
+        I_end0 = np.abs(E_end0) ** 2
+
+        for i, f in enumerate(self.fibers):
+            E_end = f.propagate(gaussian=True, sigma=10, shift=(3, 9))
+            I_end = np.abs(E_end)**2
+            pccs[i] = np.corrcoef(I_end0.ravel(), I_end.ravel())[1, 0]
+
+        fig, ax = plt.subplots()
+        ax.plot(self.wls, pccs, label='classical')
+        ax.set_xlabel(r'wl ($\mu m$)')
+        ax.set_ylabel(r'PCC')
+        ax.legend()
+        fig.show()
+
 
 
     # TODO: find length that will cause this fiber to have a spectral correlation width of ~3nm, and then check our Kilshko two-photon spectral correlation width
