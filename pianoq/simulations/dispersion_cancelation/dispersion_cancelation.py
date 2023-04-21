@@ -12,7 +12,7 @@ SOLVER_N_BETA_COARSE = 1000
 SOLVER_MIN_RADIUS_BC = .5
 
 
-class Fiber(object): 
+class Fiber(object):
     def __init__(self, wl=0.808, n1=1.453, NA=0.2, diameter=50, curvature=None, areaSize=None, npoints=2**7, autosolve=True, L=2e6):
         """ all in um """
         self.NA = NA
