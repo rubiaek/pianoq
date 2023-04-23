@@ -171,8 +171,6 @@ class ManyWavelengthSimulation(object):
         ax.legend()
         fig.show()
 
-
-
     # TODO: find length that will cause this fiber to have a spectral correlation width of ~3nm, and then check our Kilshko two-photon spectral correlation width
     # TODO: this can be defined via choosing a length L such that max_m{beta_m(w+)-beta_m(w-)}*L = 2*pi for w+ - w- = 3nm
     # TODO: then check for same L the (w+ - w-) value such that max_m{beta_m(w+)+beta_m(w-)-w*beta_m(w0)}*2*L = 2*pi, and hope this is larger than 3nm
@@ -180,11 +178,11 @@ class ManyWavelengthSimulation(object):
         Dbetas = s.betas[10, :] - s.betas[13, :]  # take 3nm of spectrum
         Dbetas -= np.median(Dbetas) # Global phase. median and not mean because there are outliers
         # everything here is in microns, so 2m of piano is 2e6,
-        L = 2e6 # 2m fiber
+        L = 2e6  # 2m fiber
         # this gives Dbetas~1 at least for the first ~30 modes, except for a few modes specific modes, not sure why
         Dphis = Dbetas*L
 
-        DDbetas = s.betas[0, :] + s.betas[20, :] - 2 * s.betas[10, :] # Klyshko picture, 20nms hoping is OK
+        DDbetas = s.betas[0, :] + s.betas[20, :] - 2 * s.betas[10, :]  # Klyshko picture, 20nms hoping is OK
         DDbetas -= np.median(DDbetas)
         DDphis = DDbetas*2*L  # seems good! even with 20nm bandwidth we seem to still be far off from 2pi!
 
