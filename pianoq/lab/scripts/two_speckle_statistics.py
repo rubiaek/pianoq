@@ -98,7 +98,7 @@ def main(is_timetagger=True, integration_time=5, coin_window=1e-9, saveto_path=N
         ph = PhotonCounter(integration_time=integration_time)
     else:
         ph = QPTimeTagger(integration_time=integration_time, coin_window=coin_window,
-                          single_channel_delays=[0, 0])
+                          single_channel_delays=[0, 450])
     print('got photon counter')
 
     single1s = []
@@ -111,7 +111,7 @@ def main(is_timetagger=True, integration_time=5, coin_window=1e-9, saveto_path=N
         dac.set_amplitudes(amps)
 
         s1, s2, coin = ph.read_interesting()
-        print(f'{s1:.1f}, {s2:.1f}, {coin:.1f}')
+        print(f'{i}: {s1:.1f}, {s2:.1f}, {coin:.1f}')
         single1s.append(s1)
         single2s.append(s2)
         coincidences.append(coin)

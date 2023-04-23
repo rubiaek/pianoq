@@ -1,5 +1,9 @@
 import vxi11
 import time
+import datetime
+import numpy as np
+import matplotlib.pyplot as plt
+
 
 class YokogawaSpectrometer(object):
     # SEe also here: https://instrumentkit.readthedocs.io/en/latest/_modules/instruments/yokogawa/yokogawa6370.html
@@ -49,9 +53,57 @@ class YokogawaSpectrometer(object):
                 print(e)
         return wl, amps
 
+    def only_get_data(self):
+        self.instr.write(":TRACE:X? TRA")
+        wl = self.instr.read()
+
+        self.instr.write(":trac:y:pden? tra,0.1nm")
+        amp = self.instr.read()
+
+        wl = [float(x) for x in wl.split(',')]
+        amp = [float(x) for x in amp.split(',')]
+
+        return wl, amp
+
+    def save_spectrum(self, path, wls=None, amps=None):
+        if wls is None and amps is None:
+            wls, amps = self.only_get_data()
+
+        f = open(path, 'wb')
+        np.savez(f,
+                 wls=wls,
+                 amps=amps,
+                 timestamp=datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+                 )
+        f.close()
 
     def close(self):
         self.instr.close()
+
+
+def load_spectrum(path):
+    f = open(path, 'rb')
+    data = np.load(f, allow_pickle=True)
+    wls = data['wls']
+    amps = data['amps']
+    return wls, amps
+
+def show_spectrum(path, title=''):
+    f = open(path, 'rb')
+    data = np.load(f, allow_pickle=True)
+    wls = data['wls']
+    amps = data['amps']
+
+    wls *= 1e9
+
+    fig, ax = plt.subplots()
+    ax.plot(wls, amps)
+    ax.set_xlabel("Wavelength [nm]")
+    ax.set_ylabel("Intensity [a.u.]")
+    ax.set_title(title)
+    ax.grid(True)
+    fig.show()
+
 
 def foo():
     instr =  vxi11.Instrument("192.168.1.110")
