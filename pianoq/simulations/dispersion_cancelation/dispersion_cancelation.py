@@ -60,24 +60,24 @@ class Fiber(object):
                                        field_limit_tol=1e-4,)
         self.Nmodes = self.modes.number
 
-    def _get_gausian(self, sig, ravel=True):
+    def _get_gausian(self, sig, X0=0, Y0=0, ravel=True):
         """ sig in pixels """
         X = np.arange(-self.npoints/2, self.npoints/2)
         XX, YY = np.meshgrid(X, X)
         # sqrt in 2d, and also 4*sig**2, because field and not power, so abs(g)**2.sum() = 1
-        g = 1 / np.sqrt(sig**2 * 2 * np.pi) * np.exp(-(XX ** 2 + YY ** 2) / (4 * sig ** 2))
+        g = 1 / np.sqrt(sig**2 * 2 * np.pi) * np.exp(-((XX-X0) ** 2 + (YY-Y0) ** 2) / (4 * sig ** 2))
         if ravel:
             return g.ravel()
         else:
             return g
 
-    def propagate(self, gaussian=True, sigma=10, shift=(3, 9)):
+    def propagate(self, gaussian=True, sigma=10, X0=0, Y0=0):
         if not gaussian:
             raise Exception('no other modes supported yet :P')
 
-        self.profile_0 = self._get_gausian(sig=sigma, ravel=True)
+        self.profile_0 = self._get_gausian(sig=sigma, X0=X0, Y0=Y0, ravel=True)
         # excite modes with input of shifted gaussian
-        self.modes_0 = self.modes.getModeMatrix(shift=shift).T @ self.profile_0
+        self.modes_0 = self.modes.getModeMatrix(shift=None).T @ self.profile_0
         # evolute modes
         self.modes_end = self.modes.getPropagationMatrix(distance=self.L) @ self.modes_0
         # modes to profile (not shifted, because it is what it is)
@@ -188,3 +188,4 @@ class ManyWavelengthSimulation(object):
 
 
 s = ManyWavelengthSimulation()
+f = s.fibers[0]
