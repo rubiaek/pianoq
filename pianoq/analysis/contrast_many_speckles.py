@@ -35,8 +35,8 @@ def analyze(dir_path, is_coin=True, mask=None):
         N = 1/c**2
         cs.append(c)
         Ns.append(N)
-        print(f'contrast: {c}')
-        print(f'N: {N}')
+        # print(f'contrast: {c}')
+        # print(f'N: {N}')
 
     mean_c = np.mean(cs)
     mean_N = np.mean(Ns)
