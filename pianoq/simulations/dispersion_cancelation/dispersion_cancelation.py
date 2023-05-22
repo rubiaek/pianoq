@@ -1,10 +1,15 @@
+import os
 import numpy as np
+from tqdm import tqdm
 import matplotlib.pyplot as plt
 from pianoq.misc.misc import Player, colorize
 import cv2
 import pyMMF
+from pyMMF.modes import Modes
 import logging
 logging.disable()
+
+MODES_DIR = "C:\\temp\\MMF_modes"
 
 
 SOLVER_N_POINTS_SEARCH = 2**8
@@ -30,11 +35,11 @@ class Fiber(object):
         self.curvature = curvature
         self.L = L
 
-        self.profile = pyMMF.IndexProfile(npoints=npoints, areaSize=self.areaSize)
-        self.profile.initParabolicGRIN(n1=n1, a=self.radius, NA=NA)
+        self.index_profile = pyMMF.IndexProfile(npoints=npoints, areaSize=self.areaSize)
+        self.index_profile.initParabolicGRIN(n1=n1, a=self.radius, NA=NA)
 
         self.solver = pyMMF.propagationModeSolver()
-        self.solver.setIndexProfile(self.profile)
+        self.solver.setIndexProfile(self.index_profile)
         self.solver.setWL(self.wl)
 
         self.profile_0 = np.zeros(self.npoints**2)
@@ -45,11 +50,14 @@ class Fiber(object):
         self.NmodesMax = pyMMF.estimateNumModesGRIN(self.wl, self.radius, self.NA)
         self.modes = None
         self.Nmodes = None
+        self.saveto_path = os.path.join(MODES_DIR, f'modes_GRIN_wl={self.wl}_npoints={self.npoints}.npz')
 
         if autosolve:
             self.solve()
 
     def solve(self):
+        if self._load_from_file():
+            return
         r_max = SOLVER_R_MAX_COEFF * self.diameter
         k0 = 2 * np.pi / self.wl
         dh = self.diameter / SOLVER_N_POINTS_SEARCH
@@ -64,6 +72,41 @@ class Fiber(object):
                                        degenerate_mode=mode_repr,
                                        field_limit_tol=1e-4,)
         self.Nmodes = self.modes.number
+        self._save_to_file()
+
+    def _load_from_file(self):
+        if not os.path.exists(self.saveto_path):
+            return False
+
+        f = open(self.saveto_path, 'rb')
+        data = np.load(f, allow_pickle=True)
+
+        self.modes = Modes()
+        self.modes.number = data['n_modes']
+        self.npoints = data['npoints']
+        self.modes.modeMatrix = data['profiles']
+        self.modes.betas = data['betas']
+        self.modes.wl = self.wl
+        assert (self.index_profile.n == data['index_profile_n']).all()
+        self.modes.indexProfile = self.index_profile
+        self.modes.profiles = list(self.modes.modeMatrix.T)
+        self.Nmodes = self.modes.number
+
+        return True
+
+    def _save_to_file(self):
+        f = open(self.saveto_path, 'wb')
+
+        np.savez(
+            f,
+            n_points=SOLVER_N_POINTS_MODE,
+            n_modes=self.Nmodes,
+            npoints=self.npoints,
+            profiles=self.modes.getModeMatrix(),
+            betas=self.modes.betas,
+            index_profile_n=self.index_profile.n)
+
+        f.close()
 
     def _get_gausian(self, sig, X0=0, Y0=0, X_linphase=0.0, Y_linphase=0.0, random_phase=0.0, ravel=True):
         """ sig in pixels """
@@ -129,8 +172,8 @@ class Fiber(object):
     def show_mode(self, m):
         """ m mode number"""
         fig, axes = plt.subplots(2)
-        axes[0].imshow(np.real(self.modes.profiles[m]).reshape([self.npoints]*2))
-        axes[1].imshow(np.imag(self.modes.profiles[m]).reshape([self.npoints]*2))
+        axes[0].imshow(np.real(self.modes.getModeMatrix()[:, m]).reshape([self.npoints]*2))
+        axes[1].imshow(np.imag(self.modes.getModeMatrix()[:, m]).reshape([self.npoints]*2))
         fig.show()
 
     def animate_modes(self):
@@ -142,7 +185,7 @@ class Fiber(object):
 
         def animation_function(i):
             ax.clear()
-            self.show_profile(self.modes.profiles[i], ax=ax)
+            self.show_profile(self.modes.getModeMatrix()[:, i], ax=ax)
             ax.set_title(f'mode num: {i}')
 
         animation = Player(fig, animation_function, interval=500, frames=self.Nmodes)
@@ -150,7 +193,7 @@ class Fiber(object):
 
 
 class ManyWavelengthSimulation(object):
-    def __init__(self, wl0=0.810, Dwl=0.010, N_wl=3):
+    def __init__(self, wl0=0.810, Dwl=0.040, N_wl=81):
         """ all in um """
         self.wl0 = wl0
         self.Dwl = Dwl
@@ -158,8 +201,10 @@ class ManyWavelengthSimulation(object):
         self.wls = self._get_wl_range()
         self.ns = self._sellmeier_silica(self.wls)
         self.fibers = []
-        for i, wl in enumerate(self.wls):
+        print(f"Getting {N_wl} fibers...")
+        for i, wl in tqdm(enumerate(self.wls)):
             self.fibers.append(Fiber(wl=wl, n1=self.ns[i]))
+        print("Got fibers!")
         self.N_modes_cutoff = min(self.fibers[0].Nmodes, self.fibers[-1].Nmodes)  # If N_modes changes with wl - discard last modes
         self.betas = np.zeros((N_wl, self.N_modes_cutoff))
         self._populate_betas()
@@ -274,9 +319,16 @@ class ManyWavelengthSimulation(object):
     def get_classical_PCCs_average(self, N_configs=5):
         pccs = np.zeros((N_configs, len(self.fibers)))
         delta_lambdas = np.zeros(len(self.fibers))
-        for i in range(N_configs):
+        for i in tqdm(range(N_configs)):
             self.set_inputs_gaussian()
             delta_lambdas, pccs[i, :] = self.get_classical_PCCs()
+        return delta_lambdas, pccs.mean(axis=0)
+
+    def get_klyshko_PCCs_average(self, N_configs=5):
+        pccs = np.zeros((1+ N_configs // 2, len(self.fibers)))
+        delta_lambdas = np.zeros(len(self.fibers))
+        for i in tqdm(range(N_configs)):
+            delta_lambdas, pccs[i, :] = self.get_klyshko_PCCs()
         return delta_lambdas, pccs.mean(axis=0)
 
     def show_PCC_classical_and_quantum(self, delta_lambdas_classical, pccs_classical, delta_lambdas_klyshko, pccs_klyshko):
@@ -304,9 +356,12 @@ class ManyWavelengthSimulation(object):
         DDphis = DDbetas*2*L  # seems good! even with 20nm bandwidth we seem to still be far off from 2pi!
 
 
-s = ManyWavelengthSimulation()
+s = ManyWavelengthSimulation(wl0=0.810, Dwl=0.080, N_wl=81)
 f = s.fibers[0]
-a, b = s.get_classical_PCCs_average(10)
-c, d = s.get_klyshko_PCCs()
+n = 2
+print(f'Getting classical with average on {n}...')
+a, b = s.get_classical_PCCs_average(n)
+print(f'Getting Klyshko with average on {n}......')
+c, d = s.get_klyshko_PCCs_average(n)
 s.show_PCC_classical_and_quantum(a, b, c, d)
 # s.show_PCC_classical_and_quantum()
