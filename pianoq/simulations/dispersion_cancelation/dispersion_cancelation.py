@@ -1,11 +1,10 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from pianoq.misc.misc import Player, colorize
 import cv2
 import pyMMF
 import logging
 logging.disable()
-import matplotlib.pyplot as plt
-import numpy as np
-from colorsys import hls_to_rgb
-from pianoq_results.misc import Player
 
 
 SOLVER_N_POINTS_SEARCH = 2**8
@@ -16,28 +15,8 @@ SOLVER_N_BETA_COARSE = 1000
 SOLVER_MIN_RADIUS_BC = .5
 
 
-def _colorize(z, theme='dark', saturation=1., beta=1.4, transparent=False, alpha=1., max_threshold=1.):
-    r = np.abs(z)
-    r /= max_threshold * np.max(np.abs(r))
-    arg = np.angle(z)
-
-    h = (arg + np.pi) / (2 * np.pi) + 0.5
-    l = 1. / (1. + r ** beta) if theme == 'white' else 1. - 1. / (1. + r ** beta)
-    s = saturation
-
-    c = np.vectorize(hls_to_rgb)(h, l, s)  # --> tuple
-    c = np.array(c)  # -->  array of (3,n,m) shape, but need (n,m,3)
-    c = c.swapaxes(0, 2)
-    if transparent:
-        a = 1. - np.sum(c ** 2, axis=-1) / 3
-        alpha_channel = a[..., None] ** alpha
-        return np.concatenate([c, alpha_channel], axis=-1)
-    else:
-        return c
-
-
 class Fiber(object):
-    def __init__(self, wl=0.808, n1=1.453, NA=0.2, diameter=50, curvature=None, areaSize=None, npoints=2**7, autosolve=True, L=2e6):
+    def __init__(self, wl=0.808, n1=1.453, NA=0.2, diameter=50, curvature=None, areaSize=None, npoints=2**7, autosolve=True, L=5e6):
         """ all in um """
         self.rng = np.random.default_rng(12345)
 
@@ -142,7 +121,7 @@ class Fiber(object):
 
         if ax is None:
             fig, ax = plt.subplots()
-        ax.imshow(_colorize(profile))
+        ax.imshow(colorize(profile))
         power_transmitted = (np.abs(profile)**2).sum()
         ax.set_title(f'total power: {power_transmitted:.3f}')
         ax.figure.show()
@@ -171,7 +150,7 @@ class Fiber(object):
 
 
 class ManyWavelengthSimulation(object):
-    def __init__(self, wl0=0.810, Dwl=0.040, N_wl=81):
+    def __init__(self, wl0=0.810, Dwl=0.010, N_wl=3):
         """ all in um """
         self.wl0 = wl0
         self.Dwl = Dwl
