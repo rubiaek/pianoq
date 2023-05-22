@@ -27,8 +27,8 @@ class Fiber(object):
 
         self.NA = NA
         self.diameter = diameter
-        self.radius = self.diameter / 2 # in microns
-        self.areaSize = areaSize or 2.5*self.radius # calculate the field on an area larger than the diameter of the fiber
+        self.radius = self.diameter / 2  # in microns
+        self.areaSize = areaSize or 2.5*self.radius  # calculate the field on an area larger than the diameter of the fiber
         self.npoints = npoints  # resolution of the window
         self.n1 = n1
         self.wl = wl  # wavelength in microns
@@ -193,7 +193,7 @@ class Fiber(object):
 
 
 class ManyWavelengthSimulation(object):
-    def __init__(self, wl0=0.810, Dwl=0.040, N_wl=81):
+    def __init__(self, wl0=0.810, Dwl=0.040, N_wl=81, fiber_L=2e6):
         """ all in um """
         self.wl0 = wl0
         self.Dwl = Dwl
@@ -203,7 +203,7 @@ class ManyWavelengthSimulation(object):
         self.fibers = []
         print(f"Getting {N_wl} fibers...")
         for i, wl in tqdm(enumerate(self.wls)):
-            self.fibers.append(Fiber(wl=wl, n1=self.ns[i]))
+            self.fibers.append(Fiber(wl=wl, n1=self.ns[i], L=fiber_L))
         print("Got fibers!")
         self.N_modes_cutoff = min(self.fibers[0].Nmodes, self.fibers[-1].Nmodes)  # If N_modes changes with wl - discard last modes
         self.betas = np.zeros((N_wl, self.N_modes_cutoff))
@@ -263,7 +263,9 @@ class ManyWavelengthSimulation(object):
         for f in self.fibers:
             self.fibers[0].set_input_random_modes(N_random_modes)
 
-    def get_klyshko_PCCs(self):
+    def get_klyshko_PCCs(self, dz=0):
+        """ dz is the error in imaging to crystal, so before swtiching wavelengths there is first some
+         free space propagation """
         i_middle = len(self.fibers) // 2
         N_measurements = (len(self.fibers) // 2) + 1  # for 5 wls: 1 degenerate + 2 non degenerate
         pccs = np.zeros(N_measurements)
@@ -271,9 +273,11 @@ class ManyWavelengthSimulation(object):
         self.fibers[i_middle].set_input_gaussian(sigma=10, X0=3, Y0=9, X_linphase=0.3, random_phase=0.5)
 
         # Simply propagate twice for degenerate
-        E_end0 = self.fibers[i_middle].propagate(show=False)
-        self.fibers[i_middle].profile_0 = E_end0
-        E_end0 = self.fibers[i_middle].propagate(show=False)
+        f = self.fibers[i_middle]
+        E_end0 = f.propagate(show=False)
+        E_after_prop = self.propagate_dz(E_end0, dz, f)
+        f.profile_0 = E_after_prop
+        E_end0 = f.propagate(show=False)
 
         I_end0 = np.abs(E_end0) ** 2
         II0 = I_end0.reshape([self.fibers[i_middle].npoints] * 2)[50:80, 50:80]  # todo: better than 50:80
@@ -283,10 +287,17 @@ class ManyWavelengthSimulation(object):
         for di in range(1, N_measurements):
             f_plus = self.fibers[i_middle+di]
             f_minus = self.fibers[i_middle-di]
+
+            # first half fiber
             f_plus.set_input_gaussian(sigma=10, X0=3, Y0=9, X_linphase=0.3, random_phase=0.5)
             E_end = f_plus.propagate(show=False)
-            # TODO: add z propagation
-            f_minus.profile_0 = E_end
+
+            # freespace
+            E_after_half_freespace = self.propagate_dz(E_end, dz, f_plus)
+            E_after_freespace = self.propagate_dz(E_after_half_freespace, dz, f_minus)
+
+            # second half fiber
+            f_minus.profile_0 = E_after_freespace
             E_end = f_minus.propagate(show=False)
             I_end = np.abs(E_end)**2
             II = I_end.reshape([self.fibers[i_middle].npoints] * 2)[50:80, 50:80]
@@ -294,6 +305,39 @@ class ManyWavelengthSimulation(object):
             delta_lambdas[di] = f_plus.wl - f_minus.wl
 
         return np.array(delta_lambdas), pccs
+
+    def propagate_dz(self, E, dz, f):
+        if len(E.shape) == 1:
+            n = np.sqrt(E.size)
+            assert n.is_integer()
+            n = int(n)
+            E = E.reshape([n] * 2)
+
+        fa = np.fft.fft2(E)
+        dx = f.index_profile.dh
+        dy = f.index_profile.dh
+        freq_x = np.fft.fftfreq(E.shape[1], d=dx)
+        freq_y = np.fft.fftfreq(E.shape[0], d=dy)
+
+        freq_Xs, freq_Ys = np.meshgrid(freq_x, freq_y)
+
+        light_k = 2 * np.pi / f.wl
+        k_x = freq_Xs * 2 * np.pi
+        k_y = freq_Ys * 2 * np.pi
+
+        k_z_sqr = light_k ** 2 - (k_x ** 2 + k_y ** 2)
+        # Remove all the negative component, as they represent evanescent waves,
+        # See Fourier Optics page 58
+        np.maximum(k_z_sqr, 0, out=k_z_sqr)
+        k_z = np.sqrt(k_z_sqr)
+
+        # Propagate light by adding the phase,
+        # see Fourier Optics page 74
+        fa *= np.exp(1j * k_z * dz)
+
+        out_E = np.fft.ifft2(fa)
+
+        return out_E.ravel()
 
     def get_classical_PCCs(self):
         # i_middle = len(self.fibers) // 2
@@ -324,20 +368,21 @@ class ManyWavelengthSimulation(object):
             delta_lambdas, pccs[i, :] = self.get_classical_PCCs()
         return delta_lambdas, pccs.mean(axis=0)
 
-    def get_klyshko_PCCs_average(self, N_configs=5):
-        pccs = np.zeros((1+ N_configs // 2, len(self.fibers)))
+    def get_klyshko_PCCs_average(self, N_configs=5, dz=0):
+        pccs = np.zeros((N_configs, 1 + len(self.fibers) // 2))
         delta_lambdas = np.zeros(len(self.fibers))
         for i in tqdm(range(N_configs)):
-            delta_lambdas, pccs[i, :] = self.get_klyshko_PCCs()
+            delta_lambdas, pccs[i, :] = self.get_klyshko_PCCs(dz=dz)
         return delta_lambdas, pccs.mean(axis=0)
 
-    def show_PCC_classical_and_quantum(self, delta_lambdas_classical, pccs_classical, delta_lambdas_klyshko, pccs_klyshko):
+    def show_PCC_classical_and_quantum(self, delta_lambdas_classical, pccs_classical, delta_lambdas_klyshko, pccs_klyshko, fiber_L, mode_mixing, dz):
         fig, ax = plt.subplots()
         ax.plot(delta_lambdas_classical * 1e3, pccs_classical, label='classical')
         ax.plot(delta_lambdas_klyshko * 1e3, pccs_klyshko, label='Klyshko')
         ax.set_xlabel(r'wl difference $ \Delta\lambda$ (nm)')
         ax.set_ylabel(r'PCC')
         ax.legend()
+        ax.set_title(f'L: {fiber_L*1e-6}m, mode mixing: {0}, dz: {dz}um')
         fig.show()
 
     # TODO: find length that will cause this fiber to have a spectral correlation width of ~3nm, and then check our Kilshko two-photon spectral correlation width
@@ -356,12 +401,15 @@ class ManyWavelengthSimulation(object):
         DDphis = DDbetas*2*L  # seems good! even with 20nm bandwidth we seem to still be far off from 2pi!
 
 
-s = ManyWavelengthSimulation(wl0=0.810, Dwl=0.080, N_wl=81)
+fiber_L = 2e6
+mode_mixing = 0
+dz = 50
+
+s = ManyWavelengthSimulation(wl0=0.810, Dwl=0.080, N_wl=81, fiber_L=fiber_L)
 f = s.fibers[0]
 n = 2
 print(f'Getting classical with average on {n}...')
 a, b = s.get_classical_PCCs_average(n)
 print(f'Getting Klyshko with average on {n}......')
-c, d = s.get_klyshko_PCCs_average(n)
-s.show_PCC_classical_and_quantum(a, b, c, d)
-# s.show_PCC_classical_and_quantum()
+c, d = s.get_klyshko_PCCs_average(n, dz=dz)
+s.show_PCC_classical_and_quantum(a, b, c, d, fiber_L, mode_mixing, dz)
