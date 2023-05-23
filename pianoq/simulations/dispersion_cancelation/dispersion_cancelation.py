@@ -149,13 +149,13 @@ class Fiber(object):
 
         if show:
             fig, ax = plt.subplots(1, 2)
-            self.show_profile(self.profile_0, ax[0])
-            self.show_profile(self.profile_end, ax[1])
+            self.show_profile(self.profile_0, ax[0], title='profile_0')
+            self.show_profile(self.profile_end, ax[1], title='profile_end')
             fig.show()
 
         return self.profile_end
 
-    def show_profile(self, profile, ax=None):
+    def show_profile(self, profile, ax=None, title=''):
         if len(profile.shape) == 1:
             n = np.sqrt(profile.size)
             assert n.is_integer()
@@ -166,7 +166,7 @@ class Fiber(object):
             fig, ax = plt.subplots()
         ax.imshow(colorize(profile))
         power_transmitted = (np.abs(profile)**2).sum()
-        ax.set_title(f'total power: {power_transmitted:.3f}')
+        ax.set_title(f'total power: {power_transmitted:.3f}, {title}')
         ax.figure.show()
 
     def show_mode(self, m):
@@ -385,6 +385,24 @@ class ManyWavelengthSimulation(object):
         ax.set_title(f'L: {fiber_L*1e-6}m, mode mixing: {0}, dz: {dz}um')
         fig.show()
 
+    def run_PCCs_different_dz(self, dzs=(0, 20, 40, 60, 80)):
+        fig, ax = plt.subplots()
+
+        print(f'Getting classical with average on {5}...')
+        delta_lambdas_classical, pccs_classical = s.get_classical_PCCs_average(5)
+        ax.plot(delta_lambdas_classical * 1e3, pccs_classical, label='classical', linewidth=3)
+
+        for dz in dzs:
+            print(f'Getting Klyshko with average on {2} dz={dz}......')
+            delta_lambdas_klyshko, pccs_klyshko = s.get_klyshko_PCCs_average(2, dz=dz)
+            ax.plot(delta_lambdas_klyshko * 1e3, pccs_klyshko, label=f'Klyshko dz={dz}')
+
+        ax.set_xlabel(r'wl difference $ \Delta\lambda$ (nm)')
+        ax.set_ylabel(r'PCC')
+        ax.legend()
+        ax.set_title(f'L: {self.fibers[0].L*1e-6}m, mode mixing: {0}')
+        fig.show()
+
     # TODO: find length that will cause this fiber to have a spectral correlation width of ~3nm, and then check our Kilshko two-photon spectral correlation width
     # TODO: this can be defined via choosing a length L such that max_m{beta_m(w+)-beta_m(w-)}*L = 2*pi for w+ - w- = 3nm
     # TODO: then check for same L the (w+ - w-) value such that max_m{beta_m(w+)+beta_m(w-)-w*beta_m(w0)}*2*L = 2*pi, and hope this is larger than 3nm
@@ -401,15 +419,18 @@ class ManyWavelengthSimulation(object):
         DDphis = DDbetas*2*L  # seems good! even with 20nm bandwidth we seem to still be far off from 2pi!
 
 
-fiber_L = 2e6
+fiber_L = 5e6
 mode_mixing = 0
 dz = 50
 
 s = ManyWavelengthSimulation(wl0=0.810, Dwl=0.080, N_wl=81, fiber_L=fiber_L)
-f = s.fibers[0]
-n = 2
-print(f'Getting classical with average on {n}...')
-a, b = s.get_classical_PCCs_average(n)
-print(f'Getting Klyshko with average on {n}......')
-c, d = s.get_klyshko_PCCs_average(n, dz=dz)
-s.show_PCC_classical_and_quantum(a, b, c, d, fiber_L, mode_mixing, dz)
+s.run_PCCs_different_dz(dzs=(0, 20, 40, 60, 80, 100, 1000))
+
+#
+# f = s.fibers[0]
+# n = 2
+# print(f'Getting classical with average on {n}...')
+# a, b = s.get_classical_PCCs_average(n)
+# print(f'Getting Klyshko with average on {n}......')
+# c, d = s.get_klyshko_PCCs_average(n, dz=dz)
+# s.show_PCC_classical_and_quantum(a, b, c, d, fiber_L, mode_mixing, dz)
