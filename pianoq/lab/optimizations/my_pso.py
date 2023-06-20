@@ -199,7 +199,7 @@ class MyPSOOptimizer(object):
         for i in range(self.n_iterations):
             self.curr_iteration += 1
             self.swarm.do_iteration()
-            print(f"### iteration no. {self.curr_iteration} - best is {self.swarm.global_best_cost} ###")
+            # print(f"### iteration no. {self.curr_iteration} - best is {self.swarm.global_best_cost} ###")
 
             if self.vary_popuation and self.curr_iteration in self.reduce_at_iterations:
                 self.swarm.reduce_population(reduction_factor=2)
