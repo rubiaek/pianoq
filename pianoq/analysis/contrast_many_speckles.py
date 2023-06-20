@@ -58,3 +58,5 @@ def both(mask=None):
     print('singles')
     analyze(PATH_NOT_HERALDED, is_coin=False, mask=mask)
 
+if __name__ == "__main__":
+    both()
