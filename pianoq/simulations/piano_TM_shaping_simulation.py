@@ -34,7 +34,6 @@ class TMShapingSimulation(object):
                                               normalize_TMs_method=self.normalize_TMs_method,
                                               quiet=True)
 
-            # TODO: change to TM comparison
             cost_function = piano_sim.cost_function_TM_shaping
 
             piano_sim.run(n_pop=self.pso_n_pop, n_iterations=1000, cost_function=cost_function,
