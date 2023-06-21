@@ -11,7 +11,6 @@ class NsqrDOFSimulation():
         self.U_random = unitary_group.rvs(self.N)
         self.U_desired = unitary_group.rvs(self.N)
 
-
     def compare_unitaries(self, U1, U2):
         # https://math.stackexchange.com/questions/1958164/measure-to-compare-a-matrix-with-a-given-unitary-matrix
         nominator = np.trace(U1.conjugate().T@U2)
@@ -19,6 +18,11 @@ class NsqrDOFSimulation():
         denominator = np.sqrt(N*np.trace(U2.conjugate().T@U2))
         X = nominator / denominator
         return np.abs(X)**2
+
+    def compare_unitaries2(self, U1, U2):
+        # eq. 3 in https://journals.aps.org/prapplied/pdf/10.1103/PhysRevApplied.17.024071
+        N = U1.shape[0]
+        return (1/N**2)*np.sum(np.abs(U1 - U2)**2)
 
     def amps_to_mat(self, V):
         # V is vector with N^2 amplitudes between 0 and 1
