@@ -1,4 +1,6 @@
 import datetime
+import time
+
 import numpy as np
 import matplotlib.pyplot as plt
 from pianoq.lab.photon_counter import PhotonCounter
@@ -6,7 +8,7 @@ from pianoq.lab.Edac40 import Edac40
 from pianoq.lab.time_tagger import QPTimeTagger
 from pianoq_results.QPPickleResult import QPPickleResult
 
-LOGS_DIR = r"G:\My Drive\Projects\Quantum Piano\Results\temp"
+LOGS_DIR = r"G:\My Drive\Projects\Dispersion Cancelation\Results\BS PBS"
 
 
 class SpeckleStatisticsResult(QPPickleResult):
@@ -101,7 +103,8 @@ def main(is_timetagger=True, integration_time=5, coin_window=1e-9, saveto_path=N
         ph = PhotonCounter(integration_time=integration_time)
     else:
         ph = QPTimeTagger(integration_time=integration_time, coin_window=coin_window,
-                          single_channel_delays=[0, 450])
+                          # single_channel_delays=[13900, 0])
+                          single_channel_delays=[200, 0])
     print('got photon counter')
 
     single1s = []
@@ -109,7 +112,7 @@ def main(is_timetagger=True, integration_time=5, coin_window=1e-9, saveto_path=N
     coincidences = []
     stds = []
 
-    for i in range(5000):
+    for i in range(2000):
         amps = np.random.rand(40)
         dac.set_amplitudes(amps)
 
@@ -125,6 +128,9 @@ def main(is_timetagger=True, integration_time=5, coin_window=1e-9, saveto_path=N
             res.coincidences = coincidences
             res.saveto(saveto_path)
 
+        if i % 50 == 0:
+            time.sleep(10)
+
 
 if __name__ == "__main__":
-    main(is_timetagger=True, integration_time=3, coin_window=1e-9, saveto_path=None, run_name='filter=10nm_not_heralded_integration_3s')
+    main(is_timetagger=True, integration_time=7, coin_window=1e-9, saveto_path=None, run_name='BS_filter=3nm_no_heralded_integration_7s')
