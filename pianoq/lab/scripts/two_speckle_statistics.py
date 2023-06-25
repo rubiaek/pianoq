@@ -29,6 +29,9 @@ class SpeckleStatisticsResult(QPPickleResult):
     def real_coin(self):
         return self.coincidences - self.accidentals
 
+    def get_N_from_fit(self, V, show_fit=True):
+        pass # TODO 
+
     def _get_contrast(self, V):
         self.reload()
         contrast = V.std() / V.mean()
