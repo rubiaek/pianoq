@@ -8,7 +8,7 @@ from pianoq_results.QPPickleResult import QPPickleResult
 from pianoq.analysis.contrast_lib import calc_contrast, contrast_to_N_modes
 from matplotlib.patches import Rectangle
 
-PATH = r'G:\My Drive\Projects\Dispersion Cancelation\Results\Classical\Cobolt_PBS'
+PATH = r'G:\My Drive\Projects\Dispersion Cancelation\Results\Classical'
 
 class ImageList(QPPickleResult):
     def __init__(self, exposure_time=None, timestamp=None):
@@ -37,8 +37,8 @@ class ImageList(QPPickleResult):
 
 
 def main():
-    exposure_time = 300
-    N = 200
+    exposure_time = 5000
+    N = 1000
     timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
 
     cam = VimbaCamera(0)
@@ -52,7 +52,7 @@ def main():
     res.exposure_time = exposure_time
     res.timestamp = timestamp
 
-    saveto_path = f"{PATH}\\{timestamp}_images.lcam"
+    saveto_path = f"{PATH}\\{timestamp}_toptica_PBS.lcam"
 
     for i in range(N):
         amps = np.random.rand(40)
@@ -62,6 +62,8 @@ def main():
         res.saveto(saveto_path)
         print(f'{i}, ',end='')
 
+    cam.close()
+    dac.close()
 
 if __name__ == "__main__":
     main()
