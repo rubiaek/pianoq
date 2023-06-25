@@ -8,6 +8,16 @@ from numpy.linalg import matrix_power
 
 from pianoq.lab.optimizations.my_pso import MyPSOOptimizer
 from pianoq_results import PopoffPRXResult
+from scipy.stats import unitary_group
+
+
+def compare_unitaries(U1, U2):
+    # https://math.stackexchange.com/questions/1958164/measure-to-compare-a-matrix-with-a-given-unitary-matrix
+    nominator = np.trace(U1.conjugate().T@U2)
+    N = U1.shape[0]
+    denominator = np.sqrt(N*np.trace(U2.conjugate().T@U2))
+    X = nominator / denominator
+    return np.abs(X)**2
 
 
 class PianoPopoffSimulation(object):
@@ -40,6 +50,7 @@ class PianoPopoffSimulation(object):
 
         self._init_in_modes()
         self.amps_history = []
+        self.random_U = unitary_group.rvs(self.pop.Nmodes)
 
     def _init_in_modes(self):
         # Each mode comes in H polarization
@@ -175,6 +186,11 @@ class PianoPopoffSimulation(object):
                            (Ny // 2) - window_size: (Ny // 2) + window_size]
         powers = np.abs(pix1[roi]) ** 2
         return powers.mean()
+
+    def cost_function_TM_shaping(self, amps):
+        tot_TM = self._amps_to_tot_TM(amps)
+        cost = compare_unitaries(tot_TM, self.random_U)
+        return -cost, None, None
 
     def cost_function_focus(self, amps):
         """ amps are between 0 and 1 """
