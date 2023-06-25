@@ -12,14 +12,19 @@ def main():
     live_cam(cam)
 
 
-def live_cam(cam, interval=100, close_at_end=False, **kwargs):
+def live_cam(cam, interval=100, close_at_end=False, remove_min=True, **kwargs):
     fig, ax = plt.subplots()
-    im = ax.imshow(cam.get_image(), **kwargs)
+    imm = cam.get_image()
+    if remove_min:
+        imm -= imm.min()
+    im = ax.imshow(imm, **kwargs)
     title = fig.suptitle('foo', fontsize=36)
     fig.colorbar(im, ax=ax)
 
     def update(i):
         imm = cam.get_image()
+        if remove_min:
+            imm -= imm.min()
         im.set_data(imm)
         title.set_text(f'Total power: {imm.sum():.3f}')
         # ax.set_title('%03d' % i)
