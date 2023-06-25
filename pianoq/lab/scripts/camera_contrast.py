@@ -1,3 +1,4 @@
+import time
 import matplotlib.pyplot as plt
 import numpy as np
 import datetime
@@ -34,11 +35,15 @@ class ImageList(QPPickleResult):
         V = np.array(V)
         print(f'contrast according to single pixel: {calc_contrast(V)}')
 
+    def loadfrom(self):
+        super().loadfrom()
+        self.images = np.array(self.images)
+
 
 
 def main():
-    exposure_time = 5000
-    N = 1000
+    exposure_time = 2000
+    N = 300
     timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
 
     cam = VimbaCamera(0)
@@ -52,15 +57,18 @@ def main():
     res.exposure_time = exposure_time
     res.timestamp = timestamp
 
-    saveto_path = f"{PATH}\\{timestamp}_toptica_PBS.lcam"
+    saveto_path = f"{PATH}\\{timestamp}_toptica_no_PBS.lcam"
 
-    for i in range(N):
-        amps = np.random.rand(40)
-        dac.set_amplitudes(amps)
-        im = cam.get_image()
-        res.images.append(im)
+    try:
+        for i in range(N):
+            amps = np.random.rand(40)
+            dac.set_amplitudes(amps)
+            im = cam.get_image()
+            res.images.append(im)
+            res.saveto(saveto_path)
+            print(f'{i}, ',end='')
+    except Exception:
         res.saveto(saveto_path)
-        print(f'{i}, ',end='')
 
     cam.close()
     dac.close()
