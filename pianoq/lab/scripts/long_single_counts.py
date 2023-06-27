@@ -1,9 +1,11 @@
 from pianoq.lab.time_tagger import QPTimeTagger
+import matplotlib.pyplot as plt
 import datetime
 import time
 import csv
 
 LOGS_DIR = r'G:\My Drive\Projects\Quantum Piano\Results\temp'
+
 
 def main():
     tt = QPTimeTagger(integration_time=1, coin_window=1e-9, single_channels=[1, 2, 3, 4], coin_channels=[])

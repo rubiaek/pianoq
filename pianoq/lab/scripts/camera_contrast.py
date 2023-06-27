@@ -31,12 +31,22 @@ class ImageList(QPPickleResult):
         ax.set_title(f'contrast on this area: {contrast}')
         fig.show()
 
-    def contrast_one_pixel(self):
+    def contrast_one_pixel(self, vmin=0, vmax=1.5):
+        fig, ax = plt.subplots()
+        mean = self.images.mean(axis=0)
+        std = self.images.std(axis=0)
+        contrast = std/mean
+        imm = ax.imshow(contrast, vmin=vmin, vmax=vmax)
+
         im = self.images[0]
         mid_x, mid_y = im.shape[1] // 2, im.shape[0] // 2
         V = [im[mid_y, mid_x] for im in self.images]
         V = np.array(V)
-        print(f'contrast according to single pixel: {calc_contrast(V)}')
+        sample_contrast = calc_contrast(V)
+        ax.set_title(f'sample contrast: {sample_contrast}')
+        fig.colorbar(imm, ax=ax)
+        # print(f'contrast according to single pixel: {calc_contrast(V)}')
+        fig.show()
 
     def loadfrom(self, path):
         super().loadfrom(path)
@@ -76,5 +86,5 @@ def main():
     dac.close()
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
