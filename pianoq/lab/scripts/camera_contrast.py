@@ -1,4 +1,4 @@
-import time
+import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import datetime
@@ -31,16 +31,21 @@ class ImageList(QPPickleResult):
         ax.set_title(f'contrast on this area: {contrast}')
         fig.show()
 
-    def contrast_one_pixel(self, vmin=0, vmax=1.5):
+    def contrast_per_pixel(self, vmin=0, vmax=1.5, binning=1):
+        images = self.images
+        if binning != 1:
+            rows, cols = images[0].shape
+            images = np.array([cv2.resize(im, (cols//binning, rows//binning), interpolation=cv2.INTER_AREA) for im in images])
+
         fig, ax = plt.subplots()
-        mean = self.images.mean(axis=0)
-        std = self.images.std(axis=0)
+        mean = images.mean(axis=0)
+        std = images.std(axis=0)
         contrast = std/mean
         imm = ax.imshow(contrast, vmin=vmin, vmax=vmax)
 
-        im = self.images[0]
+        im = images[0]
         mid_x, mid_y = im.shape[1] // 2, im.shape[0] // 2
-        V = [im[mid_y, mid_x] for im in self.images]
+        V = [im[mid_y, mid_x] for im in images]
         V = np.array(V)
         sample_contrast = calc_contrast(V)
         ax.set_title(f'sample contrast: {sample_contrast}')
@@ -96,5 +101,5 @@ def main(cam_type='vimba'):
     dac.close()
 
 
-if __name__ == "__main__":
-    main(cam_type='ASI')
+# if __name__ == "__main__":
+#     main(cam_type='ASI')
