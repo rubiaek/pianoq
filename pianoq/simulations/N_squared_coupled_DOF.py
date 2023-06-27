@@ -35,6 +35,7 @@ class NsqrDOFSimulation():
         # V is vector with N*M amplitudes between 0 and 1
         mat = self.amps_to_mat(V)
         cost = self.compare_unitaries(mat, self.U_desired)
+        # cost = self.compare_unitaries(self.U_desired, mat)
         return -cost, None, None
 
     def show_results(self):
