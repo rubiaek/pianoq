@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import datetime
 from pianoq.misc.borders import Borders
-from pianoq.lab import Edac40
+from pianoq.lab import Edac40, ASICam
 from pianoq.lab.VimbaCamera import VimbaCamera
 from pianoq_results.QPPickleResult import QPPickleResult
 from pianoq.analysis.contrast_lib import calc_contrast, contrast_to_N_modes
@@ -53,14 +53,24 @@ class ImageList(QPPickleResult):
         self.images = np.array(self.images)
 
 
-def main():
-    exposure_time = 2000
-    N = 300
+def main(cam_type='vimba'):
     timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+    if cam_type == 'vimba':
+        exposure_time = 2000
+        N = 300
 
-    cam = VimbaCamera(0)
-    cam.set_exposure_time(exposure_time)
-    cam.set_borders(Borders(490, 380, 700, 610))
+        cam = VimbaCamera(0)
+        cam.set_exposure_time(exposure_time)
+        cam.set_borders(Borders(490, 380, 700, 610))
+    elif cam_type == 'ASI':
+        exposure_time = 5
+        N = 300
+
+        cam = ASICam(exposure=5, binning=2, image_bits=16, roi=(None, None, None, None))
+        cam.set_roi(1100, 830, 200, 400)
+        cam.set_exposure(exposure_time)
+    else:
+        raise Exception('which cam type?')
 
     dac = Edac40(max_piezo_voltage=120)
     dac.SLEEP_AFTER_SEND = 0.5
@@ -69,7 +79,7 @@ def main():
     res.exposure_time = exposure_time
     res.timestamp = timestamp
 
-    saveto_path = f"{PATH}\\{timestamp}_toptica_no_PBS.lcam"
+    saveto_path = f"{PATH}\\{timestamp}_toptica_ASI_PBS_5s.lcam"
 
     try:
         for i in range(N):
@@ -86,5 +96,5 @@ def main():
     dac.close()
 
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main(cam_type='ASI')
