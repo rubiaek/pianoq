@@ -34,7 +34,7 @@ class ImageList(QPPickleResult):
             images = np.array([cv2.resize(im, (cols//binning, rows//binning), interpolation=cv2.INTER_AREA) for im in images])
 
         if remove_background:
-            V = il.images[:, 0, 0]
+            V = images[:, 0, 0]
             bg = V.mean()
             images = images.astype(float) - bg
 
@@ -51,6 +51,13 @@ class ImageList(QPPickleResult):
         mean_contrast = contrast[X:X+L, X:X+L].mean()
         std_contrast = contrast[X:X+L, X:X+L].std()
         c = ufloat(mean_contrast, std_contrast)
+        print(f'mean_contrast: \t\t\t{c}')
+        cut_ims = images[:, X:X+L, X:X+L]
+        tot_im = cut_ims.sum(axis=0)
+        cut_ims = np.array([cut_im / tot_im for cut_im in cut_ims])
+
+        V = cut_ims.ravel()
+        print(f'contrast from all pixels:\t {calc_contrast(V)}')
 
         ax.set_title(f'{title}contrast: {c:.3f}. N: {1/c**2:.2f}')
         ax.figure.colorbar(imm, ax=ax)
@@ -177,5 +184,5 @@ def main(cam_type='vimba'):
     dac.close()
 
 
-if __name__ == "__main__":
-    main(cam_type='SPCM')
+# if __name__ == "__main__":
+#     main(cam_type='SPCM')
