@@ -1,3 +1,4 @@
+import os
 import zwoasi as asi
 import matplotlib.pyplot as plt
 import datetime
@@ -5,7 +6,6 @@ from astropy.io import fits
 import astropy.time
 
 # asi.init('C:\\code\\ASI_Windows_SDK_V1.22\\ASI SDK\\lib\\x64\\ASICamera2.dll')
-
 
 class ASICam(object):
     def __init__(self, exposure=1.5, binning=2, image_bits=16, roi=(1500, 950, 200, 200)):
@@ -32,9 +32,12 @@ class ASICam(object):
         fig.show()
         return im, ax
 
-    def save_image(self, path, im=None, comment=''):
+    def save_image(self, path, im=None, comment='', add_timestamp_to_name=True):
         if im is None:
             im = self.get_image()
+
+        if add_timestamp_to_name:
+            path = os.path.join(os.path.dirname(path), f'{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}_{os.path.basename(path)}')
 
         # Following https://docs.astropy.org/en/stable/io/fits/index.html
         hdu = fits.PrimaryHDU(im)
@@ -42,7 +45,7 @@ class ASICam(object):
         # hdul.writeto(path)
         hdu.header['XBINNING'] = self.get_binning()
         hdu.header['YBINNING'] = self.get_binning()
-        hdu.header['EXPOINUS'] = self.get_exposure()
+        hdu.header['EXPOINUS'] = self.get_exposure() * 1e6
         hdu.header['GAIN'] = self.get_gain()
         hdu.header['OFFSET'] = hdu.header['BRIGHTNS'] = self.get_brightness()
         hdu.header['DATE-OBS'] = astropy.time.Time(datetime.datetime.now()).fits
@@ -50,7 +53,7 @@ class ASICam(object):
         hdu.header['INPUTFMT'] = 'FITS'
         hdu.header['XPIXSZ'] = self.pixel_size
         hdu.header['YPIXSZ'] = self.pixel_size
-        hdu.header['EXPTIME'] = hdu.header['EXPOSURE'] = self.get_exposure() * 1e6  # In seconds
+        hdu.header['EXPTIME'] = hdu.header['EXPOSURE'] = self.get_exposure()  # In seconds
         hdu.header['CCD-TEMP'] = self.get_temperature()
         hdu.header['COMMENT'] = comment
 
