@@ -3,10 +3,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import datetime
 
-from pianoq.lab.time_tagger import QPTimeTagger
 from pianoq.misc.borders import Borders
 from pianoq.lab import Edac40, ASICam
 from pianoq.lab.VimbaCamera import VimbaCamera
+from pianoq.lab.time_tagger import QPTimeTagger
 from pianoq_results.QPPickleResult import QPPickleResult
 from pianoq.analysis.contrast_lib import calc_contrast, contrast_to_N_modes
 from matplotlib.patches import Rectangle
