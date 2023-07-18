@@ -7,11 +7,11 @@ import cv2
 
 configs = {
     0: {  # SLM no. 02 from Ori lab with 808
-        'correction_path': r"G:\My Drive\Projects\Klyshko Optimization\Equipment\02 Ori Katz\deformation_correction_pattern\CAL_LSH0801927_810nm.bmp",
+        'correction_path': r"E:\Google Drive\Projects\Klyshko Optimization\Equipment\02 Ori Katz\deformation_correction_pattern\CAL_LSH0801927_810nm.bmp",
         'alpha': 213,
         'geometry': '1272x1024+1913+-30',
         'monitor': 0,  # If using slmpy
-        'active_mask_slice': np.index_exp[240:510, 630:780]
+        'active_mask_slice': np.index_exp[0:1024, 0:1272]
     },
     1: {  # SLM no. 1 with 404nm
         'correction_path': r'F:\SLM-x13138-05\deformation_correction_pattern\CAL_LSH0801946_400nm.bmp',
@@ -45,10 +45,10 @@ configs = {
 }
 
 
-try:
-    import opticalsimulator.external.slmpy as slmpy
-except TypeError:
-    print("Can't use slmpy")
+# try:
+#     import opticalsimulator.external.slmpy as slmpy
+# except TypeError:
+#     print("Can't use slmpy")
 
 
 class SLMDevice(object):
@@ -194,6 +194,12 @@ class SLMDevice(object):
     def pi_step_y(self, y):
         phase = np.zeros(self.correction.shape)
         phase[y:, :] = np.pi
+        self.update_phase(phase)
+
+    def pi_step_x_y(self, x, y):
+        phase = np.zeros(self.correction.shape)
+        phase[y:, :] = np.pi
+        phase[:, x:] = np.pi
         self.update_phase(phase)
 
     def rand_range(self, min_x=None, max_x=None, min_y=None, max_y=None):
