@@ -10,7 +10,8 @@ from pianoq.lab.time_tagger import QPTimeTagger
 
 from pianoq_results.scan_result import ScanResult
 from pianoq.misc.mplt import my_mesh
-LOGS_DIR = "C:\\temp"
+# LOGS_DIR = "C:\\temp"
+LOGS_DIR = r'E:\Google Drive\Projects\Klyshko Optimization\Results\temp'
 
 
 class PhotonScanner(object):
@@ -55,7 +56,7 @@ class PhotonScanner(object):
         if ph is None:
             print('getting photon counter...')
             if self.is_timetagger:
-                ph = QPTimeTagger(integration_time=self.integration_time, coin_window=self.coin_window, single_channel_delays=(14000, 0))
+                ph = QPTimeTagger(integration_time=self.integration_time, coin_window=self.coin_window, single_channel_delays=(0, 0))
             else:
                 ph = PhotonCounter(integration_time=self.integration_time)
             close_ph = True
@@ -103,8 +104,8 @@ class PhotonScanner(object):
         middle_y = self.start_y + (self.pixel_size_y*self.y_pixels / 2)
 
         print('Moving to starting position...')
-        x_motor.move_absolute(self.start_x)
-        y_motor.move_absolute(self.start_y)
+        # x_motor.move_absolute(self.start_x)
+        # y_motor.move_absolute(self.start_y)
 
         # TODO: we need to follow both the absulote value in mm, and also the relevant discreet index in matrix
 
@@ -218,7 +219,7 @@ def small_scan(name='small_area', integration_time=20):
     pixel_size_y = 0.050
 
     scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
-                            run_name=name)
+                            coin_window=1e-9, is_timetagger=True, run_name=name)
     single1s, single2s, coincidences = scanner.scan()
     # scanner.plot_coincidence(name)
 
@@ -237,13 +238,35 @@ def scan_1D(name='1D', integration_time=1):
     # scanner.plot_coincidence(name)
 
 
+def klyshko_scan(name='', integration_time=1):
+    mid_x = 8.6
+    mid_y = 14.0
+    start_x = 6.6
+    start_y = 12.0
+    x_pixels = 40
+    y_pixels = 40
+    pixel_size_x = 0.1
+    pixel_size_y = 0.1
+
+    scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
+                            run_name=name, is_timetagger=True, coin_window=8e-9)
+
+    x_motor = ThorlabsKcubeDC(27600573)
+    print('got x_motor')
+    y_motor = ThorlabsKcubeStepper(26003411)
+    print('got y_motor')
+
+    single1s, single2s, coincidences = scanner.scan(x_motor=x_motor, y_motor=y_motor)
+
+
 if __name__ == '__main__':
     best_x = 17.5
     best_y = 16.9
     best_z = 10  # Not very accurate, but seems OK
 
     # middle_scan(integration_time=3, name='Heralding_filter=10nm', is_timetagger=True, coin_window=1e-9)
-    middle_scan(integration_time=5, name='almost_passover', is_timetagger=True, coin_window=1e-9)
+    # middle_scan(integration_time=5, name='almost_passover', is_timetagger=True, coin_window=1e-9)
     # small_scan(integration_time=1)
     # whole_scan(integration_time=3)
     # scan_1D(integration_time=0.5)
+    klyshko_scan(integration_time=1, name='new_SMF_wide')

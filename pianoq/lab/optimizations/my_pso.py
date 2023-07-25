@@ -233,6 +233,7 @@ class MyPSOOptimizer(object):
             amps = self.swarm.sample_func(self.swarm.n_var)
             costt, cost_std, im = self.swarm.cost_func(amps)
             cost += costt
+        print('Done initializing random average cost')
 
         return cost / self.n_for_average_cost
 
