@@ -7,8 +7,7 @@ from scipy.optimize import differential_evolution
 from pianoq.lab.slm import SLMDevice
 from pianoq.lab.time_tagger import QPTimeTagger
 from pianoq.lab.asi_cam import ASICam
-from opticalsimulator.results import OptimizerResult
-from opticalsimulator.simulations.ronen.misc_utils import spiral
+from pianoq_results.slm_optimization_result import SLMOptimizationResult
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
@@ -16,7 +15,7 @@ import cv2
 LOGS_DIR = 'C:\\temp'
 
 
-class Optimizer(object):
+class SLMOptimizer(object):
     """
         This optimizer can work both in lab and in simulation!
         It assumes this configuration: Beam->SLM1-4f-SLM2-2f->camera.
@@ -38,7 +37,7 @@ class Optimizer(object):
     POINTS_FOR_LOCK_IN = 6
     N = 1024  # For simulation grid size
 
-    BORDERS = Borders(-0.010, -0.010, 0.010, 0.010)
+    # BORDERS = Borders(-0.010, -0.010, 0.010, 0.010)
     WAVELENGTH = 404e-9
     FOCAL_LENGTH = 0.300
 
@@ -69,7 +68,7 @@ class Optimizer(object):
         self.run_name = run_name
         self.saveto_path = saveto_path
 
-        self.result = OptimizerResult()
+        self.result = SLMOptimizationResult()
         self.result.powers = []
         self.result.mid_results = {}
         self.mid_results_diff = mid_results_diff
@@ -81,9 +80,9 @@ class Optimizer(object):
             self.diffuser = SLMMask(self.BORDERS, pixels_x=self.MICRO_PIXELS_X, pixels_y=self.MICRO_PIXELS_Y)
             self.farfield = FourierLens() #f=self.FOCAL_LENGTH)
         else:
-            self.slm = RealSLMDevice(1)
+            self.slm = SLMDevice(1)
             # self.diffuser = RealSLMDevice(2, use_mirror=True)
-            self.camera = VimbaCamera(0, exposure_time=self.exposure_time)  # micro-s
+            self.camera = ASICam(exposure=self.exposure_time)  # micro-s
 
         # self._init_init_power()
         # self.show_input_field()
