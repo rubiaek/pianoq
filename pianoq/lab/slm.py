@@ -186,20 +186,27 @@ class SLMDevice(object):
         phase = np.zeros(self.correction.shape)
         self.update_phase(phase)
 
-    def pi_step(self, x):
+    def pi_step(self, x, half_pi=False, another_x=None):
+        half_factor = 0.5 if half_pi else 1
         phase = np.zeros(self.correction.shape)
-        phase[:, x:] = np.pi
+        phase[:, x:] = np.pi * half_factor
+        if another_x:
+            phase[:, another_x:] = 0
         self.update_phase(phase)
 
-    def pi_step_y(self, y):
+    def pi_step_y(self, y, half_pi=False, another_y=None):
+        half_factor = 0.5 if half_pi else 1
         phase = np.zeros(self.correction.shape)
-        phase[y:, :] = np.pi
+        phase[y:, :] = np.pi * half_factor
+        if another_y:
+            phase[another_y:, :] = 0
         self.update_phase(phase)
 
-    def pi_step_x_y(self, x, y):
+    def pi_step_x_y(self, x, y, half_pi=False):
+        half_factor = 0.5 if half_pi else 1
         phase = np.zeros(self.correction.shape)
-        phase[y:, :] = np.pi
-        phase[:, x:] = np.pi
+        phase[y:, :] = np.pi * half_factor
+        phase[:, x:] = np.pi * half_factor
         self.update_phase(phase)
 
     def rand_range(self, min_x=None, max_x=None, min_y=None, max_y=None):

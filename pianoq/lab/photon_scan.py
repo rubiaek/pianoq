@@ -240,23 +240,28 @@ def scan_1D(name='1D', integration_time=1):
 
 def klyshko_scan(name='', integration_time=1):
     mid_x = 8.6
-    mid_y = 14.0
-    start_x = 6.6
-    start_y = 12.0
-    x_pixels = 40
-    y_pixels = 40
-    pixel_size_x = 0.1
-    pixel_size_y = 0.1
+    mid_y = 13.3
+    start_x = 7.85
+    start_y = 12.6
+    x_pixels = 30
+    y_pixels = 30
+    pixel_size_x = 0.05
+    pixel_size_y = 0.05
 
     scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
-                            run_name=name, is_timetagger=True, coin_window=8e-9)
+                            run_name=name, is_timetagger=True, coin_window=1e-9)
 
     x_motor = ThorlabsKcubeDC(27600573)
     print('got x_motor')
     y_motor = ThorlabsKcubeStepper(26003411)
     print('got y_motor')
+    tt = QPTimeTagger(integration_time=integration_time, coin_window=1e-9, single_channel_delays=(0, 1600))
+    print('got timetagger')
 
-    single1s, single2s, coincidences = scanner.scan(x_motor=x_motor, y_motor=y_motor)
+    single1s, single2s, coincidences = scanner.scan(x_motor=x_motor, y_motor=y_motor, ph=tt)
+    x_motor.close()
+    # y_motor.close() # pesky bug?
+    tt.close()
 
 
 if __name__ == '__main__':
@@ -269,4 +274,4 @@ if __name__ == '__main__':
     # small_scan(integration_time=1)
     # whole_scan(integration_time=3)
     # scan_1D(integration_time=0.5)
-    klyshko_scan(integration_time=1, name='new_SMF_wide')
+    klyshko_scan(integration_time=6, name='new_SMF_two_photon_speckle_4s')
