@@ -8,9 +8,8 @@ import astropy.time
 # asi.init('C:\\code\\ASI_Windows_SDK_V1.22\\ASI SDK\\lib\\x64\\ASICamera2.dll')
 
 class ASICam(object):
-    def __init__(self, exposure=1.5, binning=2, image_bits=16, roi=(1500, 950, 200, 200)):
+    def __init__(self, exposure=1.5, binning=2, image_bits=16, roi=(1500, 950, 200, 200), gain=None):
         self._cam = asi.Camera(0)  # Assume we will always have only 1 camera
-        self.set_roi = self._cam.set_roi
         self.get_roi = self._cam.get_roi
         self.get_image = self._cam.capture
         self.image_bits = self.set_image_bits(8)
@@ -20,6 +19,8 @@ class ASICam(object):
         self.set_exposure(exposure)
         self.set_image_bits(image_bits)
         self.set_roi(*roi)
+        if gain:
+            self.set_gain(gain)
 
     def show_image(self, im=None, title=None, **kwargs):
         if im is None:
@@ -58,6 +59,11 @@ class ASICam(object):
         hdu.header['COMMENT'] = comment
 
         hdu.writeto(path)
+
+    def set_roi(self, start_x=None, start_y=None, width=None, height=None, bins=None):
+        width -= width % 8  # Must be a multiple of 8
+        height -= height % 2  # Must be a multiple of 2
+        self._cam.set_roi(start_x, start_y, width, height)
 
     def set_exposure(self, exposure):
         """ in seconds """
