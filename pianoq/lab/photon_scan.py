@@ -239,14 +239,14 @@ def scan_1D(name='1D', integration_time=1):
 
 
 def klyshko_scan(name='', integration_time=1):
-    mid_x = 8.6
+    mid_x = 6.2
     mid_y = 13.3
-    start_x = 7.85
-    start_y = 12.6
-    x_pixels = 30
-    y_pixels = 30
-    pixel_size_x = 0.05
-    pixel_size_y = 0.05
+    start_x = 5
+    start_y = 12
+    x_pixels = 20
+    y_pixels = 20
+    pixel_size_x = 0.1
+    pixel_size_y = 0.1
 
     scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
                             run_name=name, is_timetagger=True, coin_window=1e-9)
@@ -274,4 +274,4 @@ if __name__ == '__main__':
     # small_scan(integration_time=1)
     # whole_scan(integration_time=3)
     # scan_1D(integration_time=0.5)
-    klyshko_scan(integration_time=6, name='new_SMF_two_photon_speckle_4s')
+    klyshko_scan(integration_time=1, name='new_SMF_after_diode_stuff_search_corr_again')
