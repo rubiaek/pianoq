@@ -61,8 +61,10 @@ class ASICam(object):
         hdu.writeto(path)
 
     def set_roi(self, start_x=None, start_y=None, width=None, height=None, bins=None):
-        width -= width % 8  # Must be a multiple of 8
-        height -= height % 2  # Must be a multiple of 2
+        if width is not None:
+            width -= width % 8  # Must be a multiple of 8
+        if height is not None:
+            height -= height % 2  # Must be a multiple of 2
         self._cam.set_roi(start_x, start_y, width, height)
 
     def set_exposure(self, exposure):

@@ -239,12 +239,12 @@ def scan_1D(name='1D', integration_time=1):
 
 
 def klyshko_scan(name='', integration_time=1):
-    mid_x = 6.2
+    mid_x = 7.3
     mid_y = 13.3
-    start_x = 5
+    start_x = 6
     start_y = 12
-    x_pixels = 20
-    y_pixels = 20
+    x_pixels = 40
+    y_pixels = 40
     pixel_size_x = 0.1
     pixel_size_y = 0.1
 

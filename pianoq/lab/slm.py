@@ -11,7 +11,8 @@ configs = {
         'alpha': 213,
         'geometry': '1272x1024+1913+-30',
         'monitor': 0,  # If using slmpy
-        'active_mask_slice': np.index_exp[430:630, 380:580]
+        # 'active_mask_slice': np.index_exp[430:630, 380:580]
+        'active_mask_slice': np.index_exp[100:1000, 100:1000]
     },
     1: {  # SLM no. 1 with 404nm
         'correction_path': r'F:\SLM-x13138-05\deformation_correction_pattern\CAL_LSH0801946_400nm.bmp',

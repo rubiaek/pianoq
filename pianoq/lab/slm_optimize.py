@@ -14,6 +14,10 @@ import numpy as np
 LOGS_DIR = 'C:\\temp'
 
 
+def spiral(X, Y):
+    yield 0, 0
+
+
 class SLMOptimizer(object):
     POINTS_FOR_LOCK_IN = 6
 
@@ -82,9 +86,9 @@ class SLMOptimizer(object):
 
     def _continuous(self):
         while True:
-            for i, j in spiral(self.macro_pixels_y_slm, self.macro_pixels_x_slm):
+            for i, j in spiral(self.macro_pixels, self.macro_pixels):
                 # new_i = (i + 2) % self.macro_pixels_y_slm
-                mask_to_play = np.zeros([self.macro_pixels_y_slm, self.macro_pixels_x_slm])
+                mask_to_play = np.zeros([self.macro_pixels, self.macro_pixels])
                 mask_to_play[i, j] = 1
                 yield mask_to_play
 
@@ -131,7 +135,7 @@ class SLMOptimizer(object):
             else:
                 print('**At shortest exposure and still saturated... You might want to add an ND to the camera..**')
 
-    def _get_best_phi(self, phis, powers, plot_cos=False):
+    def _get_best_phi(self, phis, powers, plot_cos=True):
         # "Lock in"
         C1 = powers * np.cos(phis)
         C = np.sum(C1)
@@ -176,19 +180,23 @@ class SLMOptimizer(object):
 
 if __name__ == '__main__':
     if True:  # Lab
-        macro_pixels = 30
+        macro_pixels = 10
         sleep_period = 0.1
         run_name = 'optimizer_result'
 
         asi_exposure_time = 1e-3
-        roi = (None, None, None, None)
+        roi = (2800, 2000, 400, 400)
+        l = 3
+        cost_roi = np.index_exp[200-l:200+l, 200-l:200+l]
 
         slm = SLMDevice(0)
         cam = ASICam(asi_exposure_time, binning=1, roi=roi, gain=0)
+
+        # cam.set_roi(2800, 2000, 400, 400)
         # tt = QPTimeTagger(integration_time=1, coin_window=1e-9, single_channel_delays=(0, 1600))
 
         o = SLMOptimizer(macro_pixels=macro_pixels, sleep_period=sleep_period, run_name=run_name, saveto_path=None)
-        g = o.optimize(method=SLMOptimizer.PARTITIONING, iterations=(macro_pixels**2)*2, slm=slm, cam=cam)
+        g = o.optimize(method=SLMOptimizer.PARTITIONING, iterations=(macro_pixels**2)*2, slm=slm, cam=cam, roi=cost_roi)
 
         for i in g:
             if i == 5:  # Just so there will be lines of code to break from while debugging
