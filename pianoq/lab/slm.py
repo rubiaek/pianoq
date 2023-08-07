@@ -154,7 +154,7 @@ class SLMDevice(object):
 
         phase = self.phase_grid.copy()
         if self.use_mirror and not dont_use_mirror:
-            mirror_phase = self._get_mirror_phase(m=40)
+            mirror_phase = self._get_mirror_phase(m=15, angle=np.pi/2)
             phase += mirror_phase
 
         # Calculating image to send to the SLM (see data sheet for an example)

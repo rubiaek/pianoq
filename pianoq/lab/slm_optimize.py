@@ -19,7 +19,7 @@ def spiral(X, Y):
 
 
 class SLMOptimizer(object):
-    POINTS_FOR_LOCK_IN = 6
+    POINTS_FOR_LOCK_IN = 8
 
     PARTITIONING = 'partitioning'
     CONTINUOUS = 'continuous'
@@ -99,6 +99,7 @@ class SLMOptimizer(object):
 
     def do_iteration(self, mask_to_play):
         current_iter_costs = []
+        # TODO: export 1pi option (relevant for Klyshko where we hit the SLM twice)
         phis = np.linspace(0, 2 * np.pi, self.POINTS_FOR_LOCK_IN+1)
         phis = phis[:-1]  # Don't need both 0 and 2*pi
 
@@ -185,14 +186,13 @@ if __name__ == '__main__':
         run_name = 'optimizer_result'
 
         asi_exposure_time = 1e-3
-        roi = (2800, 2000, 400, 400)
+        roi = (2800, 1600, 400, 400)
         l = 3
         cost_roi = np.index_exp[200-l:200+l, 200-l:200+l]
 
-        slm = SLMDevice(0)
+        slm = SLMDevice(0, use_mirror=True)
         cam = ASICam(asi_exposure_time, binning=1, roi=roi, gain=0)
 
-        # cam.set_roi(2800, 2000, 400, 400)
         # tt = QPTimeTagger(integration_time=1, coin_window=1e-9, single_channel_delays=(0, 1600))
 
         o = SLMOptimizer(macro_pixels=macro_pixels, sleep_period=sleep_period, run_name=run_name, saveto_path=None)
