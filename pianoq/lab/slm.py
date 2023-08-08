@@ -66,8 +66,6 @@ class SLMDevice(object):
         self.correction: np.ndarray = plt.imread(self.config['correction_path'])
 
         self.pixels_y, self.pixels_x = self.correction.shape
-        self.active_x_pixels = self.active_mask_slice[1].stop - self.active_mask_slice[1].start
-        self.active_y_pixels = self.active_mask_slice[0].stop - self.active_mask_slice[0].start
 
         self.phase_grid = np.zeros(self.correction.shape)
         x = np.arange(0, self.pixels_x)
@@ -93,6 +91,14 @@ class SLMDevice(object):
             self.slm = slmpy.SLMdisplay(monitor=self.config['monitor'])
 
         self.normal()
+
+    @property
+    def active_x_pixels(self):
+        return self.active_mask_slice[1].stop - self.active_mask_slice[1].start
+
+    @property
+    def active_y_pixels(self):
+        return self.active_mask_slice[0].stop - self.active_mask_slice[0].start
 
     def restore_position(self):
         if matplotlib.get_backend() == 'TkAgg':
