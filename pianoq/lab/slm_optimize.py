@@ -13,7 +13,6 @@ import numpy as np
 
 LOGS_DIR = 'C:\\temp'
 
-
 def spiral(X, Y):
     yield 0, 0
 
@@ -48,13 +47,15 @@ class SLMOptimizer(object):
         self.cam = None
         self.roi = None
         self.timetagger = None
+        self.best_phi_method = None
 
     # Optimization functions
-    def optimize(self, method='continuous', iterations: int = 1000, slm=None, cam=None, timetagger=None, roi=None):
+    def optimize(self, method='partitioning', iterations: int = 1000, slm=None, cam=None, timetagger=None, roi=None, best_phi_method='lock_in'):
         self.slm = slm
         self.cam = cam
         self.timetagger = timetagger
         self.roi = roi
+        self.best_phi_method = best_phi_method
 
         mask_generator = None
         lock_in_method = True
@@ -62,6 +63,14 @@ class SLMOptimizer(object):
         try:
             if method == self.PARTITIONING:
                 mask_generator = self._partitioning()
+            elif method == self.GENETIC:
+                lock_in_method = False
+                bounds = [[0, 2 * np.pi]] * self.macro_pixels * self.macro_pixels
+                res = differential_evolution(self.get_cost_genetic, bounds,
+                                             strategy='best1bin', maxiter=iterations,
+                                             popsize=0.1, recombination=0.5, mutation=(0.01, 0.1))
+                self._save_result()
+                self.genetic_res = res
             else:
                 raise NotImplemented()
 
@@ -76,7 +85,7 @@ class SLMOptimizer(object):
                     print(f'took {duration} seconds')
                     self._save_result()
 
-                    yield
+                    # yield
 
         except Exception:
             print('==>ERROR!<==')
@@ -100,7 +109,8 @@ class SLMOptimizer(object):
     def do_iteration(self, mask_to_play):
         current_iter_costs = []
         # TODO: export 1pi option (relevant for Klyshko where we hit the SLM twice)
-        phis = np.linspace(0, 2 * np.pi, self.POINTS_FOR_LOCK_IN+1)
+        # TODO: maybe not 1*pi?
+        phis = np.linspace(0, np.pi, self.POINTS_FOR_LOCK_IN+1)
         phis = phis[:-1]  # Don't need both 0 and 2*pi
 
         for phi in phis:
@@ -109,7 +119,8 @@ class SLMOptimizer(object):
             cost, cost_witness = self.get_cost()
             self.res.all_phase_masks.append(phase_mask)
             self.res.all_costs.append(cost)
-            self.res.all_cost_witnesses.append(cost_witness)
+            # self.res.all_cost_witnesses.append(cost_witness)
+            self.res.all_cost_witnesses.append(None)
             current_iter_costs.append(cost)
 
         best_phi = self._get_best_phi(phis, current_iter_costs)
@@ -136,16 +147,23 @@ class SLMOptimizer(object):
             else:
                 print('**At shortest exposure and still saturated... You might want to add an ND to the camera..**')
 
-    def _get_best_phi(self, phis, powers, plot_cos=True):
-        # "Lock in"
-        C1 = powers * np.cos(phis)
-        C = np.sum(C1)
-        S1 = powers * np.sin(phis)
-        S = np.sum(S1)
-        A = C + 1j * S
-        best_phi = np.angle(A)
-        if best_phi < 0:
-            best_phi += 2 * np.pi
+    def _get_best_phi(self, phis, powers, plot_cos=False):
+        if self.best_phi_method == 'lock_in':
+            # "Lock in"
+            C1 = powers * np.cos(phis)
+            C = np.sum(C1)
+            S1 = powers * np.sin(phis)
+            S = np.sum(S1)
+            A = C + 1j * S
+            best_phi = np.angle(A)
+            if best_phi < 0:
+                best_phi += 2 * np.pi
+        elif self.best_phi_method == 'silly_max':
+            best_phi = phis[np.argmax(powers)]
+        elif self.best_phi_method == 'cos_fit':
+            raise Exception('not implemented yet')
+        else:
+            raise Exception('say wat?')
 
         if plot_cos:
             fig, ax = plt.subplots()
@@ -154,6 +172,25 @@ class SLMOptimizer(object):
             fig.show()
 
         return best_phi
+
+    def get_cost_genetic(self, phase_mask):
+        if phase_mask.shape == (self.macro_pixels*self.macro_pixels,):
+            phase_mask = phase_mask.reshape(self.macro_pixels, self.macro_pixels)
+        else:
+            raise Exception("something unexpected!")
+
+        self.slm.update_phase_in_active(phase_mask)
+        self.slm.update_phase_in_active(phase_mask)
+        cost, cost_witness = self.get_cost()
+        self.res.all_phase_masks.append(phase_mask)
+        self.res.all_costs.append(cost)
+        self.res.all_cost_witnesses.append(cost_witness)
+
+        if self.micro_iter_num % 10 == 0:
+            print(f'\niteration: {self.micro_iter_num}. cost={cost}')
+            self._save_result()
+
+        return -cost
 
     def get_cost(self):
         self.micro_iter_num += 1
@@ -164,7 +201,7 @@ class SLMOptimizer(object):
             cost = c-2*s1*s2*self.timetagger.coin_window
             cost_witness = None
         else:
-            cost_witness = cam.get_image()
+            cost_witness = self.cam.get_image()
             self._fix_exposure(cost_witness)
             if self.roi:
                 imm = cost_witness[self.roi]
@@ -181,23 +218,26 @@ class SLMOptimizer(object):
 
 if __name__ == '__main__':
     if True:  # Lab
-        macro_pixels = 10
+        macro_pixels = 20
         sleep_period = 0.1
         run_name = 'optimizer_result'
 
-        asi_exposure_time = 1e-3
-        roi = (2800, 1600, 400, 400)
+        asi_exposure_time = 3e-3
+        roi = (2800, 1950, 400, 400)
         l = 3
         cost_roi = np.index_exp[200-l:200+l, 200-l:200+l]
 
         slm = SLMDevice(0, use_mirror=True)
         cam = ASICam(asi_exposure_time, binning=1, roi=roi, gain=0)
 
-        # tt = QPTimeTagger(integration_time=1, coin_window=1e-9, single_channel_delays=(0, 1600))
+        # tt = QPTimeTagger(integration_time=1, coin_window=2e-9, single_channel_delays=(0, 1600))
 
         o = SLMOptimizer(macro_pixels=macro_pixels, sleep_period=sleep_period, run_name=run_name, saveto_path=None)
-        g = o.optimize(method=SLMOptimizer.PARTITIONING, iterations=(macro_pixels**2)*2, slm=slm, cam=cam, roi=cost_roi)
+        # g = o.optimize(method=SLMOptimizer.PARTITIONING, iterations=(macro_pixels**2)*2, slm=slm, timetagger=tt)
+        g = o.optimize(method=SLMOptimizer.PARTITIONING, iterations=(macro_pixels**2)*2, slm=slm, cam=cam, roi=cost_roi,
+                       best_phi_method='silly_max')
+        # g = o.optimize(method=SLMOptimizer.GENETIC, iterations=(macro_pixels**2)*2, slm=slm, cam=cam, roi=cost_roi)
 
-        for i in g:
-            if i == 5:  # Just so there will be lines of code to break from while debugging
-                pass
+        # for i in g:
+        #     if i == 5:  # Just so there will be lines of code to break from while debugging
+        #         pass
