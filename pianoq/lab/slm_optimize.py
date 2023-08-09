@@ -212,7 +212,7 @@ class SLMOptimizer(object):
         return cost, cost_witness
 
     def _save_result(self):
-        saveto_path = self.saveto_path or f"{LOGS_DIR}\\{self.timestamp}_{self.run_name}.optimizer"
+        saveto_path = self.saveto_path or f"{LOGS_DIR}\\{self.timestamp}_{self.run_name}.optimizer2"
         self.res.saveto(saveto_path)
 
 
