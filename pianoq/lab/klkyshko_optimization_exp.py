@@ -199,7 +199,7 @@ if __name__ == "__main__":
     }
 
     ke = KlyshkoExperiment(config)
-    ke.run('first_full_try')
+    ke.run('second_full_try')
     ke.close()
 
 """
