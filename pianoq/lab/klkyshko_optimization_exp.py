@@ -17,7 +17,7 @@ from pianoq.lab.thorlabs_motor import ThorlabsKcubeStepper, ThorlabsKcubeDC
 from pianoq.lab.time_tagger import QPTimeTagger
 from pianoq.misc.flushing_file import FlushingPrintingFile
 
-LOGS_DIR = r'G:\My Drive\Projects\Quantum Piano\Results\temp'
+LOGS_DIR = r'E:\Google Drive\Projects\Klyshko Optimization\Results\temp'
 
 
 class KlyshkoExperiment(object):
@@ -36,8 +36,7 @@ class KlyshkoExperiment(object):
         self.y_motor = ThorlabsKcubeStepper(26003411)
         print('got y_motor')
 
-        self.asi_cam = ASICam(exposure=self.config['cam_exposure'], binning=1, image_bits=16,
-                              roi=self.config['cam_roi'], gain=0)
+        self.asi_cam = ASICam(exposure=self.config['cam_exposure'], binning=1, roi=self.config['cam_roi'], gain=0)
         print('got ASI camera')
 
         self.photon_counter = QPTimeTagger(integration_time=self.config['optimized_integration_time'],
@@ -74,7 +73,7 @@ class KlyshkoExperiment(object):
             input('Press enter when you changed to diode...')
             self.take_asi_pic('diode_no_diffuser')
             input('Press enter when you added the diffuser...')
-            self.take_asi_pic('speckles')
+            self.take_asi_pic('diode_speckles')
             self.slm_optimize()
             self.set_slm_optimized()
             self.take_asi_pic('diode_optimized')
@@ -125,9 +124,14 @@ class KlyshkoExperiment(object):
         optimization_result_path = f'{self.dir_path}\\{self.timestamp}_optimized.optimizer2'
         self.optimizer = SLMOptimizer(macro_pixels=self.config['macro_pixels'], sleep_period=0.001, run_name='run_name',
                                       saveto_path=optimization_result_path)
+
+        y = self.config['cost_roi_mid'][0]
+        x = self.config['cost_roi_mid'][1]
+        l = 5
+        cost_roi = np.index_exp[y-l: y+l, x-l: x+l]
         self.optimizer.optimize(method=SLMOptimizer.PARTITIONING, iterations=self.config['n_iterations'],
                                 slm=self.slm, cam=self.asi_cam,
-                                roi=self.config['cost_roi'], best_phi_method=self.config['best_phi_method'])
+                                roi=cost_roi, best_phi_method=self.config['best_phi_method'])
 
     def scan_coincidence(self, title=''):
         print(f'### Scanning {title} two-photon speckle ###')
@@ -155,53 +159,64 @@ class KlyshkoExperiment(object):
         if self.log_file:
             self.log_file.close()
 
+        print('Done closing')
+
 
 if __name__ == "__main__":
 
-    l = 3
     config = {
         # hardware
-        'cam_roi': (1400, 780, 400, 500),
-        'cam_exposure': 3e-3,
+        'cam_roi': (2800, 1550, 400, 400),
+        'cam_exposure': 1e-3,
 
         # optimization
-        'n_iterations': 200,
-        'cost_roi': np.index_exp[200-l:200+l, 200-l:200+l],
+        'n_iterations': 250,
+        'cost_roi_mid': (200, 200),
         'best_phi_method': 'silly_max',
-        'macro_pixels': 20,
+        'macro_pixels': 25,
 
         # scan areas
         # TODO: the real scanning params
-        'start_x': 16.2,
-        'start_y': 16.025,
-        'x_pixels': 30,
-        'y_pixels': 30,
-        'pix_size': 0.025,
-        # 'x_pixels': 15,
-        # 'y_pixels': 15,
-        # 'pix_size': 0.05,
+        # mid_x = 13.6
+        # mid_y = 8.6
+        'start_x': 7.95,
+        'start_y': 13.0,
+        # 'x_pixels': 30,
+        # 'y_pixels': 30,
+        # 'pix_size': 0.025,
+        'x_pixels': 20,
+        'y_pixels': 20,
+        'pix_size': 0.05,
 
         # Integration times
         'optimized_integration_time': 2,
-        'speckle_integration_time': 2,
-        'focus_integration_time': 5,
-        'ASI_exposure': 8,
+        'speckle_integration_time': 1,
+        'focus_integration_time': 1,
 
         # Timetagger
         'is_time_tagger': True,
-        'coin_window': 1e-9,
+        'coin_window': 2e-9,
     }
 
-    is_test = False
-    if is_test:
-        config['focus_scan_integration_time'] = 1
-        config['speckle_scan_integration_time'] = 1
-        config['piano_integration_time'] = 1
-        config['x_pixels'] = 3
-        config['y_pixels'] = 3
-        config['n_iterations'] = 3
-        config['is_time_tagger'] = True
-
     ke = KlyshkoExperiment(config)
-    ke.run('first_try')
+    ke.run('first_full_try')
     ke.close()
+
+"""
+    ke.slm.close()
+    ke.make_dir()
+    ke.save_config('comment')
+
+    ###### SPDC ######
+    input('Press enter when you changed to SPCMs...')
+    ke.set_photon_integration_time(ke.config['optimized_integration_time'])
+    ke.scan_coincidence('corr_optimized')
+
+    input('now put phase on SLM back to normal')
+    ke.set_photon_integration_time(ke.config['speckle_integration_time'])
+    ke.scan_coincidence('two_photon_speckle')
+
+    input('Press enter when you removed the diffuser...')
+    ke.set_photon_integration_time(ke.config['focus_integration_time'])
+    ke.scan_coincidence('corr_no_diffuser')
+"""
