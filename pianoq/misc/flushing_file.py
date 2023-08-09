@@ -1,3 +1,4 @@
+import traceback
 import time
 
 
@@ -10,16 +11,31 @@ class FlushingPrintingFile(object):
         self.last_written = time.time()
 
     def write(self, data):
+        self.old_stdout.write(data)
         self.f.write(data)
-        if time.time() - self.last_written > 15: # For google drive to syncronize
+        if time.time() - self.last_written > 15:  # For google drive to syncronize
             self.f.flush()
             self.last_written = time.time()
 
-        self.old_stdout.write(data)
-
     def flush(self):
-        self.f.flush()
+        try:
+            self.f.flush()
+        except Exception as e:
+            print('Exception!!!')
+            print(e)
+            traceback.print_exc()
 
     def close(self):
-        self.flush()
-        self.f.close()
+        try:
+            self.flush()
+        except Exception as e:
+            print('Exception!!!')
+            print(e)
+            traceback.print_exc()
+        try:
+            self.f.close()
+        except Exception as e:
+            print('Exception!!!')
+            print(e)
+            traceback.print_exc()
+
