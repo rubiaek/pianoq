@@ -34,8 +34,6 @@ class SLMOptimizer(object):
         self.saveto_path = saveto_path
 
         self.res = SLMOptimizationResult()
-        self.res.powers = []
-        self.res.mid_results = {}
         self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
 
         self.cur_best_slm_phase = np.zeros([self.macro_pixels, self.macro_pixels])
@@ -60,6 +58,8 @@ class SLMOptimizer(object):
         mask_generator = None
         lock_in_method = True
         self.res.opt_method = method
+        self.res.best_phi_method = best_phi_method
+        self.res.roi = roi
         try:
             if method == self.PARTITIONING:
                 mask_generator = self._partitioning()
