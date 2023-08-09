@@ -11,7 +11,6 @@ from pianoq.lab.photon_counter import PhotonCounter
 from pianoq.lab.asi_cam import ASICam
 from pianoq.lab.slm import SLMDevice
 from pianoq.lab.photon_scan import PhotonScanner
-from pianoq.lab.piano_optimization import PianoOptimization
 from pianoq.lab.slm_optimize import SLMOptimizer
 from pianoq.lab.thorlabs_motor import ThorlabsKcubeStepper, ThorlabsKcubeDC
 from pianoq.lab.time_tagger import QPTimeTagger
