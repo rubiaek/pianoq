@@ -74,6 +74,10 @@ class SLMDevice(object):
         self.use_mirror = use_mirror
         self.use_slmpy = use_slmpy
 
+        self.is_pinhole = False
+        self.center = None
+        self.radius = None
+
         if not self.use_slmpy:
             self.fig = plt.figure(f'SLM{self.config_num}-Figure', frameon=False)
             self.axes = self.fig.add_axes([0., 0., 1., 1., ])
@@ -91,6 +95,15 @@ class SLMDevice(object):
             self.slm = slmpy.SLMdisplay(monitor=self.config['monitor'])
 
         self.normal()
+
+        # I want to use the pinhole, and then the square macro pixels aren't the best...
+        # Probably should have a slm.set_hexs that gets a vector as an input and the partitioning should just do that
+        # It will beed a slight redesign also of slm_optimize.
+        # For anything to work you also need to start with monkey patching np.int = int and np.float = float
+        # hexs = SLMlayout.Hexagons(radius=150, cellSize=20, resolution=slm.correction.shape, center=(500, 500), method='equal')
+        # patt = hexs.getImageFromVec(np.random.rand(hexs.nParts), dtype=float)  # -> phase mask with hexagons with different phases
+        # mimshow(patt)
+        # slm.update_phase(patt)
 
     @property
     def active_x_pixels(self):
@@ -162,6 +175,9 @@ class SLMDevice(object):
         if self.use_mirror and not dont_use_mirror:
             mirror_phase = self._get_mirror_phase(m=15, angle=np.pi/2)
             phase += mirror_phase
+
+        if self.is_pinhole:
+            phase += self._get_pinhole_phase(self.radius, self.center)
 
         # Calculating image to send to the SLM (see data sheet for an example)
         phase = np.mod(phase * 255 / (2 * np.pi) + self.correction, 256)
@@ -361,11 +377,20 @@ class SLMDevice(object):
         mask = (Y-center[0])**2 + (X-center[1])**2 > radius**2
         return mask.astype(int)
 
-    def set_pinhole(self, radius, center):
-        # slm.set_pinhole(150, (530, 500))
+    def _get_pinhole_phase(self, radius, center):
         phase = 2 * np.pi * np.random.rand(*self.correction.shape)
         mask = self._get_out_of_disk_mask(radius, center)
-        self.update_phase(phase * mask)
+        return mask * phase
+
+    def set_pinhole(self, radius, center):
+        # slm.set_pinhole(150, (530, 500))
+        self.update_phase(self._get_pinhole_phase(radius, center))
+        self.is_pinhole = True
+        self.center = center
+        self.radius = radius
+
+    def set_not_pinhole(self):
+        self.is_pinhole = False
 
     def close(self):
         if not self.use_slmpy:
