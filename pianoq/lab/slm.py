@@ -352,6 +352,21 @@ class SLMDevice(object):
         phase = np.sin(angle) * Xs + np.cos(angle) * Ys
         return phase
 
+    def _get_out_of_disk_mask(self, radius, center=None, shape=None):
+        if not shape:
+            shape = self.correction.shape
+        if not center:
+            center = (shape[0]//2, shape[1]//2)
+        X, Y = np.meshgrid(np.arange(shape[1]), np.arange(shape[0]))
+        mask = (Y-center[0])**2 + (X-center[1])**2 > radius**2
+        return mask.astype(int)
+
+    def set_pinhole(self, radius, center):
+        # slm.set_pinhole(150, (530, 500))
+        phase = 2 * np.pi * np.random.rand(*self.correction.shape)
+        mask = self._get_out_of_disk_mask(radius, center)
+        self.update_phase(phase * mask)
+
     def close(self):
         if not self.use_slmpy:
             plt.close(self.fig)
