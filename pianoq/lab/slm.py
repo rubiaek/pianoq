@@ -104,6 +104,7 @@ class SLMDevice(object):
         # patt = hexs.getImageFromVec(np.random.rand(hexs.nParts), dtype=float)  # -> phase mask with hexagons with different phases
         # mimshow(patt)
         # slm.update_phase(patt)
+        # https://www.wavefrontshaping.net/post/id/24
 
     @property
     def active_x_pixels(self):
