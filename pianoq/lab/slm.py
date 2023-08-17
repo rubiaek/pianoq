@@ -77,6 +77,7 @@ class SLMDevice(object):
         self.is_pinhole = False
         self.center = None
         self.radius = None
+        self.pinhole_type = 'rand'
         self.rand_phase = 2 * np.pi * np.random.rand(*self.correction.shape)
 
         if not self.use_slmpy:
@@ -179,7 +180,7 @@ class SLMDevice(object):
             phase += mirror_phase
 
         if self.is_pinhole:
-            phase += self._get_pinhole_phase(self.radius, self.center)
+            phase += self._get_pinhole_phase(self.radius, self.center, self.pinhole_type)
 
         # Calculating image to send to the SLM (see data sheet for an example)
         phase = np.mod(phase * 255 / (2 * np.pi) + self.correction, 256)
@@ -379,16 +380,25 @@ class SLMDevice(object):
         mask = (Y-center[0])**2 + (X-center[1])**2 > radius**2
         return mask.astype(int)
 
-    def _get_pinhole_phase(self, radius, center):
+    def _get_pinhole_phase(self, radius, center, pinhole_type=None):
+        pinhole_type = pinhole_type or self.pinhole_type
         mask = self._get_out_of_disk_mask(radius, center)
-        return mask * self.rand_phase
+        if pinhole_type == 'rand':
+            phase = self.rand_phase
+        elif pinhole_type == 'mirror':
+            phase = self._get_mirror_phase(m=100, angle=-np.pi/2)
+        else:
+            raise NotImplementedError()
 
-    def set_pinhole(self, radius, center):
+        return mask * phase
+
+    def set_pinhole(self, radius, center, pinhole_type='rand'):
         # slm.set_pinhole(150, (530, 500))
-        self.update_phase(self._get_pinhole_phase(radius, center))
         self.is_pinhole = True
         self.center = center
         self.radius = radius
+        self.pinhole_type = pinhole_type
+        self.update()
 
     def set_not_pinhole(self):
         self.is_pinhole = False

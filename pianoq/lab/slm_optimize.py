@@ -77,8 +77,11 @@ class SLMOptimizer(object):
                 self._save_result()
                 self.genetic_res = res
             elif method == self.PARTITIONING_HEX:
+                print("Getting Hexs...")
                 self.hexs = SLMlayout.Hexagons(radius=self.slm.radius, cellSize=cell_size,
-                                          resolution=self.slm.correction.shape, center=self.slm.center, method='grid')
+                                               resolution=self.slm.correction.shape, center=self.slm.center,
+                                               method='equal')  # TODO: maybe grid?
+                print("Got it!")
                 self.cur_best_slm_phase = np.zeros(self.hexs.nParts)
 
                 mask_generator = self._partitioning_hex()
@@ -156,7 +159,7 @@ class SLMOptimizer(object):
     def update_slm(self, phase_mask):
         if self.res.opt_method == self.PARTITIONING_HEX:
             patt = self.hexs.getImageFromVec(phase_mask, dtype=float)
-            self.slm.update(patt)
+            self.slm.update_phase(patt)
         else:
             self.slm.update_phase_in_active(phase_mask)
 
@@ -244,15 +247,15 @@ if __name__ == '__main__':
     if True:  # Lab
         macro_pixels = 20
         sleep_period = 0.02
-        run_name = 'optimizer_result'
+        run_name = f'radius_150_type_mirror'
 
         asi_exposure_time = 3e-3
-        roi = (2800, 1950, 400, 400)
+        roi = (2950, 1860, 400, 400)
         l = 3
         cost_roi = np.index_exp[200-l:200+l, 200-l:200+l]
 
         slm = SLMDevice(0, use_mirror=True)
-        slm.set_pinhole(150, (530, 500))
+        slm.set_pinhole(radius=150, center=(530, 500), pinhole_type='mirror')  # pinhole_type='rand'
 
         cam = ASICam(asi_exposure_time, binning=1, roi=roi, gain=0)
 
@@ -265,4 +268,4 @@ if __name__ == '__main__':
         # g = o.optimize(method=SLMOptimizer.GENETIC, iterations=(macro_pixels**2)*2, slm=slm, cam=cam, roi=cost_roi)
 
         g = o.optimize(method=SLMOptimizer.PARTITIONING_HEX, iterations=150, slm=slm, cam=cam,
-                       roi=cost_roi, best_phi_method='silly_max')
+                       roi=cost_roi, best_phi_method='silly_max', cell_size=30)

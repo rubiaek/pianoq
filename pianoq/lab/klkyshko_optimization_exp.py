@@ -44,11 +44,12 @@ class KlyshkoExperiment(object):
         print('got photon counter')
 
         self.slm = SLMDevice(0, use_mirror=True)
+        self.slm.set_pinhole(radius=150, center=(530, 500), pinhole_type='mirror')
 
     def make_dir(self):
         # dirs and paths
         self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-        self.dir_path = f"{LOGS_DIR}\\{self.timestamp}"
+        self.dir_path = f"{LOGS_DIR}\\{self.timestamp}_klyshko"
         os.mkdir(self.dir_path)
         print(f"Results will be saved in Here: {self.dir_path}")
 
@@ -69,23 +70,27 @@ class KlyshkoExperiment(object):
             self.redirect_stdout()
 
             ###### diode ######
-            input('Press enter when you changed to diode...')
+            print('Press enter when you changed to diode...')
+            input()
             self.take_asi_pic('diode_no_diffuser')
-            input('Press enter when you added the diffuser...')
+            print('Press enter when you added the diffuser...')
+            input()
             self.take_asi_pic('diode_speckles')
             self.slm_optimize()
             self.set_slm_optimized()
             self.take_asi_pic('diode_optimized')
 
             ###### SPDC ######
-            input('Press enter when you changed to SPCMs...')
+            print('Press enter when you changed to SPCMs...')
+            input()
             self.set_photon_integration_time(self.config['optimized_integration_time'])
             self.scan_coincidence('corr_optimized')
 
             self.slm.normal()
             self.set_photon_integration_time(self.config['speckle_integration_time'])
             self.scan_coincidence('two_photon_speckle')
-            input('Press enter when you removed the diffuser...')
+            print('Press enter when you removed the diffuser...')
+            input()
             self.set_photon_integration_time(self.config['focus_integration_time'])
             self.scan_coincidence('corr_no_diffuser')
 
@@ -110,7 +115,7 @@ class KlyshkoExperiment(object):
             self.photon_counter = PhotonCounter(integration_time=time_sec)
 
     def set_slm_optimized(self):
-        self.slm.update_phase_in_active(self.optimizer.res.best_phase_mask)
+        self.optimizer.update_slm(self.optimizer.res.best_phase_mask)
 
     def take_asi_pic(self, title=''):
         time.sleep(0.2)
@@ -126,14 +131,15 @@ class KlyshkoExperiment(object):
 
         y = self.config['cost_roi_mid'][0]
         x = self.config['cost_roi_mid'][1]
-        l = 5
+        l = 4
         cost_roi = np.index_exp[y-l: y+l, x-l: x+l]
-        self.optimizer.optimize(method=SLMOptimizer.PARTITIONING, iterations=self.config['n_iterations'],
+        self.optimizer.optimize(method=SLMOptimizer.PARTITIONING_HEX, iterations=self.config['n_iterations'],
                                 slm=self.slm, cam=self.asi_cam,
-                                roi=cost_roi, best_phi_method=self.config['best_phi_method'])
+                                roi=cost_roi, best_phi_method=self.config['best_phi_method'],
+                                cell_size=self.config['cell_size'])
 
     def scan_coincidence(self, title=''):
-        print(f'### Scanning {title} two-photon speckle ###')
+        print(f'### Scanning {title} ###')
         timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
         saveto_path = f"{self.dir_path}\\{timestamp}_{title}.scan"
         scanner = PhotonScanner(self.photon_counter.integration_time,
@@ -165,26 +171,26 @@ if __name__ == "__main__":
 
     config = {
         # hardware
-        'cam_roi': (2800, 1550, 400, 400),
-        'cam_exposure': 1e-3,
+        'cam_roi': (2846, 1808, 400, 400),
+        'cam_exposure': 3e-3,
 
         # optimization
         'n_iterations': 250,
         'cost_roi_mid': (200, 200),
         'best_phi_method': 'silly_max',
         'macro_pixels': 25,
+        'cell_size': 25,
 
         # scan areas
-        # TODO: the real scanning params
         # mid_x = 13.6
         # mid_y = 8.6
-        'start_x': 7.95,
-        'start_y': 13.0,
+        'start_x': 7.70,
+        'start_y': 12.75,
         # 'x_pixels': 30,
         # 'y_pixels': 30,
         # 'pix_size': 0.025,
-        'x_pixels': 20,
-        'y_pixels': 20,
+        'x_pixels': 30,
+        'y_pixels': 30,
         'pix_size': 0.05,
 
         # Integration times
