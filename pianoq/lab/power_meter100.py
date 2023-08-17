@@ -26,8 +26,6 @@ class PowerMeterPM100(object):
         self.tlpm.getCalibrationMsg(message)
         print(c_char_p(message.raw).value)
 
-        time.sleep(1)
-
     def get_power(self):
         power = c_double()
         self.tlpm.measPower(byref(power))

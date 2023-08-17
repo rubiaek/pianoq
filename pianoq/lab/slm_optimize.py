@@ -5,6 +5,7 @@ import traceback
 import SLMlayout
 from scipy.optimize import differential_evolution
 
+from pianoq.lab.power_meter100 import PowerMeterPM100
 from pianoq.lab.slm import SLMDevice
 from pianoq.lab.time_tagger import QPTimeTagger
 from pianoq.lab.asi_cam import ASICam
@@ -47,16 +48,18 @@ class SLMOptimizer(object):
         self.cam = None
         self.roi = None
         self.timetagger = None
+        self.power_meter = None
         self.best_phi_method = None
 
         self.hexs = None
 
     # Optimization functions
-    def optimize(self, method='partitioning', iterations: int = 1000, slm=None, cam=None, timetagger=None, roi=None,
-                 best_phi_method='lock_in', cell_size=20):
+    def optimize(self, method='partitioning', iterations=1000, slm=None, cam=None, timetagger=None, power_meter=None,
+                 roi=None, best_phi_method='lock_in', cell_size=20):
         self.slm = slm
         self.cam = cam
         self.timetagger = timetagger
+        self.power_meter = power_meter
         self.roi = roi
         self.best_phi_method = best_phi_method
 
@@ -227,6 +230,9 @@ class SLMOptimizer(object):
             s1, s2, c = self.timetagger.read_interesting()
             cost = c-2*s1*s2*self.timetagger.coin_window
             cost_witness = None
+        elif self.power_meter:
+            cost = self.power_meter.get_power()
+            cost_witness = None
         else:
             cost_witness = self.cam.get_image()
             self._fix_exposure(cost_witness)
@@ -258,6 +264,7 @@ if __name__ == '__main__':
         slm.set_pinhole(radius=150, center=(530, 500), pinhole_type='mirror')  # pinhole_type='rand'
 
         cam = ASICam(asi_exposure_time, binning=1, roi=roi, gain=0)
+        power_meter = PowerMeterPM100()
 
         # tt = QPTimeTagger(integration_time=1, coin_window=2e-9, single_channel_delays=(0, 1600))
 
@@ -267,5 +274,7 @@ if __name__ == '__main__':
         #                best_phi_method='silly_max')
         # g = o.optimize(method=SLMOptimizer.GENETIC, iterations=(macro_pixels**2)*2, slm=slm, cam=cam, roi=cost_roi)
 
-        g = o.optimize(method=SLMOptimizer.PARTITIONING_HEX, iterations=150, slm=slm, cam=cam,
+        g = o.optimize(method=SLMOptimizer.PARTITIONING_HEX, iterations=150, slm=slm, cam=cam, power_meter=power_meter,
                        roi=cost_roi, best_phi_method='silly_max', cell_size=30)
+
+        power_meter.close()

@@ -184,13 +184,13 @@ if __name__ == "__main__":
         # scan areas
         # mid_x = 13.6
         # mid_y = 8.6
-        'start_x': 7.70,
-        'start_y': 12.75,
+        'start_x': 7.95,
+        'start_y': 13.0,
         # 'x_pixels': 30,
         # 'y_pixels': 30,
         # 'pix_size': 0.025,
-        'x_pixels': 30,
-        'y_pixels': 30,
+        'x_pixels': 20,
+        'y_pixels': 20,
         'pix_size': 0.05,
 
         # Integration times
@@ -206,6 +206,9 @@ if __name__ == "__main__":
     ke = KlyshkoExperiment(config)
     ke.run('second_full_try')
     ke.close()
+
+    # TODO: add power_meter, and perform full experiment with it
+    #  (but do take 3 pictures for before and middle and after)
 
 """
     ke.slm.close()
