@@ -77,6 +77,7 @@ class SLMDevice(object):
         self.is_pinhole = False
         self.center = None
         self.radius = None
+        self.rand_phase = 2 * np.pi * np.random.rand(*self.correction.shape)
 
         if not self.use_slmpy:
             self.fig = plt.figure(f'SLM{self.config_num}-Figure', frameon=False)
@@ -379,9 +380,8 @@ class SLMDevice(object):
         return mask.astype(int)
 
     def _get_pinhole_phase(self, radius, center):
-        phase = 2 * np.pi * np.random.rand(*self.correction.shape)
         mask = self._get_out_of_disk_mask(radius, center)
-        return mask * phase
+        return mask * self.rand_phase
 
     def set_pinhole(self, radius, center):
         # slm.set_pinhole(150, (530, 500))

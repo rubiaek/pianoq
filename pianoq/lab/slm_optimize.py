@@ -2,6 +2,7 @@ import time
 import datetime
 import traceback
 
+import SLMlayout
 from scipy.optimize import differential_evolution
 
 from pianoq.lab.slm import SLMDevice
@@ -23,6 +24,7 @@ class SLMOptimizer(object):
     PARTITIONING = 'partitioning'
     CONTINUOUS = 'continuous'
     GENETIC = 'genetic'
+    PARTITIONING_HEX = 'partitioning_hex'
 
     def __init__(self, macro_pixels=None, sleep_period=0.1, run_name='optimizer_result', saveto_path=None):
         self.macro_pixels = macro_pixels
@@ -47,8 +49,11 @@ class SLMOptimizer(object):
         self.timetagger = None
         self.best_phi_method = None
 
+        self.hexs = None
+
     # Optimization functions
-    def optimize(self, method='partitioning', iterations: int = 1000, slm=None, cam=None, timetagger=None, roi=None, best_phi_method='lock_in'):
+    def optimize(self, method='partitioning', iterations: int = 1000, slm=None, cam=None, timetagger=None, roi=None,
+                 best_phi_method='lock_in', cell_size=20):
         self.slm = slm
         self.cam = cam
         self.timetagger = timetagger
@@ -71,6 +76,13 @@ class SLMOptimizer(object):
                                              popsize=0.1, recombination=0.5, mutation=(0.01, 0.1))
                 self._save_result()
                 self.genetic_res = res
+            elif method == self.PARTITIONING_HEX:
+                self.hexs = SLMlayout.Hexagons(radius=self.slm.radius, cellSize=cell_size,
+                                          resolution=self.slm.correction.shape, center=self.slm.center, method='grid')
+                self.cur_best_slm_phase = np.zeros(self.hexs.nParts)
+
+                mask_generator = self._partitioning_hex()
+
             else:
                 raise NotImplemented()
 
@@ -106,6 +118,11 @@ class SLMOptimizer(object):
             mask_to_play = np.random.randint(2, size=(self.macro_pixels, self.macro_pixels))
             yield mask_to_play
 
+    def _partitioning_hex(self):
+        while True:
+            mask_to_play = np.random.randint(2, size=self.hexs.nParts)
+            yield mask_to_play
+
     def do_iteration(self, mask_to_play):
         current_iter_costs = []
         # TODO: export 1pi option (relevant for Klyshko where we hit the SLM twice)
@@ -115,7 +132,7 @@ class SLMOptimizer(object):
 
         for phi in phis:
             phase_mask = self.cur_best_slm_phase.copy() + phi * mask_to_play
-            self.slm.update_phase_in_active(phase_mask)
+            self.update_slm(phase_mask)
             cost, cost_witness = self.get_cost()
             self.res.all_phase_masks.append(phase_mask)
             self.res.all_costs.append(cost)
@@ -125,7 +142,7 @@ class SLMOptimizer(object):
 
         best_phi = self._get_best_phi(phis, current_iter_costs)
         best_phase_mask = self.cur_best_slm_phase.copy() + best_phi * mask_to_play
-        self.slm.update_phase_in_active(best_phase_mask)
+        self.update_slm(best_phase_mask)
         best_cost, best_cost_witness = self.get_cost()
 
         # Scaling factor comes from changing of exposure time
@@ -135,6 +152,13 @@ class SLMOptimizer(object):
         self.res.phase_masks.append(self.cur_best_slm_phase)
         self.res.costs.append(best_cost)
         self.res.cost_witnesses.append(best_cost_witness)
+
+    def update_slm(self, phase_mask):
+        if self.res.opt_method == self.PARTITIONING_HEX:
+            patt = self.hexs.getImageFromVec(phase_mask, dtype=float)
+            self.slm.update(patt)
+        else:
+            self.slm.update_phase_in_active(phase_mask)
 
     def _fix_exposure(self, powers):
         mx = powers.max()
@@ -219,7 +243,7 @@ class SLMOptimizer(object):
 if __name__ == '__main__':
     if True:  # Lab
         macro_pixels = 20
-        sleep_period = 0.1
+        sleep_period = 0.02
         run_name = 'optimizer_result'
 
         asi_exposure_time = 3e-3
@@ -228,16 +252,17 @@ if __name__ == '__main__':
         cost_roi = np.index_exp[200-l:200+l, 200-l:200+l]
 
         slm = SLMDevice(0, use_mirror=True)
+        slm.set_pinhole(150, (530, 500))
+
         cam = ASICam(asi_exposure_time, binning=1, roi=roi, gain=0)
 
         # tt = QPTimeTagger(integration_time=1, coin_window=2e-9, single_channel_delays=(0, 1600))
 
         o = SLMOptimizer(macro_pixels=macro_pixels, sleep_period=sleep_period, run_name=run_name, saveto_path=None)
         # g = o.optimize(method=SLMOptimizer.PARTITIONING, iterations=(macro_pixels**2)*2, slm=slm, timetagger=tt)
-        g = o.optimize(method=SLMOptimizer.PARTITIONING, iterations=(macro_pixels**2)*2, slm=slm, cam=cam, roi=cost_roi,
-                       best_phi_method='silly_max')
+        # g = o.optimize(method=SLMOptimizer.PARTITIONING, iterations=(macro_pixels**2)*2, slm=slm, cam=cam, roi=cost_roi,
+        #                best_phi_method='silly_max')
         # g = o.optimize(method=SLMOptimizer.GENETIC, iterations=(macro_pixels**2)*2, slm=slm, cam=cam, roi=cost_roi)
 
-        # for i in g:
-        #     if i == 5:  # Just so there will be lines of code to break from while debugging
-        #         pass
+        g = o.optimize(method=SLMOptimizer.PARTITIONING_HEX, iterations=150, slm=slm, cam=cam,
+                       roi=cost_roi, best_phi_method='silly_max')
