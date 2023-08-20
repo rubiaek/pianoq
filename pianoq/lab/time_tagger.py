@@ -48,21 +48,30 @@ class QPTimeTagger(object):
                                           binwidth=self.integration_time * 1e12, n_values=1)
 
     def read(self):
-        # This is so it will have the same API as the regular photon counter
-        self.counter.clear()
-        time.sleep(0.15)  # Need to sleep a bit more than him so the data will get here
-        time.sleep(self.integration_time)
-        data = self.counter.getDataNormalized()
-        single1, single2, coin = data
-        return [single1[0], single2[0], None, None, coin[0], None, None, None]
+        while True:
+            # This is so it will have the same API as the regular photon counter
+            self.counter.clear()
+            time.sleep(0.15)  # Need to sleep a bit more than him so the data will get here
+            time.sleep(self.integration_time)
+            data = self.counter.getDataNormalized()
+            data = [i[0] for i in data]
+            single1, single2, coin = data
+            if np.isnan(data).any():
+                continue
+            break
+
+        return [single1, single2, None, None, coin, None, None, None]
 
     def read_interesting(self):
-        # TODO: take care of nan bug (if nan read again)
-        self.counter.clear()
-        time.sleep(0.15)  # Need to sleep a bit more than him so the data will get here
-        time.sleep(self.integration_time)
-        data = self.counter.getDataNormalized()
-        data = [i[0] for i in data]
+        while True:
+            self.counter.clear()
+            time.sleep(0.05)  # Need to sleep a bit more than him so the data will get here
+            time.sleep(self.integration_time)
+            data = self.counter.getDataNormalized()
+            data = [i[0] for i in data]
+            if np.isnan(data).any():
+                continue
+            break
         return data
 
     def read_double_spot(self):
