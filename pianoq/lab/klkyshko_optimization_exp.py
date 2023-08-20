@@ -9,6 +9,7 @@ import json
 
 from pianoq.lab.photon_counter import PhotonCounter
 from pianoq.lab.asi_cam import ASICam
+from pianoq.lab.power_meter100 import PowerMeterPM100
 from pianoq.lab.slm import SLMDevice
 from pianoq.lab.photon_scan import PhotonScanner
 from pianoq.lab.slm_optimize import SLMOptimizer
@@ -46,6 +47,8 @@ class KlyshkoExperiment(object):
         self.slm = SLMDevice(0, use_mirror=True)
         self.slm.set_pinhole(radius=150, center=(530, 500), pinhole_type='mirror')
 
+        self.power_meter = PowerMeterPM100()
+
     def make_dir(self):
         # dirs and paths
         self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
@@ -70,14 +73,18 @@ class KlyshkoExperiment(object):
             self.redirect_stdout()
 
             ###### diode ######
-            print('Press enter when you changed to diode...')
+            print('Press enter when you changed to diode+cam...')
             input()
             self.take_asi_pic('diode_no_diffuser')
             print('Press enter when you added the diffuser...')
             input()
             self.take_asi_pic('diode_speckles')
+            print('Press enter when you changed to diode+power_meter...')
+            input()
             self.slm_optimize()
             self.set_slm_optimized()
+            print('Press enter when you changed to diode+power_cam...')
+            input()
             self.take_asi_pic('diode_optimized')
 
             ###### SPDC ######
@@ -134,7 +141,7 @@ class KlyshkoExperiment(object):
         l = 4
         cost_roi = np.index_exp[y-l: y+l, x-l: x+l]
         self.optimizer.optimize(method=SLMOptimizer.PARTITIONING_HEX, iterations=self.config['n_iterations'],
-                                slm=self.slm, cam=self.asi_cam,
+                                slm=self.slm, power_meter=self.power_meter,
                                 roi=cost_roi, best_phi_method=self.config['best_phi_method'],
                                 cell_size=self.config['cell_size'])
 
@@ -171,7 +178,8 @@ if __name__ == "__main__":
 
     config = {
         # hardware
-        'cam_roi': (2846, 1808, 400, 400),
+        # 'cam_roi': (2846, 1808, 400, 400),
+        'cam_roi': (None, None, None, None),
         'cam_exposure': 3e-3,
 
         # optimization
@@ -179,13 +187,13 @@ if __name__ == "__main__":
         'cost_roi_mid': (200, 200),
         'best_phi_method': 'silly_max',
         'macro_pixels': 25,
-        'cell_size': 25,
+        'cell_size': 30,
 
         # scan areas
         # mid_x = 13.6
         # mid_y = 8.6
-        'start_x': 7.95,
-        'start_y': 13.0,
+        'start_x': 8,
+        'start_y': 13.25,
         # 'x_pixels': 30,
         # 'y_pixels': 30,
         # 'pix_size': 0.025,
@@ -194,7 +202,7 @@ if __name__ == "__main__":
         'pix_size': 0.05,
 
         # Integration times
-        'optimized_integration_time': 2,
+        'optimized_integration_time': 1,
         'speckle_integration_time': 1,
         'focus_integration_time': 1,
 
@@ -204,11 +212,8 @@ if __name__ == "__main__":
     }
 
     ke = KlyshkoExperiment(config)
-    ke.run('second_full_try')
+    ke.run('first_full_with_power_meter')
     ke.close()
-
-    # TODO: add power_meter, and perform full experiment with it
-    #  (but do take 3 pictures for before and middle and after)
 
 """
     ke.slm.close()
