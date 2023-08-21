@@ -15,6 +15,7 @@ import numpy as np
 
 LOGS_DIR = 'C:\\temp'
 
+
 def spiral(X, Y):
     yield 0, 0
 
@@ -26,6 +27,7 @@ class SLMOptimizer(object):
     CONTINUOUS = 'continuous'
     GENETIC = 'genetic'
     PARTITIONING_HEX = 'partitioning_hex'
+    CONTINUOUS_HEX = 'continuous_hex'
 
     def __init__(self, macro_pixels=None, sleep_period=0.1, run_name='optimizer_result', saveto_path=None):
         self.macro_pixels = macro_pixels
@@ -79,16 +81,17 @@ class SLMOptimizer(object):
                                              popsize=0.1, recombination=0.5, mutation=(0.01, 0.1))
                 self._save_result()
                 self.genetic_res = res
-            elif method == self.PARTITIONING_HEX:
+            elif method == self.PARTITIONING_HEX or method == self.CONTINUOUS_HEX:
                 print("Getting Hexs...")
                 self.hexs = SLMlayout.Hexagons(radius=self.slm.radius, cellSize=cell_size,
                                                resolution=self.slm.correction.shape, center=self.slm.center,
                                                method='equal')  # TODO: maybe grid?
                 print("Got it!")
                 self.cur_best_slm_phase = np.zeros(self.hexs.nParts)
-
-                mask_generator = self._partitioning_hex()
-
+                if method == self.PARTITIONING_HEX:
+                    mask_generator = self._partitioning_hex()
+                elif method == self.CONTINUOUS_HEX:
+                    mask_generator = self._continuous_hex()
             else:
                 raise NotImplemented()
 
@@ -122,6 +125,14 @@ class SLMOptimizer(object):
     def _partitioning(self):
         while True:
             mask_to_play = np.random.randint(2, size=(self.macro_pixels, self.macro_pixels))
+            yield mask_to_play
+
+    def _continuous_hex(self):
+        i = 0
+        while True:
+            mask_to_play = np.zeros(self.hexs.nParts)
+            mask_to_play[i % self.hexs.nParts] = 1
+            i += 1
             yield mask_to_play
 
     def _partitioning_hex(self):
@@ -250,31 +261,33 @@ class SLMOptimizer(object):
 
 
 if __name__ == '__main__':
-    if True:  # Lab
-        macro_pixels = 20
-        sleep_period = 0.02
-        run_name = f'radius_150_type_mirror'
+    macro_pixels = 20
+    sleep_period = 0.02
+    run_name = f'radius_150_type_mirror'
 
-        asi_exposure_time = 3e-3
-        roi = (2950, 1860, 400, 400)
-        l = 3
-        cost_roi = np.index_exp[200-l:200+l, 200-l:200+l]
+    asi_exposure_time = 3e-3
+    roi = (3040, 1746, 600, 600)
+    l = 3
+    cost_roi = np.index_exp[300-l:300+l, 300-l:300+l]
 
-        slm = SLMDevice(0, use_mirror=True)
-        slm.set_pinhole(radius=150, center=(530, 500), pinhole_type='mirror')  # pinhole_type='rand'
+    slm = SLMDevice(0, use_mirror=True)
+    slm.set_pinhole(radius=150, center=(530, 500), pinhole_type='mirror')  # pinhole_type='rand'
 
-        cam = ASICam(asi_exposure_time, binning=1, roi=roi, gain=0)
-        power_meter = PowerMeterPM100()
+    cam = ASICam(asi_exposure_time, binning=1, roi=roi, gain=0)
+    power_meter = PowerMeterPM100()
 
-        # tt = QPTimeTagger(integration_time=1, coin_window=2e-9, single_channel_delays=(0, 1600))
+    # tt = QPTimeTagger(integration_time=1, coin_window=2e-9, single_channel_delays=(0, 1600))
 
-        o = SLMOptimizer(macro_pixels=macro_pixels, sleep_period=sleep_period, run_name=run_name, saveto_path=None)
-        # g = o.optimize(method=SLMOptimizer.PARTITIONING, iterations=(macro_pixels**2)*2, slm=slm, timetagger=tt)
-        # g = o.optimize(method=SLMOptimizer.PARTITIONING, iterations=(macro_pixels**2)*2, slm=slm, cam=cam, roi=cost_roi,
-        #                best_phi_method='silly_max')
-        # g = o.optimize(method=SLMOptimizer.GENETIC, iterations=(macro_pixels**2)*2, slm=slm, cam=cam, roi=cost_roi)
+    o = SLMOptimizer(macro_pixels=macro_pixels, sleep_period=sleep_period, run_name=run_name, saveto_path=None)
+    # g = o.optimize(method=SLMOptimizer.PARTITIONING, iterations=(macro_pixels**2)*2, slm=slm, timetagger=tt)
+    # g = o.optimize(method=SLMOptimizer.PARTITIONING, iterations=(macro_pixels**2)*2, slm=slm, cam=cam, roi=cost_roi,
+    #                best_phi_method='silly_max')
+    # g = o.optimize(method=SLMOptimizer.GENETIC, iterations=(macro_pixels**2)*2, slm=slm, cam=cam, roi=cost_roi)
 
-        g = o.optimize(method=SLMOptimizer.PARTITIONING_HEX, iterations=150, slm=slm, cam=cam, power_meter=power_meter,
-                       roi=cost_roi, best_phi_method='silly_max', cell_size=30)
+    g = o.optimize(method=SLMOptimizer.CONTINUOUS_HEX, iterations=150, slm=slm, cam=cam, power_meter=power_meter,
+                   roi=cost_roi, best_phi_method='silly_max', cell_size=30)
 
-        power_meter.close()
+    power_meter.close()
+    cam.close()
+    slm.close()
+
