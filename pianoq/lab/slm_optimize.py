@@ -171,7 +171,7 @@ class SLMOptimizer(object):
         self.res.cost_witnesses.append(best_cost_witness)
 
     def update_slm(self, phase_mask):
-        if self.res.opt_method == self.PARTITIONING_HEX:
+        if self.res.opt_method == self.PARTITIONING_HEX or self.res.opt_method == self.CONTINUOUS_HEX:
             patt = self.hexs.getImageFromVec(phase_mask, dtype=float)
             self.slm.update_phase(patt)
         else:
@@ -262,7 +262,7 @@ class SLMOptimizer(object):
 
 if __name__ == '__main__':
     macro_pixels = 20
-    sleep_period = 0.02
+    sleep_period = 0.05
     run_name = f'radius_150_type_mirror'
 
     asi_exposure_time = 3e-3
@@ -284,7 +284,7 @@ if __name__ == '__main__':
     #                best_phi_method='silly_max')
     # g = o.optimize(method=SLMOptimizer.GENETIC, iterations=(macro_pixels**2)*2, slm=slm, cam=cam, roi=cost_roi)
 
-    g = o.optimize(method=SLMOptimizer.CONTINUOUS_HEX, iterations=150, slm=slm, cam=cam, power_meter=power_meter,
+    g = o.optimize(method=SLMOptimizer.PARTITIONING_HEX, iterations=150, slm=slm, cam=cam, power_meter=power_meter,
                    roi=cost_roi, best_phi_method='silly_max', cell_size=30)
 
     power_meter.close()

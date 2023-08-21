@@ -141,7 +141,7 @@ class KlyshkoExperiment(object):
         x = self.config['cost_roi_mid'][1]
         l = 4
         cost_roi = np.index_exp[y-l: y+l, x-l: x+l]
-        self.optimizer.optimize(method=SLMOptimizer.PARTITIONING_HEX, iterations=self.config['n_iterations'],
+        self.optimizer.optimize(method=SLMOptimizer.CONTINUOUS_HEX, iterations=self.config['n_iterations'],
                                 slm=self.slm, power_meter=self.power_meter,
                                 roi=cost_roi, best_phi_method=self.config['best_phi_method'],
                                 cell_size=self.config['cell_size'])
@@ -184,11 +184,11 @@ if __name__ == "__main__":
         'cam_exposure': 5e-3,
 
         # optimization
-        'n_iterations': 300,
+        'n_iterations': 120,
         'cost_roi_mid': (200, 200),
         'best_phi_method': 'silly_max',
         'macro_pixels': 25,
-        'cell_size': 28,
+        'cell_size': 30,
 
         # scan areas
         # mid_x = 13.6
@@ -214,7 +214,7 @@ if __name__ == "__main__":
     }
 
     ke = KlyshkoExperiment(config)
-    ke.run('third_full_with_power_meter_different_diffuser_place')
+    ke.run('third_full_with_power_meter_different_diffuser_place_contiuous_hex')
     ke.close()
 
 """
