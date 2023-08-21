@@ -133,7 +133,8 @@ class KlyshkoExperiment(object):
 
     def slm_optimize(self):
         optimization_result_path = f'{self.dir_path}\\{self.timestamp}_optimized.optimizer2'
-        self.optimizer = SLMOptimizer(macro_pixels=self.config['macro_pixels'], sleep_period=0.001, run_name='run_name',
+        self.optimizer = SLMOptimizer(macro_pixels=self.config['macro_pixels'],
+                                      sleep_period=self.config['sleep_period'], run_name='run_name',
                                       saveto_path=optimization_result_path)
 
         y = self.config['cost_roi_mid'][0]
@@ -179,21 +180,21 @@ if __name__ == "__main__":
     config = {
         # hardware
         # 'cam_roi': (2846, 1808, 400, 400),
-        'cam_roi': (None, None, None, None),
-        'cam_exposure': 3e-3,
+        'cam_roi': (3040, 1746, 600, 600),
+        'cam_exposure': 5e-3,
 
         # optimization
-        'n_iterations': 250,
+        'n_iterations': 300,
         'cost_roi_mid': (200, 200),
         'best_phi_method': 'silly_max',
         'macro_pixels': 25,
-        'cell_size': 30,
+        'cell_size': 28,
 
         # scan areas
         # mid_x = 13.6
         # mid_y = 8.6
-        'start_x': 8,
-        'start_y': 13.25,
+        'start_x': 7.95,
+        'start_y': 13,
         # 'x_pixels': 30,
         # 'y_pixels': 30,
         # 'pix_size': 0.025,
@@ -205,6 +206,7 @@ if __name__ == "__main__":
         'optimized_integration_time': 1,
         'speckle_integration_time': 1,
         'focus_integration_time': 1,
+        'sleep_period': 0.1,  # after SLM update
 
         # Timetagger
         'is_time_tagger': True,
@@ -212,7 +214,7 @@ if __name__ == "__main__":
     }
 
     ke = KlyshkoExperiment(config)
-    ke.run('first_full_with_power_meter')
+    ke.run('third_full_with_power_meter_different_diffuser_place')
     ke.close()
 
 """
