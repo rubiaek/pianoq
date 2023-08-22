@@ -55,6 +55,9 @@ class KlyshkoExperiment(object):
         self.dir_path = f"{LOGS_DIR}\\{self.timestamp}_klyshko"
         os.mkdir(self.dir_path)
         print(f"Results will be saved in Here: {self.dir_path}")
+        more_info_file_path = f'{self.dir_path}\\{self.timestamp}_log.txt'
+        self.more_info_file = open(more_info_file_path, 'w')
+        self.more_info_file.write('Hi!\n')
 
     def redirect_stdout(self):
         log_path = f'{self.dir_path}\\{self.timestamp}_log.txt'
@@ -66,38 +69,69 @@ class KlyshkoExperiment(object):
         self.config['comment'] = comment
         open(config_path, 'w').write(json.dumps(self.config, indent=3))
 
+    def _input(self, msg):
+        print(msg)
+        input()
+
+    def log_power(self, msg):
+        power = self.power_meter.get_power()
+        self.more_info_file.write(f'{msg}: {power}')
+
+    def log_coin(self, msg):
+        # have some statistic, it happens only 3 times during the whole experiment...
+        for i in range(3):
+            s1, s2, c = self.photon_counter.read_interesting()
+            real_c = c - 2*s1*s2*self.photon_counter.coin_window
+            self.more_info_file.write(f'{msg}: singles1: {s1}, singles2: {s2}, coincidences: {c}, real_c: {real_c}')
+
     def run(self, comment=''):
         try:
             self.make_dir()
             self.save_config(comment)
             self.redirect_stdout()
 
+            self.set_motors_to_optimization()
+
             ###### diode ######
-            print('Press enter when you changed to diode+cam...')
-            input()
+            self._input('Press enter when you changed to diode+power_meter...')
+            self.log_power(f'Power no diffuser')
+
+            self._input('Press enter when you changed to diode+cam...')
             self.take_asi_pic('diode_no_diffuser')
-            print('Press enter when you added the diffuser...')
-            input()
+
+            self._input('Press enter when you added the diffuser...')
             self.take_asi_pic('diode_speckles')
-            print('Press enter when you changed to diode+power_meter...')
-            input()
+
+            self._input('Press enter when you changed to diode+power_meter...')
+            self.log_power(f'Power yes diffuser')
             self.slm_optimize()
             self.set_slm_optimized()
-            print('Press enter when you changed to diode+power_cam...')
-            input()
+            self.log_power(f'Power optimized')
+
+            self._input('Press enter when you changed to diode+_cam...')
             self.take_asi_pic('diode_optimized')
 
             ###### SPDC ######
-            print('Press enter when you changed to SPCMs...')
-            input()
+            self._input('####### Press enter when you changed to SPCMs... #######')
+            self.log_coin('coin optimized')
+            self.slm.normal()
+            self.log_coin('coin yes diffuser')
+
+            flag = False
+            if flag:
+                self._input('Press enter when you removed diffuser...')
+                self.log_coin('coin no diffuser')
+                self._input('Press enter when you added diffuser...')
+
+            self.set_slm_optimized()
             self.set_photon_integration_time(self.config['optimized_integration_time'])
             self.scan_coincidence('corr_optimized')
 
             self.slm.normal()
             self.set_photon_integration_time(self.config['speckle_integration_time'])
             self.scan_coincidence('two_photon_speckle')
-            print('Press enter when you removed the diffuser...')
-            input()
+            self._input('Press enter when you removed the diffuser...')
+
             self.set_photon_integration_time(self.config['focus_integration_time'])
             self.scan_coincidence('corr_no_diffuser')
 
@@ -107,6 +141,10 @@ class KlyshkoExperiment(object):
             print('Exception!!!')
             print(e)
             traceback.print_exc()
+
+    def set_motors_to_optimization(self):
+        self.x_motor.move_absolute(self.config['optimization_x_loc'])
+        self.y_motor.move_absolute(self.config['optimization_y_loc'])
 
     def set_photon_integration_time(self, time_sec):
         if self.photon_counter.integration_time == time_sec:
@@ -169,6 +207,7 @@ class KlyshkoExperiment(object):
         self.photon_counter.close()
         self.asi_cam.close()
         self.slm.close()
+        self.more_info_file.close()
         if self.log_file:
             self.log_file.close()
 
@@ -188,7 +227,9 @@ if __name__ == "__main__":
         'cost_roi_mid': (200, 200),
         'best_phi_method': 'silly_max',
         'macro_pixels': 25,
-        'cell_size': 30,
+        'cell_size': 25,
+        'optimization_x_loc': 8.5,  # todo: find exactly with coincidence
+        'optimization_y_loc': 13.5,
 
         # scan areas
         # mid_x = 13.6
