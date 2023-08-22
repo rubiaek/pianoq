@@ -55,7 +55,7 @@ class KlyshkoExperiment(object):
         self.dir_path = f"{LOGS_DIR}\\{self.timestamp}_klyshko"
         os.mkdir(self.dir_path)
         print(f"Results will be saved in Here: {self.dir_path}")
-        more_info_file_path = f'{self.dir_path}\\{self.timestamp}_log.txt'
+        more_info_file_path = f'{self.dir_path}\\{self.timestamp}_log_more.txt'
         self.more_info_file = open(more_info_file_path, 'w')
         self.more_info_file.write('Hi!\n')
 
