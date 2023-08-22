@@ -75,14 +75,18 @@ class KlyshkoExperiment(object):
 
     def log_power(self, msg):
         power = self.power_meter.get_power()
-        self.more_info_file.write(f'{msg}: {power}')
+        to_write = f'{msg}: {power}'
+        print(to_write)
+        self.more_info_file.write(to_write)
 
     def log_coin(self, msg):
         # have some statistic, it happens only 3 times during the whole experiment...
         for i in range(3):
             s1, s2, c = self.photon_counter.read_interesting()
             real_c = c - 2*s1*s2*self.photon_counter.coin_window
-            self.more_info_file.write(f'{msg}: singles1: {s1}, singles2: {s2}, coincidences: {c}, real_c: {real_c}')
+            to_write = f'{msg}: singles1: {s1}, singles2: {s2}, coincidences: {c}, real_c: {real_c}'
+            print(to_write)
+            self.more_info_file.write(to_write)
 
     def run(self, comment=''):
         try:
@@ -223,19 +227,19 @@ if __name__ == "__main__":
         'cam_exposure': 5e-3,
 
         # optimization
-        'n_iterations': 120,
+        'n_iterations': 140,
         'cost_roi_mid': (200, 200),
         'best_phi_method': 'silly_max',
         'macro_pixels': 25,
         'cell_size': 25,
-        'optimization_x_loc': 8.5,  # todo: find exactly with coincidence
-        'optimization_y_loc': 13.5,
+        'optimization_x_loc': 8.5,
+        'optimization_y_loc': 13.45,
 
         # scan areas
         # mid_x = 13.6
         # mid_y = 8.6
-        'start_x': 7.95,
-        'start_y': 13,
+        'start_x': 8,
+        'start_y': 12.95,
         # 'x_pixels': 30,
         # 'y_pixels': 30,
         # 'pix_size': 0.025,
@@ -255,7 +259,7 @@ if __name__ == "__main__":
     }
 
     ke = KlyshkoExperiment(config)
-    ke.run('third_full_with_power_meter_different_diffuser_place_contiuous_hex')
+    ke.run('two_diffusers_power_meter_continuous_hex')
     ke.close()
 
 """
