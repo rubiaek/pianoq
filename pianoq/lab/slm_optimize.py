@@ -36,10 +36,10 @@ class SLMOptimizer(object):
         self.power_scaling_factor = 1
 
         self.run_name = run_name
-        self.saveto_path = saveto_path
 
         self.res = SLMOptimizationResult()
         self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+        self.saveto_path = saveto_path or f"{LOGS_DIR}\\{self.timestamp}_{self.run_name}.optimizer2"
 
         self.cur_best_slm_phase = np.zeros([self.macro_pixels, self.macro_pixels])
         self.micro_iter_num = 0
@@ -190,6 +190,7 @@ class SLMOptimizer(object):
 
     def _get_best_phi(self, phis, powers, plot_cos=False):
         if self.best_phi_method == 'lock_in':
+            phis = 2*np.copy(phis)  # because it is actuall 0 - 1*pi, but I don't want to think about it
             # "Lock in"
             C1 = powers * np.cos(phis)
             C = np.sum(C1)
@@ -197,6 +198,7 @@ class SLMOptimizer(object):
             S = np.sum(S1)
             A = C + 1j * S
             best_phi = np.angle(A)
+            best_phi = best_phi / 2  # because it is actuall 0 - 1*pi, but I don't want to think about it
             if best_phi < 0:
                 best_phi += 2 * np.pi
         elif self.best_phi_method == 'silly_max':
@@ -256,8 +258,7 @@ class SLMOptimizer(object):
         return cost, cost_witness
 
     def _save_result(self):
-        saveto_path = self.saveto_path or f"{LOGS_DIR}\\{self.timestamp}_{self.run_name}.optimizer2"
-        self.res.saveto(saveto_path)
+        self.res.saveto(self.saveto_path)
 
 
 if __name__ == '__main__':
@@ -284,8 +285,8 @@ if __name__ == '__main__':
     #                best_phi_method='silly_max')
     # g = o.optimize(method=SLMOptimizer.GENETIC, iterations=(macro_pixels**2)*2, slm=slm, cam=cam, roi=cost_roi)
 
-    g = o.optimize(method=SLMOptimizer.PARTITIONING_HEX, iterations=150, slm=slm, cam=cam, power_meter=power_meter,
-                   roi=cost_roi, best_phi_method='silly_max', cell_size=30)
+    g = o.optimize(method=SLMOptimizer.CONTINUOUS_HEX, iterations=400, slm=slm, cam=cam, power_meter=power_meter,
+                   roi=cost_roi, best_phi_method='silly_max', cell_size=15)
 
     power_meter.close()
     cam.close()

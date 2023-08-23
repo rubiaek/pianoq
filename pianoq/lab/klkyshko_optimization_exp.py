@@ -45,7 +45,8 @@ class KlyshkoExperiment(object):
         print('got photon counter')
 
         self.slm = SLMDevice(0, use_mirror=True)
-        self.slm.set_pinhole(radius=150, center=(530, 500), pinhole_type='mirror')
+        self.slm.set_pinhole(radius=self.config['slm_pinhole_radius'], center=self.config['slm_pinhole_center'],
+                             pinhole_type=self.config['slm_pinhole_type'])
 
         self.power_meter = PowerMeterPM100()
 
@@ -223,15 +224,18 @@ if __name__ == "__main__":
     config = {
         # hardware
         # 'cam_roi': (2846, 1808, 400, 400),
-        'cam_roi': (3040, 1746, 600, 600),
-        'cam_exposure': 5e-3,
+        'cam_roi': (2940, 1646, 800, 800),
+        'cam_exposure': 10e-3,
+        'slm_pinhole_radius': 150,
+        'slm_pinhole_center': (530, 500),
+        'slm_pinhole_type': 'mirror',
+        'cell_size': 15,
 
         # optimization
-        'n_iterations': 140,
-        'cost_roi_mid': (200, 200),
+        'n_iterations': 400,
+        'cost_roi_mid': (400, 400),
         'best_phi_method': 'silly_max',
         'macro_pixels': 25,
-        'cell_size': 25,
         'optimization_x_loc': 8.5,
         'optimization_y_loc': 13.45,
 
@@ -259,7 +263,7 @@ if __name__ == "__main__":
     }
 
     ke = KlyshkoExperiment(config)
-    ke.run('two_diffusers_power_meter_continuous_hex')
+    ke.run('two_diffusers_0.25_0.5_power_meter_continuous_hex')
     ke.close()
 
 """
