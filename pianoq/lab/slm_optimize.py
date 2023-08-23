@@ -142,13 +142,12 @@ class SLMOptimizer(object):
 
     def do_iteration(self, mask_to_play):
         current_iter_costs = []
-        # TODO: export 1pi option (relevant for Klyshko where we hit the SLM twice)
-        # TODO: maybe not 1*pi?
-        phis = np.linspace(0, np.pi, self.POINTS_FOR_LOCK_IN+1)
+        phis = np.linspace(0, 1*np.pi, self.POINTS_FOR_LOCK_IN+1)
         phis = phis[:-1]  # Don't need both 0 and 2*pi
 
         for phi in phis:
             phase_mask = self.cur_best_slm_phase.copy() + phi * mask_to_play
+            phase_mask = np.mod(phase_mask, 1*np.pi)
             self.update_slm(phase_mask)
             cost, cost_witness = self.get_cost()
             self.res.all_phase_masks.append(phase_mask)
@@ -159,6 +158,7 @@ class SLMOptimizer(object):
 
         best_phi = self._get_best_phi(phis, current_iter_costs)
         best_phase_mask = self.cur_best_slm_phase.copy() + best_phi * mask_to_play
+        best_phase_mask = np.mod(best_phase_mask, 1 * np.pi)
         self.update_slm(best_phase_mask)
         best_cost, best_cost_witness = self.get_cost()
 
