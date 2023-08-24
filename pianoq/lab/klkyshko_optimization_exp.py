@@ -56,9 +56,16 @@ class KlyshkoExperiment(object):
         self.dir_path = f"{LOGS_DIR}\\{self.timestamp}_klyshko"
         os.mkdir(self.dir_path)
         print(f"Results will be saved in Here: {self.dir_path}")
+
         more_info_file_path = f'{self.dir_path}\\{self.timestamp}_log_more.txt'
         self.more_info_file = open(more_info_file_path, 'w')
         self.more_info_file.write('Hi!\n')
+
+        klyshk_file_path = f'{self.dir_path}\\{self.timestamp}_clickme.klyshk'
+        self.klyshk_file = open(klyshk_file_path, 'w')
+        self.klyshk_file.write('Hi!\n')
+        self.klyshk_file.close()
+
 
     def redirect_stdout(self):
         log_path = f'{self.dir_path}\\{self.timestamp}_log.txt'
@@ -216,7 +223,7 @@ class KlyshkoExperiment(object):
         if self.log_file:
             self.log_file.close()
 
-        print('Done closing')
+        # print('Done closing')
 
 
 if __name__ == "__main__":
@@ -224,7 +231,7 @@ if __name__ == "__main__":
     config = {
         # hardware
         # 'cam_roi': (2846, 1808, 400, 400),
-        'cam_roi': (2940, 1646, 800, 800),
+        'cam_roi': (2910, 1780, 800, 800),
         'cam_exposure': 10e-3,
         'slm_pinhole_radius': 150,
         'slm_pinhole_center': (530, 500),
@@ -236,14 +243,14 @@ if __name__ == "__main__":
         'cost_roi_mid': (400, 400),
         'best_phi_method': 'silly_max',
         'macro_pixels': 25,
-        'optimization_x_loc': 8.5,
-        'optimization_y_loc': 13.45,
+        'optimization_x_loc': 8.6,
+        'optimization_y_loc': 13.6,
 
         # scan areas
-        # mid_x = 13.6
-        # mid_y = 8.6
-        'start_x': 8,
-        'start_y': 12.95,
+        # mid_x = 8.6
+        # mid_y = 13.6
+        'start_x': 8.1,
+        'start_y': 13.1,
         # 'x_pixels': 30,
         # 'y_pixels': 30,
         # 'pix_size': 0.025,
@@ -252,7 +259,7 @@ if __name__ == "__main__":
         'pix_size': 0.05,
 
         # Integration times
-        'optimized_integration_time': 1,
+        'optimized_integration_time': 2,
         'speckle_integration_time': 1,
         'focus_integration_time': 1,
         'sleep_period': 0.1,  # after SLM update
