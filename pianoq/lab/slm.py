@@ -12,7 +12,7 @@ configs = {
         'geometry': '1272x1024+1913+-30',
         'monitor': 0,  # If using slmpy
         # 'active_mask_slice': np.index_exp[430:630, 380:580]
-        'active_mask_slice': np.index_exp[100:1000, 100:1000]
+        'active_mask_slice': np.index_exp[380:680, 350:650]
     },
     1: {  # SLM no. 1 with 404nm
         'correction_path': r'F:\SLM-x13138-05\deformation_correction_pattern\CAL_LSH0801946_400nm.bmp',
@@ -254,13 +254,14 @@ class SLMDevice(object):
         self.update_phase(phase)
 
     def set_diffuser(self, macro_pixels, active_mask_slice=None):
-        active_mask_slice = active_mask_slice or self.config['active_mask_slice']
+        active_mask_slice = active_mask_slice or self.active_mask_slice
         orig_mask = 2 * np.pi * np.random.rand(macro_pixels, macro_pixels)
 
         phase_mask = cv2.resize(orig_mask, (self.active_x_pixels, self.active_y_pixels), interpolation=cv2.INTER_AREA)
         final_mask = np.zeros(self.correction.shape)
         final_mask[active_mask_slice] = phase_mask
         self.update_phase(final_mask)
+        return phase_mask
 
     def set_diffuser2(self, sigma):
         """
@@ -340,7 +341,7 @@ class SLMDevice(object):
         phase_screen = np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(rand_spectrum))) * df_x*df_y * N_x*N_y
         phase_screen = self._add_subharms(phase_screen)
 
-        phase_screen = np.angle(phase_screen)
+        phase_screen = np.real(phase_screen)
 
         self.update_phase_in_active(phase_screen)
         return phase_screen
