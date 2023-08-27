@@ -66,7 +66,6 @@ class KlyshkoExperiment(object):
         self.klyshk_file.write('Hi!\n')
         self.klyshk_file.close()
 
-
     def redirect_stdout(self):
         log_path = f'{self.dir_path}\\{self.timestamp}_log.txt'
         self.log_file = FlushingPrintingFile(log_path, 'w', self.orig_stdout)
@@ -96,6 +95,62 @@ class KlyshkoExperiment(object):
             print(to_write)
             self.more_info_file.write(to_write)
 
+    def run_virtual_speckles(self, comment=''):
+        self.make_dir()
+        self.save_config(comment)
+        self.redirect_stdout()
+
+        self.slm.normal()
+        self.take_dark_pic()
+        self.take_asi_pic('normal')
+
+        phase_kolmogorov1 = self.slm.set_kolmogorov(cn2=1e-16, L=1e3)
+        self.save_phase_screen(phase_kolmogorov1, 'kolmogorov1')
+        self.take_asi_pic('kolmogorov1')
+
+        phase_kolmogorov2 = self.slm.set_kolmogorov(cn2=1e-16, L=1e3)
+        self.save_phase_screen(phase_kolmogorov2, 'kolmogorov2')
+        self.take_asi_pic('kolmogorov2')
+
+        phase_10_macros_1 = self.slm.set_diffuser(10)
+        self.save_phase_screen(phase_10_macros_1, '10_macros_1')
+        self.take_asi_pic('10_macros_1')
+
+        phase_10_macros_2 = self.slm.set_diffuser(10)
+        self.save_phase_screen(phase_10_macros_2, '10_macros_2')
+        self.take_asi_pic('10_macros_2')
+
+        ###### SPCMs ######
+        self._input('Press enter when changed to SPCMs')
+        self.slm.normal()
+        self.scan_coincidence('normal')
+
+        self.slm.update_phase_in_active(phase_kolmogorov1)
+        self.scan_coincidence('kolmogorov1')
+
+        self.slm.update_phase_in_active(phase_kolmogorov2)
+        self.scan_coincidence('kolmogorov2')
+
+        final_mask = np.zeros(self.slm.correction.shape)
+        final_mask[self.slm.active_mask_slice] = phase_10_macros_1
+        self.slm.update_phase(phase_10_macros_1)
+        self.scan_coincidence('10_macros_1')
+
+        final_mask = np.zeros(self.slm.correction.shape)
+        final_mask[self.slm.active_mask_slice] = phase_10_macros_2
+        self.slm.update_phase(phase_10_macros_2)
+        self.scan_coincidence('10_macros_2')
+
+        print('Done!')
+
+    def save_phase_screen(self, A, title):
+        timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+        path = f'{self.dir_path}\\{timestamp}_{title}.npz'
+
+        f = open(path, 'wb')
+        np.savez(f, diffuser=A)
+        f.close()
+
     def run(self, comment=''):
         try:
             self.make_dir()
@@ -107,6 +162,7 @@ class KlyshkoExperiment(object):
             ###### diode ######
             self._input('Press enter when you changed to diode+power_meter...')
             self.log_power(f'Power no diffuser')
+            self.take_dark_pic()
 
             self._input('Press enter when you changed to diode+cam...')
             self.take_asi_pic('diode_no_diffuser')
@@ -153,6 +209,19 @@ class KlyshkoExperiment(object):
             print('Exception!!!')
             print(e)
             traceback.print_exc()
+
+    def take_dark_pic(self):
+        im = self.asi_cam.get_image()
+        darks = np.zeros((10, im.shape[0], im.shape[1]))
+        for i in range(10):
+            time.sleep(0.1)
+            darks[i] = self.asi_cam.get_image()
+
+        dark_im = np.mean(darks, axis=0)
+        timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+        image_path = f'{self.dir_path}\\{timestamp}_dark.fits'
+        self.asi_cam.save_image(image_path, im=dark_im, comment='dark', add_timestamp_to_name=False)
+        time.sleep(0.1)
 
     def set_motors_to_optimization(self):
         self.x_motor.move_absolute(self.config['optimization_x_loc'])
@@ -270,7 +339,8 @@ if __name__ == "__main__":
     }
 
     ke = KlyshkoExperiment(config)
-    ke.run('two_diffusers_0.25_0.5_power_meter_continuous_hex')
+    # ke.run('two_diffusers_0.25_0.5_power_meter_continuous_hex')
+    ke.run_virtual_speckles('first try')
     ke.close()
 
 """
