@@ -240,16 +240,19 @@ def scan_1D(name='1D', integration_time=1):
 
 def klyshko_scan(name='', integration_time=1):
     mid_x = 8.5
-    mid_y = 13.8
-    start_x = 7.85
-    start_y = 12.55
-    x_pixels = 30
-    y_pixels = 30
-    pixel_size_x = 0.05
-    pixel_size_y = 0.05
+    mid_y = 13.55
+    start_x = 5
+    start_y = 10
+    x_pixels = 46
+    y_pixels = 46
+    pixel_size_x = 0.15
+    pixel_size_y = 0.15
 
+    timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+    dir_path = r'E:\Google Drive\Projects\Klyshko Optimization\Results\temp\2023_08_28_08_10_25_klyshko_thick_diffuser_0.25_and_0.25_0.16_power_meter_continuous_hex\memory_measurements'
+    path = f'{dir_path}\\{timestamp}_huge_scan_lol_what_happened.scan'
     scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
-                            run_name=name, is_timetagger=True, coin_window=1e-9)
+                            run_name=name, is_timetagger=True, coin_window=2e-9, saveto_path=path)
 
     x_motor = ThorlabsKcubeDC(27600573)
     print('got x_motor')
@@ -260,7 +263,7 @@ def klyshko_scan(name='', integration_time=1):
 
     single1s, single2s, coincidences = scanner.scan(x_motor=x_motor, y_motor=y_motor, ph=tt)
     x_motor.close()
-    # y_motor.close() # pesky bug?
+    y_motor.close()  # pesky bug?
     tt.close()
 
 
@@ -274,4 +277,4 @@ if __name__ == '__main__':
     # small_scan(integration_time=1)
     # whole_scan(integration_time=3)
     # scan_1D(integration_time=0.5)
-    klyshko_scan(integration_time=1, name='trying_Klyshko_1_diffuser_slm_optimized')
+    klyshko_scan(integration_time=1, name='huge_scan_lol_wat_happened')

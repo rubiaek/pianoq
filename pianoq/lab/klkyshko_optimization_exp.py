@@ -100,8 +100,8 @@ class KlyshkoExperiment(object):
         self.save_config(comment)
         self.redirect_stdout()
 
+        self._input('Press enter when changed to diode+cam')
         self.slm.normal()
-        self.take_dark_pic()
         self.take_asi_pic('normal')
 
         phase_kolmogorov1 = self.slm.set_kolmogorov(cn2=1e-16, L=1e3)
@@ -112,16 +112,17 @@ class KlyshkoExperiment(object):
         self.save_phase_screen(phase_kolmogorov2, 'kolmogorov2')
         self.take_asi_pic('kolmogorov2')
 
-        phase_10_macros_1 = self.slm.set_diffuser(10)
-        self.save_phase_screen(phase_10_macros_1, '10_macros_1')
-        self.take_asi_pic('10_macros_1')
+        phase_15_macros_1 = self.slm.set_diffuser(15)
+        self.save_phase_screen(phase_15_macros_1, '15_macros_1')
+        self.take_asi_pic('15_macros_1')
 
-        phase_10_macros_2 = self.slm.set_diffuser(10)
-        self.save_phase_screen(phase_10_macros_2, '10_macros_2')
-        self.take_asi_pic('10_macros_2')
+        phase_15_macros_2 = self.slm.set_diffuser(15)
+        self.save_phase_screen(phase_15_macros_2, '15_macros_2')
+        self.take_asi_pic('15_macros_2')
 
         ###### SPCMs ######
         self._input('Press enter when changed to SPCMs')
+        self.take_dark_pic()
         self.slm.normal()
         self.scan_coincidence('normal')
 
@@ -132,14 +133,14 @@ class KlyshkoExperiment(object):
         self.scan_coincidence('kolmogorov2')
 
         final_mask = np.zeros(self.slm.correction.shape)
-        final_mask[self.slm.active_mask_slice] = phase_10_macros_1
-        self.slm.update_phase(phase_10_macros_1)
-        self.scan_coincidence('10_macros_1')
+        final_mask[self.slm.active_mask_slice] = phase_15_macros_1
+        self.slm.update_phase(phase_15_macros_1)
+        self.scan_coincidence('15_macros_1')
 
         final_mask = np.zeros(self.slm.correction.shape)
-        final_mask[self.slm.active_mask_slice] = phase_10_macros_2
-        self.slm.update_phase(phase_10_macros_2)
-        self.scan_coincidence('10_macros_2')
+        final_mask[self.slm.active_mask_slice] = phase_15_macros_2
+        self.slm.update_phase(phase_15_macros_2)
+        self.scan_coincidence('15_macros_2')
 
         print('Done!')
 
@@ -176,7 +177,7 @@ class KlyshkoExperiment(object):
             self.set_slm_optimized()
             self.log_power(f'Power optimized')
 
-            self._input('Press enter when you changed to diode+_cam...')
+            self._input('Press enter when you changed to diode+cam...')
             self.take_asi_pic('diode_optimized')
 
             ###### SPDC ######
@@ -300,7 +301,7 @@ if __name__ == "__main__":
     config = {
         # hardware
         # 'cam_roi': (2846, 1808, 400, 400),
-        'cam_roi': (2910, 1780, 800, 800),
+        'cam_roi': (2910, 1680, 800, 800),
         'cam_exposure': 10e-3,
         'slm_pinhole_radius': 150,
         'slm_pinhole_center': (530, 500),
@@ -313,13 +314,11 @@ if __name__ == "__main__":
         'best_phi_method': 'silly_max',
         'macro_pixels': 25,
         'optimization_x_loc': 8.6,
-        'optimization_y_loc': 13.6,
+        'optimization_y_loc': 13.525,
 
         # scan areas
-        # mid_x = 8.6
-        # mid_y = 13.6
         'start_x': 8.1,
-        'start_y': 13.1,
+        'start_y': 13.0,
         # 'x_pixels': 30,
         # 'y_pixels': 30,
         # 'pix_size': 0.025,
@@ -339,8 +338,8 @@ if __name__ == "__main__":
     }
 
     ke = KlyshkoExperiment(config)
-    # ke.run('two_diffusers_0.25_0.5_power_meter_continuous_hex')
-    ke.run_virtual_speckles('first try')
+    ke.run('thick_diffuser_0.25_and_0.25_0.16_power_meter_continuous_hex')
+    # ke.run_virtual_speckles('second try')
     ke.close()
 
 """
