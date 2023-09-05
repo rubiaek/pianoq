@@ -13,9 +13,8 @@ O2 = 2*N//3
 
 N_phases = 20
 
-
+# TODO: simply phase conjugate or something instead of searching
 def optimize_beacon():
-    # TODO: simply phase conjugate or something instead of searching
     best_cost1 = 0
     best_S1 = np.zeros(N)
     all_costs1 = []
@@ -24,7 +23,7 @@ def optimize_beacon():
         S = best_S1.copy()
         for phase in np.linspace(0, 2 * np.pi, N_phases):
             S[mode_index % N] = phase
-            final_mat = np.diag(np.exp(1j * S)) @ T
+            final_mat = T @ np.diag(np.exp(1j * S))
             complex_cost = final_mat[O1, O1]
             cost = np.abs(complex_cost) ** 2
             all_costs1.append(cost)
@@ -40,7 +39,7 @@ def optimize_beacon():
         S = best_S2.copy()
         for phase in np.linspace(0, 2 * np.pi, N_phases):
             S[mode_index % N] = phase
-            final_mat = np.diag(np.exp(1j * S)) @ T.transpose()
+            final_mat = T @ np.diag(np.exp(1j * S))  # make sure order TS. Also that this shouldn't be dagger
             complex_cost = final_mat[O2, O2]
             cost = np.abs(complex_cost) ** 2
             all_costs2.append(cost)
@@ -60,7 +59,7 @@ def optimize_klyshko():
         S = best_S.copy()
         for phase in np.linspace(0, 2*np.pi, N_phases):
             S[mode_index % N] = phase
-            final_mat = T @ np.diag(np.exp(1j*S))**2 @ T.transpose()
+            final_mat = T @ np.diag(np.exp(1j*S))**2 @ T.transpose().conjugate()
             complex_cost = final_mat[O1, O2]
             cost = np.abs(complex_cost)**2
             all_costs.append(cost)
