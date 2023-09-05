@@ -15,8 +15,7 @@ O2 = 2*N//3
 
 N_phases = 20
 
-# TODO: simply phase conjugate or something instead of searching
-# TODO: see scaling of efficiency with degree of control. Maybe Klyshko will be linear and beacon squared?
+# TODO: see scaling of efficiency with degree of control (SLM will be stuck on x% of the pixels). Maybe Klyshko will be linear and beacon squared?
 # TODO: see scaling also with thickness / amount of memory. Simulate with help from here: https://www.nature.com/articles/nphys3373
 def optimize_beacon():
     best_cost1 = 0
