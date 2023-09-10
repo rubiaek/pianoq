@@ -12,7 +12,7 @@ control = 1
 I1 = 0
 I2 = 1
 O1 = N//3
-O2 = 2*N//3
+O2 = 2*N//3  # = O1
 
 N_phases = 20
 
@@ -103,7 +103,7 @@ def get_optimal_klyshko_conj():
     """
         Returns phases to put on SLM (0, 2*pi)
         Explanation:
-        (TS^2T^dag)_ij = T_ik S^2_kl T_jl
+        (TS^2T^t)_ij = T_ik S^2_kl T_jl
         ij = O1,O2 -> T_O1k T_O2l S^2_kl
         -> s_kl = (T_O1k T_O2l)^*
         s digonal -> k=l
