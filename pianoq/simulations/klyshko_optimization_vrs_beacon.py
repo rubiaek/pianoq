@@ -4,9 +4,10 @@ from scipy.stats import unitary_group
 from pianoq.misc.mplt import *
 
 # dimension
-N = 64
+N = 256
 # TM of the thick random medium
 T = unitary_group.rvs(N)
+control = 1
 # The two output modes optimizing coincidences to
 I1 = 0
 I2 = 1
@@ -74,8 +75,49 @@ def optimize_klyshko():
     return best_S, all_costs
 
 
-def get_optimal_beacon_conj(inout1=True):
-    if inout1:
+def prop_beacon(S, in1=True):
+    """
+    if in1:
+        I = I1
+    else:
+        I = I2
+
+    in_vec = np.zeros(N, complex)
+    in_vec[I] = 1
+    in_vec = np.fft.ifftshift(np.fft.ifft(np.fft.ifftshift(in_vec)))
+    """
+    in_vec = np.ones(N, complex) / np.sqrt(N)
+    out = T @ np.diag(np.exp(1j*S)) @ in_vec
+
+    return out
+
+
+def prop_klyshko(S):
+    vec_from_O1 = np.zeros(N, complex)
+    vec_from_O1[O1] = 1  # TODO: there is something here with O1/O2 that I need to understand better
+    out = T @ np.diag(np.exp(1j*S))**2 @ T.transpose() @ vec_from_O1
+    return out
+
+
+def get_optimal_klyshko_conj():
+    """
+        Returns phases to put on SLM (0, 2*pi)
+        Explanation:
+        (TS^2T^dag)_ij = T_ik S^2_kl T_jl
+        ij = O1,O2 -> T_O1k T_O2l S^2_kl
+        -> s_kl = (T_O1k T_O2l)^*
+        s digonal -> k=l
+    """
+    S = np.zeros(N, complex)
+    for k in range(N):
+        S[k] = (T[O1, k] * T[O2, k]).conjugate()
+
+    # dividing by 2 because we go twice on the SLM in Klyshko picture
+    return np.angle(S) / 2
+
+
+def get_optimal_beacon_conj(out1=True):
+    if out1:
         O = O1
         I = I1
     else:
@@ -85,59 +127,47 @@ def get_optimal_beacon_conj(inout1=True):
     # returns angles (0, 2*pi)
     desired_vec = np.zeros(N, complex)
     desired_vec[O] = 1
-    at_slm = T.transpose().conjugate() @ desired_vec  # dagger
+    at_slm = T.transpose() @ desired_vec
     angles_from_out = np.angle(at_slm)
 
-    in_vec = np.zeros(N, complex)
-    in_vec[I] = 1
-    in_vec = np.fft.ifftshift(np.fft.ifft(np.fft.ifftshift(in_vec)))
-    angles_from_in = np.angle(in_vec)
+    # in_vec = np.zeros(N, complex)
+    # in_vec[I] = 1
+    # in_vec = np.fft.ifftshift(np.fft.ifft(np.fft.ifftshift(in_vec)))
+    # angles_from_in = np.angle(in_vec)
+    # in_vec = np.ones(N, complex)
 
-    S = -(angles_from_in + angles_from_out)  # TODO: this doesn't work well. Please understand it.
-
+    # S = -(angles_from_in + angles_from_out)
+    S = -angles_from_out
     return S % (2*np.pi)
 
 
-def prop_beacon(S, in1=True):
-    if in1:
-        I = I1
-    else:
-        I = I2
+def test(ctrl=1):
+    global T
+    global control
+    T = unitary_group.rvs(N)
+    control = ctrl
 
-    in_vec = np.zeros(N, complex)
-    in_vec[I] = 1
-    in_vec = np.fft.ifftshift(np.fft.ifft(np.fft.ifftshift(in_vec)))
+    print('Klyshko')
+    S_k = get_optimal_klyshko_conj()
+    amps = prop_klyshko(S_k)
+    print(np.abs(amps[O2])**2)
 
-    out = T @ np.diag(np.exp(1j*S)) @ in_vec
+    print('beacon one way O1')
+    S1 = get_optimal_beacon_conj(True)
+    amps = prop_beacon(S1, True)
+    print(np.abs(amps[O1]) ** 2)
 
-    return out
+    print('beacon one way O2')
+    S2 = get_optimal_beacon_conj(False)
+    amps = prop_beacon(S2, False)
+    print(np.abs(amps[O2]) ** 2)
 
-
-def prop_klyshko(S):
-    vec_from_O1 = np.zeros(N, complex)
-    vec_from_O1[O2] = 1  # TODO: there is something here with O1/O2 that I need to understand better
-    out = T @ np.diag(np.exp(1j*S))**2 @ T.transpose().conjugate() @ vec_from_O1
-    return out
-
-
-def get_optimal_klyshko_conj():
-    """
-        Returns phases to put on SLM (0, 2*pi)
-        Explanation:
-        (TS^2T^dag)_ij = T_ik S^2_kl T^*_jl
-        ij = O1,O2 -> T_O1k T^*_O2l S^2_kl
-        -> s_kl = (T_O1k T^*_O2l)^*
-        s digonal -> k=l
-    """
-    S = np.zeros(N, complex)
-    for k in range(N):
-        S[k] = T[O1, k].conjugate() * T[O2, k]
-
-    # dividing by 2 because we go twice on the SLM in Klyshko picture
-    return np.angle(S) / 2
+    print('beacon both ways O1->O2')
+    amps = prop_klyshko((S1+S2)/2)
+    print(np.abs(amps[O2]) ** 2)
 
 
-def plot_res(S, all_costs, axes=None):
+def plot_res(S, axes=None):
     if axes is None:
         fig, axes = plt.subplots(1, 2, figsize=(9, 3))
     final_mat = T @ np.diag(np.exp(1j*S))**2 @ T.transpose().conjugate()
