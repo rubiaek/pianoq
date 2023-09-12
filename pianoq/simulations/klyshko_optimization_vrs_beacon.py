@@ -4,16 +4,20 @@ from scipy.stats import unitary_group
 from pianoq.misc.mplt import *
 
 # dimension
-N = 40
+N = 256
 # TM of the thick random medium
 T = unitary_group.rvs(N)
+control = 1
 # The two output modes optimizing coincidences to
+I1 = 0
+I2 = 1
 O1 = N//3
-O2 = 2*N//3
+O2 = 2*N//3  # = O1
 
 N_phases = 20
 
-# TODO: simply phase conjugate or something instead of searching
+# TODO: see scaling of efficiency with degree of control (SLM will be stuck on x% of the pixels). Maybe Klyshko will be linear and beacon squared?
+# TODO: see scaling also with thickness / amount of memory. Simulate with help from here: https://www.nature.com/articles/nphys3373
 def optimize_beacon():
     best_cost1 = 0
     best_S1 = np.zeros(N)
@@ -71,10 +75,102 @@ def optimize_klyshko():
     return best_S, all_costs
 
 
-def plot_res(S, all_costs, axes=None):
+def prop_beacon(S, in1=True):
+    """
+    if in1:
+        I = I1
+    else:
+        I = I2
+
+    in_vec = np.zeros(N, complex)
+    in_vec[I] = 1
+    in_vec = np.fft.ifftshift(np.fft.ifft(np.fft.ifftshift(in_vec)))
+    """
+    in_vec = np.ones(N, complex) / np.sqrt(N)
+    out = T @ np.diag(np.exp(1j*S)) @ in_vec
+
+    return out
+
+
+def prop_klyshko(S):
+    vec_from_O1 = np.zeros(N, complex)
+    vec_from_O1[O1] = 1  # TODO: there is something here with O1/O2 that I need to understand better
+    out = T @ np.diag(np.exp(1j*S))**2 @ T.transpose() @ vec_from_O1
+    return out
+
+
+def get_optimal_klyshko_conj():
+    """
+        Returns phases to put on SLM (0, 2*pi)
+        Explanation:
+        (TS^2T^t)_ij = T_ik S^2_kl T_jl
+        ij = O1,O2 -> T_O1k T_O2l S^2_kl
+        -> s_kl = (T_O1k T_O2l)^*
+        s digonal -> k=l
+    """
+    S = np.zeros(N, complex)
+    for k in range(N):
+        S[k] = (T[O1, k] * T[O2, k]).conjugate()
+
+    # dividing by 2 because we go twice on the SLM in Klyshko picture
+    return np.angle(S) / 2
+
+
+def get_optimal_beacon_conj(out1=True):
+    if out1:
+        O = O1
+        I = I1
+    else:
+        O = O2
+        I = I2
+
+    # returns angles (0, 2*pi)
+    desired_vec = np.zeros(N, complex)
+    desired_vec[O] = 1
+    at_slm = T.transpose() @ desired_vec
+    angles_from_out = np.angle(at_slm)
+
+    # in_vec = np.zeros(N, complex)
+    # in_vec[I] = 1
+    # in_vec = np.fft.ifftshift(np.fft.ifft(np.fft.ifftshift(in_vec)))
+    # angles_from_in = np.angle(in_vec)
+    # in_vec = np.ones(N, complex)
+
+    # S = -(angles_from_in + angles_from_out)
+    S = -angles_from_out
+    return S % (2*np.pi)
+
+
+def test(ctrl=1):
+    global T
+    global control
+    T = unitary_group.rvs(N)
+    control = ctrl
+
+    print('Klyshko')
+    S_k = get_optimal_klyshko_conj()
+    amps = prop_klyshko(S_k)
+    print(np.abs(amps[O2])**2)
+
+    print('beacon one way O1')
+    S1 = get_optimal_beacon_conj(True)
+    amps = prop_beacon(S1, True)
+    print(np.abs(amps[O1]) ** 2)
+
+    print('beacon one way O2')
+    S2 = get_optimal_beacon_conj(False)
+    amps = prop_beacon(S2, False)
+    print(np.abs(amps[O2]) ** 2)
+
+    print('beacon both ways O1->O2')
+    amps = prop_klyshko((S1+S2)/2)
+    print(np.abs(amps[O2]) ** 2)
+
+
+def plot_res(S, axes=None):
     if axes is None:
         fig, axes = plt.subplots(1, 2, figsize=(9, 3))
-    final_mat = T @ np.diag(np.exp(1j*S))**2 @ T.transpose()
+    final_mat = T @ np.diag(np.exp(1j*S))**2 @ T.transpose().conjugate()
 
     X_MARKER_COLOR = '#929591'
     X_MARKER_EDGEWITDH = 1.5
@@ -95,10 +191,22 @@ def plot_res(S, all_costs, axes=None):
 
 
 if __name__ == "__main__":
+    """
+        SLM is in real basis, also the diffuser is in real basis, and also measurement. 
+        The input state should be in Fourier basis, so the SLM will do something nontrivial. 
+        
+        In Klyshko: Out1 -> U^dag -> slm -> F -> mirror -> F^-1 -> slm -> U -> Out2, so we can just forget the Fourier, 
+        everything is in real basis, so we just want to enhance the total matrix at [O1, O2]
+        
+        In beacon: I1 -> Fourier -> SLM -> U -> O1, and here we want to have only at O1. So there isn't a single index 
+        to enhance (since we have many inputs), so analytically I feel a bit stuck. I guess I want the phases at SLM 
+        plane to be the back-prop from O1, so take the phases from the backprop + phases from input, and conjugate that. 
+    """
     # S, all_costs = optimize_klyshko()
     # fig, axes = plt.subplots(1, 2, figsize=(9, 3))
     # plot_res(S, all_costs, axes)
 
-    S2, all_costs = optimize_beacon()
-    fig, axes = plt.subplots(1, 2, figsize=(9, 3))
-    plot_res(S2, all_costs, axes)
+    # S2, all_costs = optimize_beacon()
+    # fig, axes = plt.subplots(1, 2, figsize=(9, 3))
+    # plot_res(S2, all_costs, axes)
+    pass
