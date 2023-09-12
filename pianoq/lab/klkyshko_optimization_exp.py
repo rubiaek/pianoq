@@ -31,12 +31,12 @@ class KlyshkoExperiment(object):
 
     def get_hardware(self):
         # Hardware
-        self.x_motor = ThorlabsKcubeDC(27600573)
+        self.x_motor = ThorlabsKcubeStepper(26003411)
         print('got x_motor')
-        self.y_motor = ThorlabsKcubeStepper(26003411)
+        self.y_motor = ThorlabsKcubeDC(27600573)
         print('got y_motor')
 
-        self.asi_cam = ASICam(exposure=self.config['cam_exposure'], binning=1, roi=self.config['cam_roi'], gain=0)
+        self.asi_cam = ASICam(exposure=self.config['cam_exposure_focus'], binning=1, roi=self.config['cam_roi'], gain=0)
         print('got ASI camera')
 
         self.photon_counter = QPTimeTagger(integration_time=self.config['optimized_integration_time'],
@@ -163,13 +163,19 @@ class KlyshkoExperiment(object):
             ###### diode ######
             self._input('Press enter when you changed to diode+power_meter...')
             self.log_power(f'Power no diffuser')
-            self.take_dark_pic()
+            self.take_dark_pic(exposure=self.config['cam_exposure_focus'])
+            print('Took low_exp dark pic')
+            self.take_dark_pic(exposure=self.config['cam_exposure_speckles'])
+            print('Took high_exp dark pic')
 
             self._input('Press enter when you changed to diode+cam...')
+            self.asi_cam.set_exposure(self.config['cam_exposure_focus'])
             self.take_asi_pic('diode_no_diffuser')
 
             self._input('Press enter when you added the diffuser...')
             self.take_asi_pic('diode_speckles')
+            self.asi_cam.set_exposure(self.config['cam_exposure_speckles'])
+            self.take_asi_pic('diode_speckles_higher_exp')
 
             self._input('Press enter when you changed to diode+power_meter...')
             self.log_power(f'Power yes diffuser')
@@ -178,6 +184,7 @@ class KlyshkoExperiment(object):
             self.log_power(f'Power optimized')
 
             self._input('Press enter when you changed to diode+cam...')
+            self.asi_cam.set_exposure(self.config['cam_exposure_focus'])
             self.take_asi_pic('diode_optimized')
 
             ###### SPDC ######
@@ -211,7 +218,8 @@ class KlyshkoExperiment(object):
             print(e)
             traceback.print_exc()
 
-    def take_dark_pic(self):
+    def take_dark_pic(self, exposure):
+        self.asi_cam.set_exposure(exposure)
         im = self.asi_cam.get_image()
         darks = np.zeros((10, im.shape[0], im.shape[1]))
         for i in range(10):
@@ -220,7 +228,7 @@ class KlyshkoExperiment(object):
 
         dark_im = np.mean(darks, axis=0)
         timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-        image_path = f'{self.dir_path}\\{timestamp}_dark.fits'
+        image_path = f'{self.dir_path}\\{timestamp}_dark_exp={exposure}.fits'
         self.asi_cam.save_image(image_path, im=dark_im, comment='dark', add_timestamp_to_name=False)
         time.sleep(0.1)
 
@@ -301,24 +309,25 @@ if __name__ == "__main__":
     config = {
         # hardware
         # 'cam_roi': (2846, 1808, 400, 400),
-        'cam_roi': (2910, 1680, 800, 800),
-        'cam_exposure': 10e-3,
+        'cam_roi': (2610, 1480, 1500, 1500),
+        'cam_exposure_focus': 1e-2,
+        'cam_exposure_speckles': 2e-1,
         'slm_pinhole_radius': 150,
         'slm_pinhole_center': (530, 500),
         'slm_pinhole_type': 'mirror',
         'cell_size': 15,
 
         # optimization
-        'n_iterations': 400,
+        'n_iterations': 1000,
         'cost_roi_mid': (400, 400),
         'best_phi_method': 'silly_max',
         'macro_pixels': 25,
-        'optimization_x_loc': 8.6,
-        'optimization_y_loc': 13.525,
+        'optimization_x_loc': 13.6,
+        'optimization_y_loc': 8.85,
 
         # scan areas
-        'start_x': 8.1,
-        'start_y': 13.0,
+        'start_x': 13.1,
+        'start_y': 8.35,
         # 'x_pixels': 30,
         # 'y_pixels': 30,
         # 'pix_size': 0.025,
@@ -338,7 +347,7 @@ if __name__ == "__main__":
     }
 
     ke = KlyshkoExperiment(config)
-    ke.run('thick_diffuser_0.25_and_0.25_0.16_power_meter_continuous_hex')
+    ke.run('thick_diffuser_0.5_and_0.25_0.16_power_meter_continuous_hex')
     # ke.run_virtual_speckles('second try')
     ke.close()
 

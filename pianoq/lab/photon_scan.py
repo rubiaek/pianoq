@@ -239,24 +239,24 @@ def scan_1D(name='1D', integration_time=1):
 
 
 def klyshko_scan(name='', integration_time=1):
-    mid_x = 8.5
-    mid_y = 13.55
-    start_x = 8.0
-    start_y = 13.05
+    mid_x = 13.6  # this is with the linear tilt on SLM. With no tilt - 13.95
+    mid_y = 8.85
+    start_x = 13.1
+    start_y = 8.35
     x_pixels = 20
     y_pixels = 20
     pixel_size_x = 0.05
     pixel_size_y = 0.05
 
     timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-    dir_path = r'E:\Google Drive\Projects\Klyshko Optimization\Results\temp\2023_08_28_08_10_25_klyshko_thick_diffuser_0.25_and_0.25_0.16_power_meter_continuous_hex\memory_measurements'
-    path = f'{dir_path}\\{timestamp}_d=50um_again.scan'
+    dir_path = r'E:\Google Drive\Projects\Klyshko Optimization\Results\temp'
+    path = f'{dir_path}\\{timestamp}_{name}.scan'
     scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
                             run_name=name, is_timetagger=True, coin_window=2e-9, saveto_path=path)
 
-    x_motor = ThorlabsKcubeDC(27600573)
+    x_motor = ThorlabsKcubeStepper(26003411)
     print('got x_motor')
-    y_motor = ThorlabsKcubeStepper(26003411)
+    y_motor = ThorlabsKcubeDC(27600573)
     print('got y_motor')
     tt = QPTimeTagger(integration_time=integration_time, coin_window=2e-9, single_channel_delays=(0, 1600))
     print('got timetagger')
@@ -277,4 +277,4 @@ if __name__ == '__main__':
     # small_scan(integration_time=1)
     # whole_scan(integration_time=3)
     # scan_1D(integration_time=0.5)
-    klyshko_scan(integration_time=1, name='memory_effect')
+    klyshko_scan(integration_time=1, name='search_again')
