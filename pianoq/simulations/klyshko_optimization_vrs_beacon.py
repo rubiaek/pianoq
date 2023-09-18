@@ -24,6 +24,7 @@ class KlyshkoBeaconSimulationResult(object):
         ax.errorbar(self.ctrls, self.QOPCs, yerr=self.QOPC_stds, fmt='o', label='QOPC')
         ax.set_xlabel('Degree of control')
         ax.set_ylabel('Phase only efficiency')
+        ax.axhline(y=1, color='c', linestyle='--')
         ax.axhline(y=np.pi/4, color='g', linestyle='--')
         ax.axhline(y=(np.pi/4)**2, color='b', linestyle='--')
         ax.annotate(r'$\frac{\pi}{4}$', xy=(0.3, np.pi/4), xytext=(0.2, 0.9), arrowprops=dict(facecolor='black', shrink=0.05, width=2), fontsize=16)
@@ -59,7 +60,7 @@ class KlyshkoBeaconSimulation(object):
         self.O2 = 2*self.N//3
 
         self.N_phases = 20
-        self.incomplete_control_method = 'zero'
+        self.incomplete_control_method = 'macro_pixels'  # 'zero'
 
     # TODO: see scaling also with thickness / amount of memory. Simulate with help from here: https://www.nature.com/articles/nphys3373
     def optimize_beacon(self):
@@ -152,16 +153,24 @@ class KlyshkoBeaconSimulation(object):
         at_slm = (self.T[self.O1, :] * self.T[self.O2, :])
         S = -np.angle(at_slm)
 
-        if deg_of_control < 1:
+        if 0 < deg_of_control < 1:
             if self.incomplete_control_method == 'zero':
                 N_to_remove = round(self.N * (1-deg_of_control))
                 S[self.N-N_to_remove:] = 0
             elif self.incomplete_control_method == 'macro_pixels':
                 # see doc in similar below at self.get_optimal_beacon_conj()
                 macro_pixel_size = round(1 / deg_of_control)
-                averaged = at_slm.reshape((-1, macro_pixel_size)).sum(axis=1)
+                max_index = (len(at_slm)//macro_pixel_size)*macro_pixel_size
+                truncated = at_slm[:max_index]
+                averaged = truncated.reshape((-1, macro_pixel_size)).sum(axis=1)
                 repeated = np.repeat(averaged, macro_pixel_size)
-                S = -np.angle(repeated)
+                end_val = at_slm[max_index:].sum()
+                padded = np.pad(repeated, (0, len(at_slm) % macro_pixel_size), constant_values=(0, end_val))
+                S = -np.angle(padded)
+        elif deg_of_control == 0:
+            # Global phase does nothing
+            S = np.zeros(self.N)
+
 
         # dividing by 2 because we go twice on the SLM in Klyshko picture
         return S / 2
@@ -193,7 +202,7 @@ class KlyshkoBeaconSimulation(object):
 
         S = -angles_from_out
 
-        if deg_of_control < 1:
+        if 0 < deg_of_control < 1:
             if self.incomplete_control_method == 'zero':
                 N_to_remove = round(self.N * (1-deg_of_control))
                 S[self.N-N_to_remove:] = 0
@@ -202,11 +211,20 @@ class KlyshkoBeaconSimulation(object):
                 # weights according to their contribution to the final mode (their phasor arrow lengths). To do this I
                 # sum their complex field contributions, and take the conjugate of that angle
                 macro_pixel_size = round(1/deg_of_control)
+                max_index = (len(at_slm)//macro_pixel_size)*macro_pixel_size
+
                 # inspiration from here: https://stackoverflow.com/questions/18582544/sum-parts-of-numpy-array by Jaime
                 # shape of -1 means it is inferred for the length + other dimension lengths
-                averaged = at_slm.reshape((-1, macro_pixel_size)).sum(axis=1)
+                truncated = at_slm[:max_index]
+                averaged = truncated.reshape((-1, macro_pixel_size)).sum(axis=1)
                 repeated = np.repeat(averaged, macro_pixel_size)
-                S = -np.angle(repeated)
+                end_val = at_slm[max_index:].sum()
+                padded = np.pad(repeated, (0, len(at_slm) % macro_pixel_size), constant_values=(0, end_val))
+                S = -np.angle(padded)
+
+        elif deg_of_control == 0:
+            # Global phase does nothing
+            S = np.zeros(self.N)
 
         return S % (2*np.pi)
 
