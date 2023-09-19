@@ -49,6 +49,7 @@ class KlyshkoExperiment(object):
                              pinhole_type=self.config['slm_pinhole_type'])
 
         self.power_meter = PowerMeterPM100()
+        self.power_meter.set_exposure(self.config['power_meter_exp'])
 
     def make_dir(self):
         # dirs and paths
@@ -309,13 +310,14 @@ if __name__ == "__main__":
     config = {
         # hardware
         # 'cam_roi': (2846, 1808, 400, 400),
-        'cam_roi': (2610, 1480, 1500, 1500),
+        'cam_roi': (1600, 1100, 2000, 2000),
         'cam_exposure_focus': 1e-2,
-        'cam_exposure_speckles': 2e-1,
+        'cam_exposure_speckles': 3e-1,
         'slm_pinhole_radius': 150,
         'slm_pinhole_center': (530, 500),
         'slm_pinhole_type': 'mirror',
         'cell_size': 15,
+        'power_meter_exp': 0.05,
 
         # optimization
         'n_iterations': 1000,

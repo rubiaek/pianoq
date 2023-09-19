@@ -26,6 +26,17 @@ class PowerMeterPM100(object):
         self.tlpm.getCalibrationMsg(message)
         print(c_char_p(message.raw).value)
 
+    def get_exposure(self):
+        q = c_double()
+        # 0 for current set value. 1 for min val and 2 for max val. 3 for default which is 1e-3
+        retval = self.tlpm.getAvgTime(0, byref(q))
+        assert retval == 0
+        return q.value
+
+    def set_exposure(self, exposure=0.05):
+        """ exposure in seconds """
+        self.tlpm.setAvgTime(c_double(exposure))
+
     def get_power(self):
         power = c_double()
         self.tlpm.measPower(byref(power))

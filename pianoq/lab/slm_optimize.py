@@ -21,7 +21,7 @@ def spiral(X, Y):
 
 
 class SLMOptimizer(object):
-    POINTS_FOR_LOCK_IN = 8
+    POINTS_FOR_LOCK_IN = 9
 
     PARTITIONING = 'partitioning'
     CONTINUOUS = 'continuous'
