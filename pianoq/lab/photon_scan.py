@@ -239,17 +239,17 @@ def scan_1D(name='1D', integration_time=1):
 
 
 def klyshko_scan(name='', integration_time=1):
-    mid_x = 13.6  # this is with the linear tilt on SLM. With no tilt - 13.95
-    mid_y = 8.85
-    start_x = 13.1
-    start_y = 8.35
+    mid_x = 13.55  # this is with the linear tilt on SLM. With no tilt - 13.95
+    mid_y = 8.9
+    start_x = 13.05
+    start_y = 8.4
     x_pixels = 20
     y_pixels = 20
     pixel_size_x = 0.05
     pixel_size_y = 0.05
 
     timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-    dir_path = r'E:\Google Drive\Projects\Klyshko Optimization\Results\temp'
+    dir_path = r'E:\Google Drive\Projects\Klyshko Optimization\Results\temp'  # \2023_09_20_09_52_22_klyshko\Memory'
     path = f'{dir_path}\\{timestamp}_{name}.scan'
     scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
                             run_name=name, is_timetagger=True, coin_window=2e-9, saveto_path=path)
@@ -263,7 +263,7 @@ def klyshko_scan(name='', integration_time=1):
 
     single1s, single2s, coincidences = scanner.scan(x_motor=x_motor, y_motor=y_motor, ph=tt)
     x_motor.close()
-    y_motor.close()  # pesky bug?
+    # y_motor.close()  # pesky bug?
     tt.close()
 
 
@@ -277,4 +277,4 @@ if __name__ == '__main__':
     # small_scan(integration_time=1)
     # whole_scan(integration_time=3)
     # scan_1D(integration_time=0.5)
-    klyshko_scan(integration_time=1, name='search_again')
+    klyshko_scan(integration_time=1, name='fixed_d=100um')

@@ -159,17 +159,25 @@ class KlyshkoExperiment(object):
             self.save_config(comment)
             self.redirect_stdout()
 
+            ###### SPDC clean ######
+            self._input('Press enter when you changed to SPDC + no diffuser...')
             self.set_motors_to_optimization()
+            self.set_photon_integration_time(self.config['focus_integration_time'])
+            self.log_coin('coin no diffuser')
+            self.scan_coincidence('corr_no_diffuser')
 
-            ###### diode ######
-            self._input('Press enter when you changed to diode+power_meter...')
-            self.log_power(f'Power no diffuser')
+            ###### dark #####
             self.take_dark_pic(exposure=self.config['cam_exposure_focus'])
             print('Took low_exp dark pic')
             self.take_dark_pic(exposure=self.config['cam_exposure_speckles'])
             print('Took high_exp dark pic')
 
-            self._input('Press enter when you changed to diode+cam...')
+            ###### diode ######
+            self.set_motors_to_optimization()
+            self._input('Press enter when you changed to diode + power_meter + no diffuser...')
+            self.log_power(f'Power no diffuser')
+
+            self._input('Press enter when you changed to diode + cam + no difuser...')
             self.asi_cam.set_exposure(self.config['cam_exposure_focus'])
             self.take_asi_pic('diode_no_diffuser')
 
@@ -178,7 +186,7 @@ class KlyshkoExperiment(object):
             self.asi_cam.set_exposure(self.config['cam_exposure_speckles'])
             self.take_asi_pic('diode_speckles_higher_exp')
 
-            self._input('Press enter when you changed to diode+power_meter...')
+            self._input('Press enter when you changed to diode + power_meter...')
             self.log_power(f'Power yes diffuser')
             self.slm_optimize()
             self.set_slm_optimized()
@@ -194,12 +202,6 @@ class KlyshkoExperiment(object):
             self.slm.normal()
             self.log_coin('coin yes diffuser')
 
-            flag = False
-            if flag:
-                self._input('Press enter when you removed diffuser...')
-                self.log_coin('coin no diffuser')
-                self._input('Press enter when you added diffuser...')
-
             self.set_slm_optimized()
             self.set_photon_integration_time(self.config['optimized_integration_time'])
             self.scan_coincidence('corr_optimized')
@@ -207,10 +209,6 @@ class KlyshkoExperiment(object):
             self.slm.normal()
             self.set_photon_integration_time(self.config['speckle_integration_time'])
             self.scan_coincidence('two_photon_speckle')
-            self._input('Press enter when you removed the diffuser...')
-
-            self.set_photon_integration_time(self.config['focus_integration_time'])
-            self.scan_coincidence('corr_no_diffuser')
 
             print("done!")
 
@@ -309,15 +307,14 @@ if __name__ == "__main__":
 
     config = {
         # hardware
-        # 'cam_roi': (2846, 1808, 400, 400),
-        'cam_roi': (1600, 1100, 2000, 2000),
-        'cam_exposure_focus': 1e-2,
+        'cam_roi': (2200, 1050, 2000, 2000),
+        'cam_exposure_focus': 2e-3,
         'cam_exposure_speckles': 3e-1,
         'slm_pinhole_radius': 150,
         'slm_pinhole_center': (530, 500),
         'slm_pinhole_type': 'mirror',
         'cell_size': 15,
-        'power_meter_exp': 0.05,
+        'power_meter_exp': 0.02,
 
         # optimization
         'n_iterations': 1000,
@@ -325,11 +322,11 @@ if __name__ == "__main__":
         'best_phi_method': 'silly_max',
         'macro_pixels': 25,
         'optimization_x_loc': 13.6,
-        'optimization_y_loc': 8.85,
+        'optimization_y_loc': 8.9,
 
         # scan areas
         'start_x': 13.1,
-        'start_y': 8.35,
+        'start_y': 8.4,
         # 'x_pixels': 30,
         # 'y_pixels': 30,
         # 'pix_size': 0.025,
@@ -341,7 +338,7 @@ if __name__ == "__main__":
         'optimized_integration_time': 2,
         'speckle_integration_time': 1,
         'focus_integration_time': 1,
-        'sleep_period': 0.1,  # after SLM update
+        'sleep_period': 0.05,  # after SLM update
 
         # Timetagger
         'is_time_tagger': True,
@@ -349,8 +346,7 @@ if __name__ == "__main__":
     }
 
     ke = KlyshkoExperiment(config)
-    ke.run('thick_diffuser_0.5_and_0.25_0.16_power_meter_continuous_hex')
-    # ke.run_virtual_speckles('second try')
+    ke.run('thick_diffuser_0.5_and_0.25_0.25_4.5cm_power_meter_continuous_hex')
     ke.close()
 
 """
