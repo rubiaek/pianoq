@@ -17,6 +17,9 @@ class KlyshkoBeaconSimulationResult(object):
         self.QOPCs = []
         self.QOPC_stds = []
 
+        self.T_mode = ''
+        self.incomplete_control_method = ''
+
     def show(self, fits=None):
         dummy_x = np.linspace(self.ctrls[0], self.ctrls[-1], 100)
         fig, ax = plt.subplots(figsize=(9, 4))
@@ -64,6 +67,7 @@ class KlyshkoBeaconSimulationResult(object):
         ax.annotate(r'$\left(\frac{\pi}{4}\right)^{2}$', xy=(0.3, (np.pi/4)**2), xytext=(0.2, 0.4), arrowprops=dict(facecolor='black', shrink=0.05, width=2), fontsize=16)
 
         fig.legend(loc='upper left')  # plt.rcParams['legend.loc'] = 'upper left'
+        fig.suptitle(f'incomplete_method: {self.incomplete_control_method}, T_mode: {self.T_mode}')
         fig.show()
         return fig, ax
 
@@ -97,11 +101,15 @@ class KlyshkoBeaconSimulation(object):
 
     # TODO: both phase and amplitude
 
-    def __init__(self):
+    def __init__(self, N=256, T_mode='unitary'):
+        """ N the dimension. T_mode could be 'unitary' or 'gaus_iid' """
         # dimension
-        self.N = 256
+        self.N = N
         # TM of the thick random medium
-        self.T = unitary_group.rvs(self.N)
+        self.T_mode = T_mode
+        self.T = None
+        self.T2 = None
+        self.reset_T()
         # The two output modes optimizing coincidences to
         self.I1 = 0
         self.I2 = 1
@@ -278,7 +286,16 @@ class KlyshkoBeaconSimulation(object):
         return S % (2*np.pi)
 
     def reset_T(self):
-        self.T = unitary_group.rvs(self.N)
+        if self.T_mode == 'unitary':
+            self.T = unitary_group.rvs(self.N)
+            # self.T2 = unitary_group.rvs(self.N)
+        elif self.T_mode == 'gaus_iid':
+            # Following this: https://stackoverflow.com/questions/55700338/how-to-generate-a-complex-gaussian-white-noise-signal-in-pythonor-numpy-scipy
+            # with a var of 1
+            self.T = 1/np.sqrt(self.N) * np.random.normal(loc=0, scale=np.sqrt(2)/2, size=(self.N, self.N, 2)).view(np.complex128)[:, :, 0]
+            # self.T2 = np.random.normal(loc=0, scale=np.sqrt(2)/2, size=(self.N, self.N, 2)).view(np.complex128)[:, :, 0]
+        else:
+            raise Exception('Need to choose s.T_mode of either "unitary" or "gaus_iid"')
 
     def test(self, ctrl=1):
         self.reset_T()
@@ -344,6 +361,9 @@ class KlyshkoBeaconSimulation(object):
 
     def run(self, N_average=10, N_ctrls=10, ctrls=()):
         res = KlyshkoBeaconSimulationResult()
+        res.T_mode = self.T_mode
+        res.incomplete_control_method = self.incomplete_control_method
+
         if len(ctrls) == 0:
             ctrls = np.linspace(0, 1, N_ctrls)
         res.ctrls = ctrls
