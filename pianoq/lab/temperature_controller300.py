@@ -11,6 +11,7 @@ import time
 
 class TC300(object):
     # note: added to path and to pythonpath this dir: C:\Program Files (x86)\Thorlabs\TC300\Sample\Thorlabs_TC300_PythonSDK
+    # note also that in TC300_COMMAND_LIB.py you need th change the LoadLibrary to load the 64x instead of the win32
 
     def __init__(self):
         self.devs = TC300ListDevices()
