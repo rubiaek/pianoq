@@ -239,9 +239,9 @@ def scan_1D(name='1D', integration_time=1):
 
 
 def klyshko_scan(name='', integration_time=1):
-    mid_x = 13.55  # this is with the linear tilt on SLM. With no tilt - 13.95
+    mid_x = 13.45  # this is with the linear tilt on SLM. With no tilt - 13.95
     mid_y = 8.9
-    start_x = 13.05
+    start_x = 12.95
     start_y = 8.4
     x_pixels = 20
     y_pixels = 20
@@ -258,7 +258,7 @@ def klyshko_scan(name='', integration_time=1):
     print('got x_motor')
     y_motor = ThorlabsKcubeDC(27600573)
     print('got y_motor')
-    tt = QPTimeTagger(integration_time=integration_time, coin_window=2e-9, single_channel_delays=(0, 1600))
+    tt = QPTimeTagger(integration_time=integration_time, coin_window=2e-9, single_channel_delays=(0, 1800))
     print('got timetagger')
 
     single1s, single2s, coincidences = scanner.scan(x_motor=x_motor, y_motor=y_motor, ph=tt)
@@ -277,4 +277,4 @@ if __name__ == '__main__':
     # small_scan(integration_time=1)
     # whole_scan(integration_time=3)
     # scan_1D(integration_time=0.5)
-    klyshko_scan(integration_time=1, name='fixed_d=100um')
+    klyshko_scan(integration_time=1, name='back_from_the_war_1')
