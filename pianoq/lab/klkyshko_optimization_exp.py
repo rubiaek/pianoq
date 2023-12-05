@@ -312,7 +312,7 @@ if __name__ == "__main__":
         'cam_exposure_speckles': 3e-1,
         'slm_pinhole_radius': 150,
         'slm_pinhole_center': (530, 500),
-        'slm_pinhole_type': 'mirror',
+        'slm_pinhole_type': 'rand',  # TODO: which is better?
         'cell_size': 15,
         'power_meter_exp': 0.02,
 
@@ -321,12 +321,12 @@ if __name__ == "__main__":
         'cost_roi_mid': (400, 400),
         'best_phi_method': 'silly_max',
         'macro_pixels': 25,
-        'optimization_x_loc': 13.6,
-        'optimization_y_loc': 8.9,
+        'optimization_x_loc': 13.65,
+        'optimization_y_loc': 8.85,
 
         # scan areas
-        'start_x': 13.1,
-        'start_y': 8.4,
+        'start_x': 13.15,
+        'start_y': 8.35,
         # 'x_pixels': 30,
         # 'y_pixels': 30,
         # 'pix_size': 0.025,
@@ -335,7 +335,7 @@ if __name__ == "__main__":
         'pix_size': 0.05,
 
         # Integration times
-        'optimized_integration_time': 2,
+        'optimized_integration_time': 1,
         'speckle_integration_time': 1,
         'focus_integration_time': 1,
         'sleep_period': 0.05,  # after SLM update
@@ -346,7 +346,7 @@ if __name__ == "__main__":
     }
 
     ke = KlyshkoExperiment(config)
-    ke.run('thick_diffuser_0.5_and_0.25_0.25_4.5cm_power_meter_continuous_hex')
+    ke.run('thick_diffuser_0.5_and_0.25_0.25_4.5cm_after_war')
     ke.close()
 
 """

@@ -264,29 +264,31 @@ class SLMOptimizer(object):
 if __name__ == '__main__':
     macro_pixels = 20
     sleep_period = 0.05
-    run_name = f'radius_150_type_mirror'
+    run_name = f'MMF_1'
 
-    asi_exposure_time = 3e-3
-    roi = (3040, 1746, 600, 600)
+    asi_exposure_time = 0.1
+    roi = (2700, 1550, 1000, 1000)
     l = 3
-    cost_roi = np.index_exp[300-l:300+l, 300-l:300+l]
+    cost_roi = np.index_exp[450-l:450+l, 450-l:450+l]
 
     slm = SLMDevice(0, use_mirror=True)
-    slm.set_pinhole(radius=150, center=(530, 500), pinhole_type='mirror')  # pinhole_type='rand'
+    slm.set_pinhole(radius=150, center=(530, 500), pinhole_type='rand')  # pinhole_type='mirror'
 
-    cam = ASICam(asi_exposure_time, binning=1, roi=roi, gain=0)
+    cam = ASICam(asi_exposure_time, binning=4, roi=roi, gain=0)
     power_meter = PowerMeterPM100()
+    power_meter.set_exposure(0.05)
 
     # tt = QPTimeTagger(integration_time=1, coin_window=2e-9, single_channel_delays=(0, 1600))
 
     o = SLMOptimizer(macro_pixels=macro_pixels, sleep_period=sleep_period, run_name=run_name, saveto_path=None)
     # g = o.optimize(method=SLMOptimizer.PARTITIONING, iterations=(macro_pixels**2)*2, slm=slm, timetagger=tt)
-    # g = o.optimize(method=SLMOptimizer.PARTITIONING, iterations=(macro_pixels**2)*2, slm=slm, cam=cam, roi=cost_roi,
-    #                best_phi_method='silly_max')
+    g = o.optimize(method=SLMOptimizer.CONTINUOUS_HEX, iterations=200, slm=slm, cam=cam, roi=cost_roi,
+                   power_meter=power_meter,
+                   best_phi_method='silly_max', cell_size=25)
     # g = o.optimize(method=SLMOptimizer.GENETIC, iterations=(macro_pixels**2)*2, slm=slm, cam=cam, roi=cost_roi)
 
-    g = o.optimize(method=SLMOptimizer.CONTINUOUS_HEX, iterations=400, slm=slm, cam=cam, power_meter=power_meter,
-                   roi=cost_roi, best_phi_method='silly_max', cell_size=15)
+    # g = o.optimize(method=SLMOptimizer.CONTINUOUS_HEX, iterations=400, slm=slm, cam=cam, power_meter=power_meter,
+    #                roi=cost_roi, best_phi_method='silly_max', cell_size=15)
 
     power_meter.close()
     cam.close()

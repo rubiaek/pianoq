@@ -12,7 +12,7 @@ def main():
     live_cam(cam)
 
 
-def live_cam(cam, interval=100, close_at_end=False, remove_min=True, cut_line=None, **kwargs):
+def live_cam(cam, interval=100, close_at_end=False, remove_min=True, cut_line=None, show_max=True, **kwargs):
     if cut_line is None:
         fig, ax = plt.subplots()
     else:
@@ -34,7 +34,10 @@ def live_cam(cam, interval=100, close_at_end=False, remove_min=True, cut_line=No
         if remove_min:
             imm -= imm.min()
         im.set_data(imm)
-        title.set_text(f'Total power: {imm.sum():.3f}')
+        if show_max:
+            title.set_text(f'Max pixel: {imm.max():.3f}')
+        else:
+            title.set_text(f'Total power: {imm.sum():.3f}')
         # ax.set_title('%03d' % i)
         if cut_line is not None:
             line.set_ydata(imm[cut_line, :])
