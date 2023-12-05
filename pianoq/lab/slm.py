@@ -7,7 +7,7 @@ import cv2
 
 configs = {
     0: {  # SLM no. 02 from Ori lab with 808
-        'correction_path': r"E:\Google Drive\Projects\Klyshko Optimization\Equipment\02 Ori Katz\deformation_correction_pattern\CAL_LSH0801927_810nm.bmp",
+        'correction_path': r"G:\My Drive\Projects\Klyshko Optimization\Equipment\02 Ori Katz\deformation_correction_pattern\CAL_LSH0801927_810nm.bmp",
         'alpha': 213,
         'geometry': '1272x1024+1913+-30',
         'monitor': 0,  # If using slmpy

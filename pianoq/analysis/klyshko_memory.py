@@ -6,7 +6,7 @@ from pianoq_results.misc import my_mesh
 from pianoq_results.scan_result import ScanResult
 from pianoq_results.fits_image import FITSImage
 
-PATH_THICK_MEMORY = r'E:\Google Drive\Projects\Klyshko Optimization\Results\temp\2023_09_20_09_52_22_klyshko_very_thick_with_memory_meas\Memory'
+PATH_THICK_MEMORY = r'G:\My Drive\Projects\Klyshko Optimization\Results\temp\2023_09_20_09_52_22_klyshko_very_thick_with_memory_meas\Memory'
 
 
 def get_correlation(im1, im2):

@@ -11,7 +11,7 @@ from pianoq.lab.time_tagger import QPTimeTagger
 from pianoq_results.scan_result import ScanResult
 from pianoq.misc.mplt import my_mesh
 # LOGS_DIR = "C:\\temp"
-LOGS_DIR = r'E:\Google Drive\Projects\Klyshko Optimization\Results\temp'
+LOGS_DIR = r'G:\My Drive\Projects\Klyshko Optimization\Results\temp'
 
 
 class PhotonScanner(object):
@@ -249,7 +249,7 @@ def klyshko_scan(name='', integration_time=1):
     pixel_size_y = 0.05
 
     timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-    dir_path = r'E:\Google Drive\Projects\Klyshko Optimization\Results\temp'  # \2023_09_20_09_52_22_klyshko\Memory'
+    dir_path = r'G:\My Drive\Projects\Klyshko Optimization\Results\temp'  # \2023_09_20_09_52_22_klyshko\Memory'
     path = f'{dir_path}\\{timestamp}_{name}.scan'
     scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
                             run_name=name, is_timetagger=True, coin_window=2e-9, saveto_path=path)
