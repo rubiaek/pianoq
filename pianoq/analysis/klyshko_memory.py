@@ -18,7 +18,7 @@ def get_correlation(im1, im2):
     return dist_ncc
 
 
-def get_memory_classical(dir_path=PATH_THICK_MEMORY):
+def get_memory_classical(dir_path=PATH_THICK_MEMORY, option='PCC'):
     X_pixs = 266  # == 1mm which is FOV of scan, divided by 3.76um for cam pix size
     Y_pixs = 266
     paths = sorted(glob.glob(f'{dir_path}\\*d=*um.fits'))
@@ -35,13 +35,21 @@ def get_memory_classical(dir_path=PATH_THICK_MEMORY):
 
     corrs = []
     for im in fixed_ims:
-        corr = get_correlation(im, fixed_ims[0])
+        if option == 'PCC':
+            corr = get_correlation(im, fixed_ims[0])
+        elif option == 'max_pix':
+            corr = im.max()
+        elif option == 'max_speckle':
+            corr = 2  # TODO
+        else:
+            corr = 2
+
         corrs.append(corr)
 
     return all_ds, corrs
 
 
-def get_memory_coin(dir_path=PATH_THICK_MEMORY):
+def get_memory_coin(dir_path=PATH_THICK_MEMORY, option='PCC'):
     paths = sorted(glob.glob(f'{dir_path}\\*d=*um.scan'))
     all_ds = np.array([re.findall('.*d=(.*)um', path)[0] for path in paths]).astype(int)
     scans = [ScanResult(path) for path in paths]
@@ -49,38 +57,35 @@ def get_memory_coin(dir_path=PATH_THICK_MEMORY):
     for scan in scans:
         # TODO: we need to correlate to the original picture but moving. This is almost what happens here.
         # Look at [(s.X[0], s.Y[0]) for s in scans] next to all_ds
-        corr = get_correlation(scan.real_coins, scans[0].real_coins)
+        if option == 'PCC':
+            corr = get_correlation(scan.real_coins, scans[0].real_coins)
+        elif option == 'max_pix':
+            corr = scan.real_coins.max()
+        elif option == 'max_speckle':
+            corr = 2  # TODO
+        else:
+            corr = 2
         corrs.append(corr)
 
     return all_ds, corrs
 
 
-"""
-    fig, axes = plt.subplots(1, len(show_ds), figsize=(len(show_ds)*3.5, 3), constrained_layout=True)
-    for i in range(len(show_ds)):
-        ind = np.where(all_ds == show_ds[i])[0][0]
-        if not classic:
-            scan = ScanResult(paths[ind])
-            my_mesh(scan.X, scan.Y, scan.real_coins, axes[i])
-            axes[i].invert_xaxis()
-        else:
-            im = FITSImage(paths[ind])
-            imm = axes[i].imshow(im.image)
-
-            axes[i].set_xlim(left=ind_col - X_pixs / 2, right=ind_col + X_pixs / 2)
-            axes[i].set_ylim(bottom=ind_row - Y_pixs / 2, top=ind_row + Y_pixs / 2)
-            fig.colorbar(imm, ax=axes[i])
-
-        axes[i].set_title(f'd = {show_ds[i]}')
-
-    fig.suptitle(f'classic = {classic}')
-
+def show_memories(dir_path=PATH_THICK_MEMORY):
+    fig, ax = plt.subplots()
+    diode_ds, diode_corrs = get_memory_classical(dir_path=dir_path)
+    diode_corrs = np.array(diode_corrs) / max(diode_corrs)
+    coin_ds, coin_corrs = get_memory_coin(dir_path=dir_path)
+    coin_corrs = np.array(coin_corrs) / max(coin_corrs)
+    ax.plot(diode_ds, diode_corrs, '*--', label='diode')
+    ax.plot(coin_ds, coin_corrs, '*--', label='SPDC')
+    fig.legend()
     fig.show()
-"""
+
 
 def main():
-    pass
+    show_memories()
 
 
 if __name__ == "__main__":
     main()
+    plt.show()
