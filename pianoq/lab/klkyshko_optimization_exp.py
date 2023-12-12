@@ -17,7 +17,7 @@ from pianoq.lab.thorlabs_motor import ThorlabsKcubeStepper, ThorlabsKcubeDC
 from pianoq.lab.time_tagger import QPTimeTagger
 from pianoq.misc.flushing_file import FlushingPrintingFile
 
-LOGS_DIR = r'E:\Google Drive\Projects\Klyshko Optimization\Results\temp'
+LOGS_DIR = r'G:\My Drive\Projects\Klyshko Optimization\Results\temp'
 
 
 class KlyshkoExperiment(object):

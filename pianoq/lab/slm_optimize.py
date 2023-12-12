@@ -13,7 +13,7 @@ from pianoq_results.slm_optimization_result import SLMOptimizationResult
 import matplotlib.pyplot as plt
 import numpy as np
 
-LOGS_DIR = 'C:\\temp'
+LOGS_DIR = r'G:\My Drive\Projects\Klyshko Optimization\Paper1\Data\Off axis'
 
 
 def spiral(X, Y):
@@ -264,7 +264,7 @@ class SLMOptimizer(object):
 if __name__ == '__main__':
     macro_pixels = 20
     sleep_period = 0.05
-    run_name = f'MMF_1'
+    run_name = f'off_axis2'
 
     asi_exposure_time = 0.1
     roi = (2700, 1550, 1000, 1000)
@@ -272,7 +272,7 @@ if __name__ == '__main__':
     cost_roi = np.index_exp[450-l:450+l, 450-l:450+l]
 
     slm = SLMDevice(0, use_mirror=True)
-    slm.set_pinhole(radius=150, center=(530, 500), pinhole_type='rand')  # pinhole_type='mirror'
+    slm.set_pinhole(radius=150, center=(530, 500), pinhole_type='mirror')  # pinhole_type='mirror'
 
     cam = ASICam(asi_exposure_time, binning=4, roi=roi, gain=0)
     power_meter = PowerMeterPM100()
@@ -282,7 +282,7 @@ if __name__ == '__main__':
 
     o = SLMOptimizer(macro_pixels=macro_pixels, sleep_period=sleep_period, run_name=run_name, saveto_path=None)
     # g = o.optimize(method=SLMOptimizer.PARTITIONING, iterations=(macro_pixels**2)*2, slm=slm, timetagger=tt)
-    g = o.optimize(method=SLMOptimizer.CONTINUOUS_HEX, iterations=200, slm=slm, cam=cam, roi=cost_roi,
+    g = o.optimize(method=SLMOptimizer.CONTINUOUS_HEX, iterations=800, slm=slm, cam=cam, roi=cost_roi,
                    power_meter=power_meter,
                    best_phi_method='silly_max', cell_size=25)
     # g = o.optimize(method=SLMOptimizer.GENETIC, iterations=(macro_pixels**2)*2, slm=slm, cam=cam, roi=cost_roi)

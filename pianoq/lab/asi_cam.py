@@ -57,6 +57,7 @@ class ASICam(object):
         hdu.header['EXPTIME'] = hdu.header['EXPOSURE'] = self.get_exposure()  # In seconds
         hdu.header['CCD-TEMP'] = self.get_temperature()
         hdu.header['COMMENT'] = comment
+        hdu.header['ROI'] = str(self.get_roi())
 
         hdu.writeto(path)
 
