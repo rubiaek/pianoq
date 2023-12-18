@@ -13,7 +13,7 @@ from pianoq_results.slm_optimization_result import SLMOptimizationResult
 import matplotlib.pyplot as plt
 import numpy as np
 
-LOGS_DIR = r'G:\My Drive\Projects\Klyshko Optimization\Paper1\Data\Off axis'
+LOGS_DIR = r'G:\My Drive\Projects\Klyshko Optimization\Results\two spots\try2'
 
 
 def spiral(X, Y):
@@ -250,11 +250,23 @@ class SLMOptimizer(object):
             cost_witness = self.cam.get_image()
             self._fix_exposure(cost_witness)
             if self.roi:
-                imm = cost_witness[self.roi]
-                cost = imm.sum()
+                if isinstance(self.roi, (list, tuple)):
+                    costs = []
+                    for r in self.roi:
+                        costs.append(float(cost_witness[r].sum()))
+
+                    cost = np.sum([np.sqrt(cost) for cost in costs])
+                    norm_diff = np.abs(costs[1] - costs[0]) / np.max(costs)
+                    cost -= norm_diff * 0.2 * cost  # if the two spots differ by 10% so the cost will be 2% less
+
+                else:
+                    imm = cost_witness[self.roi]
+                    cost = imm.sum()
             else:
                 cost = cost_witness.sum()
 
+        if self.macro_iter_num % 8 != 0:
+            cost_witness = None
         return cost, cost_witness
 
     def _save_result(self):
@@ -263,18 +275,21 @@ class SLMOptimizer(object):
 
 if __name__ == '__main__':
     macro_pixels = 20
-    sleep_period = 0.05
-    run_name = f'off_axis2'
+    sleep_period = 0.02
+    run_name = f'two_spots_try_1'
 
-    asi_exposure_time = 0.1
-    roi = (2700, 1550, 1000, 1000)
+    asi_exposure_time = 0.002
+    roi = [850, 600, 500, 500]
     l = 3
-    cost_roi = np.index_exp[450-l:450+l, 450-l:450+l]
+    roi_mid = np.index_exp[255-l:255+l, 250-l:250+l]  # middle
+    roi_left = np.index_exp[255-l:255+l, 237-l:237+l]  # left
+    roi_right = np.index_exp[255-l:255+l, 263-l:263+l]  # right
+    cost_roi = [roi_right, roi_left]
 
     slm = SLMDevice(0, use_mirror=True)
     slm.set_pinhole(radius=150, center=(530, 500), pinhole_type='mirror')  # pinhole_type='mirror'
 
-    cam = ASICam(asi_exposure_time, binning=4, roi=roi, gain=0)
+    cam = ASICam(asi_exposure_time, binning=3, roi=roi, gain=0)
     power_meter = PowerMeterPM100()
     power_meter.set_exposure(0.05)
 
@@ -282,9 +297,9 @@ if __name__ == '__main__':
 
     o = SLMOptimizer(macro_pixels=macro_pixels, sleep_period=sleep_period, run_name=run_name, saveto_path=None)
     # g = o.optimize(method=SLMOptimizer.PARTITIONING, iterations=(macro_pixels**2)*2, slm=slm, timetagger=tt)
-    g = o.optimize(method=SLMOptimizer.CONTINUOUS_HEX, iterations=800, slm=slm, cam=cam, roi=cost_roi,
-                   power_meter=power_meter,
-                   best_phi_method='silly_max', cell_size=25)
+    g = o.optimize(method=SLMOptimizer.CONTINUOUS_HEX, iterations=600, slm=slm, cam=cam, roi=cost_roi,
+                   # power_meter=power_meter,
+                   best_phi_method='silly_max', cell_size=20)
     # g = o.optimize(method=SLMOptimizer.GENETIC, iterations=(macro_pixels**2)*2, slm=slm, cam=cam, roi=cost_roi)
 
     # g = o.optimize(method=SLMOptimizer.CONTINUOUS_HEX, iterations=400, slm=slm, cam=cam, power_meter=power_meter,

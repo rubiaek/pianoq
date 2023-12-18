@@ -7,18 +7,22 @@ import astropy.time
 
 # asi.init('C:\\code\\ASI_Windows_SDK_V1.22\\ASI SDK\\lib\\x64\\ASICamera2.dll')
 
+
 class ASICam(object):
-    def __init__(self, exposure=1.5, binning=2, image_bits=16, roi=(1500, 950, 200, 200), gain=None):
+    def __init__(self, exposure=None, binning=None, image_bits=16, roi=None, gain=None):
         self._cam = asi.Camera(0)  # Assume we will always have only 1 camera
         self.get_roi = self._cam.get_roi
         self.get_image = self._cam.capture
         self.image_bits = self.set_image_bits(8)
         self._cam.disable_dark_subtract()
         self.pixel_size = self._cam.get_camera_property()['PixelSize']
-        self.set_binning(binning)
-        self.set_exposure(exposure)
         self.set_image_bits(image_bits)
-        self.set_roi(*roi)
+        if binning:
+            self.set_binning(binning)
+        if exposure:
+            self.set_exposure(exposure)
+        if roi:
+            self.set_roi(*roi)
         if gain:
             self.set_gain(gain)
 
@@ -66,7 +70,7 @@ class ASICam(object):
             width -= width % 8  # Must be a multiple of 8
         if height is not None:
             height -= height % 2  # Must be a multiple of 2
-        self._cam.set_roi(start_x, start_y, width, height)
+        self._cam.set_roi(start_x, start_y, width, height, bins=bins)
 
     def set_exposure(self, exposure):
         """ in seconds """
