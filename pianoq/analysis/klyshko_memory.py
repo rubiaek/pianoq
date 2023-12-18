@@ -59,7 +59,7 @@ def get_memory_classical2(dir_path=r'G:\My Drive\Projects\Klyshko Optimization\R
     mid_ind = np.where(all_ds==5)[0][0]
     all_ds *= 10
     ims = [FITSImage(path) for path in paths]
-    ind_row, ind_col = np.unravel_index(np.argmax(ims[0].image, axis=None), ims[0].image.shape)
+    ind_row, ind_col = np.unravel_index(np.argmax(ims[mid_ind].image, axis=None), ims[0].image.shape)
     fixed_ims = []
     for i, im in enumerate(ims):
         delta_d = all_ds[i] - all_ds[mid_ind]
@@ -71,7 +71,7 @@ def get_memory_classical2(dir_path=r'G:\My Drive\Projects\Klyshko Optimization\R
     corrs = []
     for im in fixed_ims:
         if option == 'PCC':
-            corr = get_correlation(im, fixed_ims[0])
+            corr = get_correlation(im, fixed_ims[mid_ind])
         elif option == 'max_pix':
             corr = im.max()
         elif option == 'max_speckle':
@@ -105,13 +105,19 @@ def get_memory_coin(dir_path=PATH_THICK_MEMORY, option='PCC'):
     return all_ds, corrs
 
 
-def show_memories(dir_path=PATH_THICK_MEMORY):
+def show_memories(dir_path=PATH_THICK_MEMORY, option='PCC'):
     fig, ax = plt.subplots()
-    diode_ds, diode_corrs = get_memory_classical(dir_path=dir_path)
+    diode_ds2, diode_corrs2 = get_memory_classical2(dir_path=r'G:\My Drive\Projects\Klyshko Optimization\Results\Off_axis\Memory Diode', option=option)
+    diode_corrs2 = np.array(diode_corrs2) / max(diode_corrs2)
+
+    diode_ds, diode_corrs = get_memory_classical(dir_path=dir_path, option=option)
     diode_corrs = np.array(diode_corrs) / max(diode_corrs)
-    coin_ds, coin_corrs = get_memory_coin(dir_path=dir_path)
+
+    coin_ds, coin_corrs = get_memory_coin(dir_path=dir_path, option=option)
     coin_corrs = np.array(coin_corrs) / max(coin_corrs)
+
     ax.plot(diode_ds, diode_corrs, '*--', label='diode')
+    ax.plot(diode_ds2, diode_corrs2, '*--', label='diode2')
     ax.plot(coin_ds, coin_corrs, '*--', label='SPDC')
     fig.legend()
     fig.show()
@@ -122,5 +128,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
-    plt.show()
+    pass
+    # main()
+    # plt.show()
