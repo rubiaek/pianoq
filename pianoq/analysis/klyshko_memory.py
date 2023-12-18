@@ -49,6 +49,41 @@ def get_memory_classical(dir_path=PATH_THICK_MEMORY, option='PCC'):
     return all_ds, corrs
 
 
+def get_memory_classical2(dir_path=r'G:\My Drive\Projects\Klyshko Optimization\Results\Off_axis\Memory Diode', option='PCC'):
+    X_pixs = 266  # == 1mm which is FOV of scan, divided by 3.76um for cam pix size
+    Y_pixs = 266
+    paths = glob.glob(f'{dir_path}\\*d=*.fits')
+    all_ds = np.array([re.findall('.*d=(.*)\.', path)[0] for path in paths]).astype(int)
+    all_ds, paths = list(zip(*sorted(zip(all_ds, paths), key=lambda pair: pair[0])))
+    all_ds = np.array(all_ds, dtype=int)
+    mid_ind = np.where(all_ds==5)[0][0]
+    all_ds *= 10
+    ims = [FITSImage(path) for path in paths]
+    ind_row, ind_col = np.unravel_index(np.argmax(ims[0].image, axis=None), ims[0].image.shape)
+    fixed_ims = []
+    for i, im in enumerate(ims):
+        delta_d = all_ds[i] - all_ds[mid_ind]
+        factor = int(10*delta_d / 3.76)
+        fixed_im = im.image[ind_row - X_pixs // 2         : ind_row + X_pixs // 2,
+                            ind_col - Y_pixs // 2 - factor: ind_col + Y_pixs // 2 - factor]
+        fixed_ims.append(fixed_im)
+
+    corrs = []
+    for im in fixed_ims:
+        if option == 'PCC':
+            corr = get_correlation(im, fixed_ims[0])
+        elif option == 'max_pix':
+            corr = im.max()
+        elif option == 'max_speckle':
+            corr = 2  # TODO
+        else:
+            corr = 2
+
+        corrs.append(corr)
+
+    return all_ds, corrs
+
+
 def get_memory_coin(dir_path=PATH_THICK_MEMORY, option='PCC'):
     paths = sorted(glob.glob(f'{dir_path}\\*d=*um.scan'))
     all_ds = np.array([re.findall('.*d=(.*)um', path)[0] for path in paths]).astype(int)
