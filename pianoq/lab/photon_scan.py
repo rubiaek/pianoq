@@ -1,6 +1,7 @@
 import time
 import datetime
 
+from pianoq.lab.power_meter100 import PowerMeterPM100
 from pianoq.lab.thorlabs_motor import ThorlabsKcubeDC, ThorlabsKcubeStepper
 from pianoq.lab.photon_counter import PhotonCounter
 
@@ -12,7 +13,7 @@ from pianoq_results.scan_result import ScanResult
 from pianoq.misc.mplt import my_mesh
 # LOGS_DIR = "C:\\temp"
 # LOGS_DIR = r'G:\My Drive\Projects\Klyshko Optimization\Results\temp'
-LOGS_DIR = r'G:\My Drive\Projects\Klyshko Optimization\Results\two spots\try2'
+LOGS_DIR = r'G:\My Drive\Projects\Klyshko Optimization\Results\same_speckle\try3'
 
 
 class PhotonScanner(object):
@@ -53,18 +54,19 @@ class PhotonScanner(object):
         self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
         self.start_time = time.time()
 
-    def scan(self, spiral=False, ph=None , x_motor=None, y_motor=None):
-        if ph is None:
+    def scan(self, spiral=False, ph=None , x_motor=None, y_motor=None, use_power_meter=False):
+
+        close_ph = False
+        if ph is None and not use_power_meter:
             print('getting photon counter...')
             if self.is_timetagger:
                 ph = QPTimeTagger(integration_time=self.integration_time, coin_window=self.coin_window, single_channel_delays=(0, 0))
             else:
                 ph = PhotonCounter(integration_time=self.integration_time)
             close_ph = True
-        else:
+        elif ph is not None:
             assert isinstance(ph, (PhotonCounter, QPTimeTagger))
             self.integration_time = ph.integration_time
-            close_ph = False
 
         if x_motor is None:
             print('getting x motor...')
@@ -82,7 +84,7 @@ class PhotonScanner(object):
 
         try:
             if not spiral:
-                self._linear(x_motor, y_motor, ph)
+                self._linear(x_motor, y_motor, ph, use_power_meter)
 
         except Exception as e:
             print('Exception occurred')
@@ -110,10 +112,15 @@ class PhotonScanner(object):
 
         # TODO: we need to follow both the absulote value in mm, and also the relevant discreet index in matrix
 
-    def _linear(self, x_motor, y_motor, ph):
+    def _linear(self, x_motor, y_motor, ph, use_power_meter=False):
         print('Moving to starting position...')
         x_motor.move_absolute(self.start_x)
         y_motor.move_absolute(self.start_y)
+
+        power_meter = None
+        if use_power_meter:
+            power_meter = PowerMeterPM100()
+            power_meter.set_exposure(0.05)
 
         print('starting scan')
         count = 0
@@ -122,6 +129,12 @@ class PhotonScanner(object):
             for j in range(self.x_pixels):
                 x_motor.move_relative(self.pixel_size_x)
                 duration_till_now = time.time() - self.start_time
+
+                if use_power_meter:
+                    self.single1s[i, j], self.single2s[i, j], self.coincidences[i, j] = 0, 0, power_meter.get_power() * 1e6
+                    print(f'dur: {int(duration_till_now)}. pix: {i}, {j}. Power: {self.coincidences[i, j]:.2f}.')
+                    self._save_result()
+                    continue
 
                 if not self.is_double_spot:
                     self.single1s[i, j], self.single2s[i, j], self.coincidences[i, j] = ph.read_interesting()
@@ -175,88 +188,23 @@ class PhotonScanner(object):
         fig.show()
 
 
-def whole_scan(name='whole_area', integration_time=5):
-    start_x = 15.2
-    start_y = 15.3
-    x_pixels = 15
-    y_pixels = 15
-    pixel_size_x = 0.1
-    pixel_size_y = 0.1
-
-
-    scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
-                            run_name=name)
-    single1s, single2s, coincidences = scanner.scan()
-
-
-def middle_scan(name='middle_area', integration_time=5, is_timetagger=False, coin_window=4e-9):
-    # pix_size = 0.05
-    pix_size = 0.025
-    if pix_size == 0.025:
-        start_x = 15.75
-        start_y = 14.9
-        x_pixels = 30
-        y_pixels = 30
-
-    elif pix_size == 0.05:
-        start_x = 16.275
-        start_y = 16.05
-        x_pixels = 10
-        y_pixels = 10
-
-    scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pix_size, pix_size,
-                            coin_window=coin_window, is_timetagger=is_timetagger, run_name=name)
-
-    single1s, single2s, coincidences = scanner.scan()
-    # scanner.plot_coincidence(name)
-
-
-def small_scan(name='small_area', integration_time=20):
-    start_x = 16.85
-    start_y = 16.45
-    x_pixels = 5
-    y_pixels = 5
-    pixel_size_x = 0.050
-    pixel_size_y = 0.050
-
-    scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
-                            coin_window=1e-9, is_timetagger=True, run_name=name)
-    single1s, single2s, coincidences = scanner.scan()
-    # scanner.plot_coincidence(name)
-
-
-def scan_1D(name='1D', integration_time=1):
-    start_x = 15
-    start_y = 16.6
-    x_pixels = 30
-    y_pixels = 1
-    pixel_size_x = 0.1
-    pixel_size_y = 0.1
-
-    scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
-                            run_name=name)
-    single1s, single2s, coincidences = scanner.scan()
-    # scanner.plot_coincidence(name)
-
-
-def klyshko_scan(name='', integration_time=1.0):
-    mid_x = 13.65  # this is with the linear tilt on SLM. With no tilt - 13.95
-    mid_y = 9.1
+def klyshko_scan(name='', integration_time=1.0, use_power_meter=False):
+    mid_x = 13.7  # this is with the linear tilt on SLM.
+    mid_y = 9.05
     here = True
     if here:  # d = 5
-        start_x = 13.35
-        start_y = 8.7
-
+        start_x = 13.125
+        start_y = 8.675
     else:
         start_x = 13.3
         start_y = 7.55
 
     # start_x = 9.6
     # start_y = 4.4
-    x_pixels = 12
-    y_pixels = 16
-    pixel_size_x = 0.05
-    pixel_size_y = 0.05
+    x_pixels = 38
+    y_pixels = 38
+    pixel_size_x = 0.025
+    pixel_size_y = 0.025
 
     timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
     dir_path = r'G:\My Drive\Projects\Klyshko Optimization\Results\Off_axis\Try2_20nm_Semrock'
@@ -268,13 +216,17 @@ def klyshko_scan(name='', integration_time=1.0):
     print('got x_motor')
     y_motor = ThorlabsKcubeDC(27600573)
     print('got y_motor')
-    tt = QPTimeTagger(integration_time=integration_time, coin_window=2e-9, single_channel_delays=(0, 1800))
-    print('got timetagger')
+    tt = None
+    pm = None
+    if not use_power_meter:
+        tt = QPTimeTagger(integration_time=integration_time, coin_window=2e-9, single_channel_delays=(0, 1800))
+        print('got timetagger')
 
-    single1s, single2s, coincidences = scanner.scan(x_motor=x_motor, y_motor=y_motor, ph=tt)
+    single1s, single2s, coincidences = scanner.scan(x_motor=x_motor, y_motor=y_motor, ph=tt, use_power_meter=use_power_meter)
     x_motor.close()
     # y_motor.close()  # pesky bug?
-    tt.close()
+    if not use_power_meter:
+        tt.close()
 
 
 if __name__ == '__main__':
@@ -282,9 +234,4 @@ if __name__ == '__main__':
     best_y = 16.9
     best_z = 10  # Not very accurate, but seems OK
 
-    # middle_scan(integration_time=3, name='Heralding_filter=10nm', is_timetagger=True, coin_window=1e-9)
-    # middle_scan(integration_time=5, name='almost_passover', is_timetagger=True, coin_window=1e-9)
-    # small_scan(integration_time=1)
-    # whole_scan(integration_time=3)
-    # scan_1D(integration_time=0.5)
-    klyshko_scan(integration_time=6, name='optimized_two_spots_longer')
+    klyshko_scan(integration_time=2, name='speckles4_two_photon_high_res_again', use_power_meter=False)
