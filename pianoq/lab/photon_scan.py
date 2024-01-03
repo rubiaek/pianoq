@@ -188,27 +188,24 @@ class PhotonScanner(object):
         fig.show()
 
 
-def klyshko_scan(name='', integration_time=1.0, use_power_meter=False):
-    mid_x = 13.7  # this is with the linear tilt on SLM.
-    mid_y = 9.05
-    here = True
-    if here:  # d = 5
-        start_x = 13.125
-        start_y = 8.675
-    else:
-        start_x = 13.3
-        start_y = 7.55
+def klyshko_scan(name='', integration_time=1.0, use_power_meter=False, D0=0.0, D=0.0):
+    mid_x = 13.5  # 13.7  # this is with the linear tilt on SLM.
+    mid_y = 9.05  # with d=7 which is middle of single counts
 
-    # start_x = 9.6
-    # start_y = 4.4
-    x_pixels = 38
-    y_pixels = 38
+    # d=2 -> mid_x = 8.45
+    # d=12 -> mid_x = 9.6
+    start_x = 13.3
+    # 1e-3 for um, 10 because micrometer 7 as actually 70, and 9.5x for different magnification
+    start_y = 8.85 - (np.abs(D-D0) * 1e-3 * 10 * 9.5)
+
+    x_pixels = 14
+    y_pixels = 14
     pixel_size_x = 0.025
     pixel_size_y = 0.025
 
     timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-    dir_path = r'G:\My Drive\Projects\Klyshko Optimization\Results\Off_axis\Try2_20nm_Semrock'
-    path = f'{LOGS_DIR}\\{timestamp}_{name}.scan'
+    dir_path = r'G:\My Drive\Projects\Klyshko Optimization\Results\Off_axis\try6\SPDC_memory'
+    path = f'{dir_path}\\{timestamp}_{name}.scan'
     scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
                             run_name=name, is_timetagger=True, coin_window=2e-9, saveto_path=path)
 
@@ -219,11 +216,11 @@ def klyshko_scan(name='', integration_time=1.0, use_power_meter=False):
     tt = None
     pm = None
     if not use_power_meter:
-        tt = QPTimeTagger(integration_time=integration_time, coin_window=2e-9, single_channel_delays=(0, 1800))
+        tt = QPTimeTagger(integration_time=integration_time, coin_window=2e-9, single_channel_delays=(0, 1600))
         print('got timetagger')
 
     single1s, single2s, coincidences = scanner.scan(x_motor=x_motor, y_motor=y_motor, ph=tt, use_power_meter=use_power_meter)
-    x_motor.close()
+    # x_motor.close()
     # y_motor.close()  # pesky bug?
     if not use_power_meter:
         tt.close()
@@ -234,4 +231,7 @@ if __name__ == '__main__':
     best_y = 16.9
     best_z = 10  # Not very accurate, but seems OK
 
-    klyshko_scan(integration_time=2, name='speckles4_two_photon_high_res_again', use_power_meter=False)
+    D0 = 7
+    D = 1
+
+    klyshko_scan(integration_time=4, name=f'optimized_d={D}', use_power_meter=False, D0=D0, D=D)

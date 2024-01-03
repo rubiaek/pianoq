@@ -9,8 +9,9 @@ import astropy.time
 
 
 class ASICam(object):
-    def __init__(self, exposure=None, binning=None, image_bits=16, roi=None, gain=None):
-        self._cam = asi.Camera(0)  # Assume we will always have only 1 camera
+    def __init__(self, exposure=None, binning=None, image_bits=16, roi=None, gain=None, camno=0):
+        self.camno = camno
+        self._cam = asi.Camera(self.camno)
         self.get_roi = self._cam.get_roi
         self.get_image = self._cam.capture
         self.image_bits = self.set_image_bits(8)
