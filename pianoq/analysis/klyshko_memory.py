@@ -1,13 +1,10 @@
 import re
 import glob
-import math
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
-from pianoq_results.misc import my_mesh
 from pianoq_results.scan_result import ScanResult
 from pianoq_results.fits_image import FITSImage
-import uncertainties
 from uncertainties import unumpy
 
 PATH_THICK_MEMORY = r'G:\My Drive\Projects\Klyshko Optimization\Results\temp\2023_09_20_09_52_22_klyshko_very_thick_with_memory_meas\Memory'
@@ -127,7 +124,7 @@ def show_memories(dir_path=PATH_THICK_MEMORY, option='PCC'):
     fig.show()
 
 
-def get_memory_classical3(dir_path, l=3):
+def get_memory_classical3(dir_path, l=4):
     paths = glob.glob(f'{dir_path}\\*d=*.fits')
     dark_im = FITSImage(r"G:\My Drive\Projects\Klyshko Optimization\Results\Off_axis\try6\2024_01_03_11_26_52_dark.fits")
     all_ds = np.array([re.findall('.*d=(.*)\.fits', path)[0] for path in paths]).astype(float)
@@ -143,11 +140,18 @@ def get_memory_classical3(dir_path, l=3):
         # TODO: have some moving window around expected focus that you choose the max pixel from within it, similar to SPDC
         # TODO: though there is no real need - it happens automatically
         ind_row, ind_col = np.unravel_index(np.argmax(image, axis=None), image.shape)
-        # altogether 7 pixels, which comes out ~79um
+        # altogether 9 pixels, which comes out ~101um
+        l = 4
         max_speckle = image[ind_row - l:ind_row + l + 1, ind_col - l:ind_col + l + 1].sum()
-        max_speckles.append(max_speckle)
+        # in SPDC we have 50um fibers, and counting 3 pixels that are 25um apart, so we count the inner 50um twice
+        # 5 pixels is ~56um
+        l = 2
+        inner_50_um = image[ind_row - l:ind_row + l + 1, ind_col - l:ind_col + l + 1].sum()
+        max_speckles.append(max_speckle+inner_50_um)
 
-    return all_ds[0] - all_ds, np.array(max_speckles) / max_speckles[0]
+    dx = all_ds[0] - all_ds
+
+    return dx, np.array(max_speckles) / max_speckles[0]
 
 
 def get_memory_SPDC3(dir_path, l=1):
@@ -164,7 +168,7 @@ def get_memory_SPDC3(dir_path, l=1):
         # altogether 3X3 pixels, which comes out ~75umX75um
         coin_area = scan.real_coins[ind_row-l:ind_row+l+1, ind_col-l:ind_col+l+1]
         coin_std_area = scan.real_coins_std[ind_row-l:ind_row+l+1, ind_col-l:ind_col+l+1]
-        u_max_speckle = unumpy.uarray((coin_area, coin_std_area)).sum()
+        u_max_speckle = unumpy.uarray(coin_area, coin_std_area).sum()
         max_speckle = u_max_speckle.nominal_value
         max_speckle_std = u_max_speckle.std_dev
         max_speckles.append(max_speckle)
@@ -173,8 +177,8 @@ def get_memory_SPDC3(dir_path, l=1):
     return all_ds[0] - all_ds, np.array(max_speckles) / max_speckles[0], np.array(max_speckle_stds, dtype=float) / max_speckles[0]
 
 
-def mem_func(x, d_x):
-    return ( (x/d_x) / (1e-9 + np.sinh(x/d_x)) )**2
+def mem_func(theta, d_theta):
+    return ( (theta/d_theta) / (1e-17 + np.sinh(theta/d_theta)) )**2
 
 
 def show_memories3(dir_path_classical, dir_path_SPDC, d_x=22, l1=3, l2=1):
@@ -182,18 +186,22 @@ def show_memories3(dir_path_classical, dir_path_SPDC, d_x=22, l1=3, l2=1):
     diode_ds, diode_corrs = get_memory_classical3(dir_path_classical, l=l1)
     SPDC_ds, SPDC_corrs, SPDC_corr_stds = get_memory_SPDC3(dir_path_SPDC, l=l2)
 
-    ax.errorbar(diode_ds, diode_corrs, xerr=2, fmt='*', label='diode', color='b')
-    ax.errorbar(SPDC_ds, SPDC_corrs, xerr=2, yerr=SPDC_corr_stds, fmt='o', label='SPDC', color='r')
-    dummy_x = np.linspace(0.001, 65, 1000)
+    diode_thetas = diode_ds * 10 / 100e3 # 10x magnification to SMF, and 100mm lens
+    SPDC_thetas = SPDC_ds * 10 / 100e3  # 10x magnification to SMF, and 100mm lens
+    theta_err = 2*10/100e3  # 20 um in manual micrometer, and 100mm lens
+
+    ax.errorbar(diode_thetas, diode_corrs, xerr=theta_err, fmt='*', label='diode', color='b')
+    ax.errorbar(SPDC_thetas, SPDC_corrs, xerr=theta_err, yerr=SPDC_corr_stds, fmt='o', label='SPDC', color='r')
+    dummy_theta = np.linspace(1e-6, 0.007, 1000)
     # ax.plot(dummy_x, mem_func(dummy_x, d_x), '-', label='analytical')
-    popt, pcov = curve_fit(mem_func, diode_ds, diode_corrs, p0=20)
-    ax.plot(dummy_x, mem_func(dummy_x, *popt), '--', label='diode fit', color='b')
+    popt, pcov = curve_fit(mem_func, diode_thetas, diode_corrs, p0=0.02, bounds=(1e-6, 2))
+    ax.plot(dummy_theta, mem_func(dummy_theta, *popt), '--', label='diode fit', color='b')
     print(*popt)
-    popt, pcov = curve_fit(mem_func, SPDC_ds, SPDC_corrs, p0=20)
-    ax.plot(dummy_x, mem_func(dummy_x, *popt), '--', label='SPDC fit', color='r')
+    popt, pcov = curve_fit(mem_func, SPDC_thetas, SPDC_corrs, p0=0.02, bounds=(1e-6, 2))
+    ax.plot(dummy_theta, mem_func(dummy_theta, *popt), '--', label='SPDC fit', color='r')
     print(*popt)
-    ax.set_title(f'l1={l1}, l2={l2}')
-    ax.set_xlabel('$\Delta x (\mu m)$')
+    # ax.set_title(f'l1={l1}, l2={l2}')
+    ax.set_xlabel(r'$\Delta\theta$ (rad)')
     ax.set_ylabel('normalized focus intensity')
     fig.legend()
     fig.show()
