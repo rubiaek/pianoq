@@ -189,3 +189,12 @@ class Fiber(object):
 
         animation = Player(fig, animation_function, interval=500, frames=self.Nmodes)
         plt.show()
+
+
+"""
+from pianoq.simulations.dispersion_cancelation.fiber import Fiber
+f = Fiber(L=2e5)
+f.set_input_gaussian(sigma=7, X0=25, Y0=-25); 
+f.propagate()
+
+"""
