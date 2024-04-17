@@ -197,22 +197,22 @@ class ManyWavelengthFiber(object):
         ax.set_title(f'L: {fiber_L*1e-6}m, mode mixing: {0}, dz: {dz}um')
         fig.show()
 
-    def run_PCCs_different_dz(self, dzs=(0, 20, 40, 60, 80)):
+    def run_PCCs_different_dz(self, dzs=(0, 20, 40, 60, 80), N_classical=5, N_klyshko=2):
         fig, ax = plt.subplots()
 
-        print(f'Getting classical with average on {5}...')
-        delta_lambdas_classical, pccs_classical = self.get_classical_PCCs_average(5)
+        print(f'Getting classical with average on {N_classical}...')
+        delta_lambdas_classical, pccs_classical = self.get_classical_PCCs_average(N_classical)
         ax.plot(delta_lambdas_classical * 1e3, pccs_classical, label='classical', linewidth=3)
 
         for dz in dzs:
-            print(f'Getting Klyshko with average on {2} dz={dz}......')
-            delta_lambdas_klyshko, pccs_klyshko = self.get_klyshko_PCCs_average(2, dz=dz)
-            ax.plot(delta_lambdas_klyshko * 1e3, pccs_klyshko, label=f'Klyshko dz={dz}')
+            print(f'Getting Klyshko with average on {N_klyshko} dz={dz}......')
+            delta_lambdas_klyshko, pccs_klyshko = self.get_klyshko_PCCs_average(N_klyshko, dz=dz)
+            ax.plot(delta_lambdas_klyshko * 1e3, pccs_klyshko, label=f'Klyshko dz={dz}$\mu m$')
 
         ax.set_xlabel(r'wl difference $ \Delta\lambda$ (nm)')
         ax.set_ylabel(r'PCC')
         ax.legend()
-        ax.set_title(f'L: {self.fibers[0].L*1e-6}m, mode mixing: {0}')
+        ax.set_title(f'L: {self.fibers[0].L*1e-6}m')  # mode mixing: {0}
         fig.show()
 
     # find length that will cause this fiber to have a spectral correlation width of ~3nm, and then check our Kilshko two-photon spectral correlation width

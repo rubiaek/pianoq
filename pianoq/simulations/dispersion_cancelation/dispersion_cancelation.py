@@ -6,8 +6,9 @@ def main():
     mode_mixing = 0
     dz = 50
 
-    s = ManyWavelengthFiber(wl0=0.810, Dwl=0.080, N_wl=41, fiber_L=fiber_L)
-    s.run_PCCs_different_dz(dzs=(0, 20, 40, 60, 150))
+    s = ManyWavelengthFiber(wl0=0.810, Dwl=0.080, N_wl=161, fiber_L=5e6)
+    # s.run_PCCs_different_dz(dzs=(0, 20, 40, 60, 150))
+    s.run_PCCs_different_dz(dzs=(0, 20, 80))
 
 
 if __name__ == "__main__":
