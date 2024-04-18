@@ -58,8 +58,8 @@ class KlyshkoBeaconSimulationResult(object):
                                    bounds=(1 - fit_freedom, 1 + fit_freedom))
             ax.plot(dummy_x, popt[0] * dummy_x ** pow, linestyle='--', color=QOPC_lines[0].get_c())  # label='QOPC sqr_fit'
 
-        ax.set_xlabel('Degree of control')
-        ax.set_ylabel('Phase only efficiency')
+        ax.set_xlabel('Degree of control', size=18)
+        ax.set_ylabel('Phase only efficiency', size=18)
         ax.axhline(y=1, color='c', linestyle='--')
         ax.axhline(y=np.pi/4, color='g', linestyle='--')
         ax.axhline(y=(np.pi/4)**2, color='b', linestyle='--')
