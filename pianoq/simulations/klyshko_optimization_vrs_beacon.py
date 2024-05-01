@@ -23,10 +23,10 @@ class KlyshkoBeaconSimulationResult(object):
     def show(self, fits=None):
         dummy_x = np.linspace(self.ctrls[0], self.ctrls[-1], 100)
         fig, ax = plt.subplots(figsize=(9, 4))
-        klyshko_lines = ax.errorbar(self.ctrls, self.klyshkos, yerr=self.klyshko_stds, fmt='o', label='klyshkos')
-        b1_lines = ax.errorbar(self.ctrls, self.beacon_one_ways, yerr=self.beacon_one_way_stds, fmt='o', label='beacon_one_way')
-        b2_lines = ax.errorbar(self.ctrls, self.beacon_two_ways, yerr=self.beacon_two_way_stds, fmt='o', label='beacon_two_way')
-        QOPC_lines = ax.errorbar(self.ctrls, self.QOPCs, yerr=self.QOPC_stds, fmt='o', label='QOPC')
+        b1_lines = ax.errorbar(self.ctrls, self.beacon_one_ways, yerr=self.beacon_one_way_stds, fmt='o', label='classical')
+        klyshko_lines = ax.errorbar(self.ctrls, self.klyshkos, yerr=self.klyshko_stds, fmt='o', label='Klyshko optimization')
+        b2_lines = ax.errorbar(self.ctrls, self.beacon_two_ways, yerr=self.beacon_two_way_stds, fmt='o', label='double beacon')
+        QOPC_lines = ax.errorbar(self.ctrls, self.QOPCs, yerr=self.QOPC_stds, fmt='o', label='Quantum OPC')
 
         if fits:
             if isinstance(fits, bool):
@@ -65,9 +65,10 @@ class KlyshkoBeaconSimulationResult(object):
         ax.axhline(y=(np.pi/4)**2, color='b', linestyle='--')
         ax.annotate(r'$\frac{\pi}{4}$', xy=(0.3, np.pi/4), xytext=(0.2, 0.9), arrowprops=dict(facecolor='black', shrink=0.05, width=2), fontsize=16)
         ax.annotate(r'$\left(\frac{\pi}{4}\right)^{2}$', xy=(0.3, (np.pi/4)**2), xytext=(0.2, 0.4), arrowprops=dict(facecolor='black', shrink=0.05, width=2), fontsize=16)
+        ax.tick_params(axis='both', labelsize=16)
 
         fig.legend(loc='upper left')  # plt.rcParams['legend.loc'] = 'upper left'
-        fig.suptitle(f'incomplete_method: {self.incomplete_control_method}, T_mode: {self.T_mode}')
+        # fig.suptitle(f'incomplete_method: {self.incomplete_control_method}, T_mode: {self.T_mode}')
         fig.show()
         return fig, ax
 
@@ -369,6 +370,7 @@ class KlyshkoBeaconSimulation(object):
         res.ctrls = ctrls
 
         for ctrl in ctrls:
+            print(ctrl)
             eff, std = self.get_klyshko_efficiency(N_average=N_average, deg_of_control=ctrl)
             res.klyshkos.append(eff)
             res.klyshko_stds.append(std)
@@ -423,4 +425,7 @@ if __name__ == "__main__":
     # S2, all_costs = optimize_beacon()
     # fig, axes = plt.subplots(1, 2, figsize=(9, 3))
     # plot_res(S2, all_costs, axes)
-    s = KlyshkoBeaconSimulation()
+    s = KlyshkoBeaconSimulation(T_mode='gaus_iid')
+    res = s.run(30, 30, 1 / np.linspace(1, 20, 20))
+    res.show((False, False, True, False))
+    plt.show()
