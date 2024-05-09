@@ -20,7 +20,7 @@ class KlyshkoBeaconSimulationResult(object):
         self.T_mode = ''
         self.incomplete_control_method = ''
 
-    def show(self, fits=None):
+    def show(self, fits=None, show_legend=True):
         dummy_x = np.linspace(self.ctrls[0], self.ctrls[-1], 100)
         fig, ax = plt.subplots(figsize=(9, 4))
         b1_lines = ax.errorbar(self.ctrls, self.beacon_one_ways, yerr=self.beacon_one_way_stds, fmt='o', label='classical')
@@ -67,7 +67,8 @@ class KlyshkoBeaconSimulationResult(object):
         ax.annotate(r'$\left(\frac{\pi}{4}\right)^{2}$', xy=(0.3, (np.pi/4)**2), xytext=(0.2, 0.4), arrowprops=dict(facecolor='black', shrink=0.05, width=2), fontsize=16)
         ax.tick_params(axis='both', labelsize=16)
 
-        fig.legend(loc='upper left')  # plt.rcParams['legend.loc'] = 'upper left'
+        if show_legend:
+            fig.legend(loc='upper left')  # plt.rcParams['legend.loc'] = 'upper left'
         # fig.suptitle(f'incomplete_method: {self.incomplete_control_method}, T_mode: {self.T_mode}')
         fig.show()
         return fig, ax
@@ -426,6 +427,6 @@ if __name__ == "__main__":
     # fig, axes = plt.subplots(1, 2, figsize=(9, 3))
     # plot_res(S2, all_costs, axes)
     s = KlyshkoBeaconSimulation(T_mode='gaus_iid')
-    res = s.run(30, 30, 1 / np.linspace(1, 20, 20))
-    res.show((False, False, True, False))
+    res = s.run(3, 20, 1 / np.linspace(1, 20, 20))
+    res.show((False, False, True, False), show_legend=False)
     plt.show()
