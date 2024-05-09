@@ -153,7 +153,7 @@ class SLMOptimizer(object):
             self.res.all_phase_masks.append(phase_mask)
             self.res.all_costs.append(cost)
             # self.res.all_cost_witnesses.append(cost_witness)
-            self.res.all_cost_witnesses.append(None)
+            # self.res.all_cost_witnesses.append(None)
             current_iter_costs.append(cost)
 
         best_phi = self._get_best_phi(phis, current_iter_costs)
@@ -168,7 +168,8 @@ class SLMOptimizer(object):
 
         self.res.phase_masks.append(self.cur_best_slm_phase)
         self.res.costs.append(best_cost)
-        self.res.cost_witnesses.append(best_cost_witness)
+        if best_cost_witness is not None:
+            self.res.cost_witnesses.append(best_cost_witness)
 
     def update_slm(self, phase_mask):
         if self.res.opt_method == self.PARTITIONING_HEX or self.res.opt_method == self.CONTINUOUS_HEX:
@@ -250,7 +251,7 @@ class SLMOptimizer(object):
             cost_witness = self.cam.get_image()
             self._fix_exposure(cost_witness)
             if self.roi:
-                if isinstance(self.roi, (list, tuple)):
+                if isinstance(self.roi, (list, tuple)) and isinstance(self.roi[0], (list, tuple)):
                     costs = []
                     for r in self.roi:
                         costs.append(float(cost_witness[r].sum()))
@@ -258,7 +259,6 @@ class SLMOptimizer(object):
                     cost = np.sum([np.sqrt(cost) for cost in costs])
                     norm_diff = np.abs(costs[1] - costs[0]) / np.max(costs)
                     cost -= norm_diff * 0.2 * cost  # if the two spots differ by 10% so the cost will be 2% less
-
                 else:
                     imm = cost_witness[self.roi]
                     cost = imm.sum()
@@ -276,32 +276,38 @@ class SLMOptimizer(object):
 if __name__ == '__main__':
     macro_pixels = 20
     sleep_period = 0.02
-    run_name = f'off_axis_optimize_d=7'
+    run_name = f'scaling_between'
 
-    asi_exposure_time = 0.002
-    roi = [850, 600, 500, 500]
-    l = 3
-    roi_mid = np.index_exp[255-l:255+l, 250-l:250+l]  # middle
+    asi_exposure_time = 0.02
+    roi = [850, 500, 500, 500]
+    l = 1
+    roi_mid = np.index_exp[240-l:240+l, 230-l:230+l]  # middle
     roi_left = np.index_exp[255-l:255+l, 237-l:237+l]  # left
     roi_right = np.index_exp[255-l:255+l, 263-l:263+l]  # right
     cost_roi = [roi_right, roi_left]
 
     slm = SLMDevice(0, use_mirror=True)
-    slm.set_pinhole(radius=150, center=(530, 500), pinhole_type='mirror')  # pinhole_type='mirror'
+    slm.set_pinhole(radius=150, center=(530, 500), pinhole_type='rand')  # pinhole_type='mirror'
 
-    # cam = ASICam(asi_exposure_time, binning=3, roi=roi, gain=0)
+    cam = ASICam(asi_exposure_time, binning=3, roi=roi, gain=0)
     power_meter = PowerMeterPM100()
     power_meter.set_exposure(0.05)
 
     # tt = QPTimeTagger(integration_time=1, coin_window=2e-9, single_channel_delays=(0, 1600))
 
     timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-    dir_path = r'G:\My Drive\Projects\Klyshko Optimization\Results\Off_axis\Try6'
-    path = f'{dir_path}\\{timestamp}_{run_name}.optimizer2'
-    o = SLMOptimizer(macro_pixels=macro_pixels, sleep_period=sleep_period, run_name=run_name, saveto_path=path)
-    g = o.optimize(method=SLMOptimizer.CONTINUOUS_HEX, iterations=1000, slm=slm, cam=None,
-                   power_meter=power_meter,
-                   best_phi_method='silly_max', cell_size=15)
+    dir_path = r'G:\My Drive\Projects\ScalingPropertiesQWFS\Results\KlyshkoSetup\Try1\Between2Diffusers'
+
+    nPartss = [55, 61, 85, 101, 111, 121, 143, 199, 363]
+    # nPartss = [101]
+    for i, cell_size in enumerate([40, 35, 32, 28, 27, 26, 24, 20, 15]):
+        # for i, cell_size in enumerate([28]):
+        path = f'{dir_path}\\{timestamp}_{run_name}_{cell_size=}.optimizer2'
+        o = SLMOptimizer(macro_pixels=macro_pixels, sleep_period=sleep_period, run_name=run_name, saveto_path=path)
+        g = o.optimize(method=SLMOptimizer.CONTINUOUS_HEX, iterations=nPartss[i]*3, slm=slm, cam=cam,
+                       power_meter=None,
+                       best_phi_method='silly_max', cell_size=cell_size,
+                       roi=roi_mid)
 
     power_meter.close()
     # cam.close()

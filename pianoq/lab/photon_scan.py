@@ -193,18 +193,20 @@ def klyshko_scan(name='', integration_time=1.0, use_power_meter=False, D0=0.0, D
     mid_y = 9.05  # with d=7 which is middle of single counts
 
     # d=2 -> mid_x = 8.45
+    # d=7 -> mid_x = 9.05
     # d=12 -> mid_x = 9.6
-    start_x = 13.3
+    # mid_y = 13.45
+    start_x = 13.05
     # 1e-3 for um, 10 because micrometer 7 as actually 70, and 9.5x for different magnification
-    start_y = 8.85 - (np.abs(D-D0) * 1e-3 * 10 * 9.5)
+    start_y = 8.1  # for memory -> 8.85 - (np.abs(D-D0) * 1e-3 * 10 * 9.5)
 
-    x_pixels = 14
-    y_pixels = 14
-    pixel_size_x = 0.025
-    pixel_size_y = 0.025
+    x_pixels = 16
+    y_pixels = 32
+    pixel_size_x = 0.05
+    pixel_size_y = 0.05
 
     timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-    dir_path = r'G:\My Drive\Projects\Klyshko Optimization\Results\Off_axis\try6\SPDC_memory'
+    dir_path = r'G:\My Drive\Projects\Klyshko Optimization\Results\Off_axis\try7'
     path = f'{dir_path}\\{timestamp}_{name}.scan'
     scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
                             run_name=name, is_timetagger=True, coin_window=2e-9, saveto_path=path)
@@ -234,4 +236,4 @@ if __name__ == '__main__':
     D0 = 7
     D = 1
 
-    klyshko_scan(integration_time=4, name=f'optimized_d={D}', use_power_meter=False, D0=D0, D=D)
+    klyshko_scan(integration_time=2, name=f'slm_normal_again_again_again_d=2', use_power_meter=False, D0=0, D=0)
