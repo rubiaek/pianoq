@@ -31,6 +31,8 @@ def show_scaling():
     fig, ax = plt.subplots()
     ax.plot(Ns_between, Es_between, '*', label='SLM between')
     ax.plot(Ns_before, Es_before, '*', label='SLM before')
+    ax.set_xlabel('$N_{DOF}$')
+    ax.set_ylabel('Enhancement')
     ax.legend()
     fig.show()
 
