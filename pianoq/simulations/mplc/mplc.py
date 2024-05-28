@@ -19,6 +19,7 @@ class MPLC:
 
         # TODO: have reality grid 3X larger than the mask size of SLM, so I won't reach the edges and have edge effects.
         #  In the propagation zero manully the phases outside SLM mask
+        # TODO: after calculation of each mask - do the zeroing, and also filter in k-space the e^(i*phi)
         # TODO: have a finer dx for reality grid, with each SLM pixel being 2X2 reality pixels etc.
         self.X = np.arange(-self.Nx / 2, self.Nx / 2) * self.dx
         self.Y = np.arange(-self.Ny / 2, self.Ny / 2) * self.dy
