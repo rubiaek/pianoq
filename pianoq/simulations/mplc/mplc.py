@@ -52,14 +52,13 @@ class MPLC:
         self.prop = self.propagate_freespace
 
     def set_input_spots_modes(self, sig=0.1, N_rows=4, N_cols=4, spacing=0.6):
-        # TODO: Gaussian normalization. The power currently does not sum to 1
         mode_no = 0
         for i in range(N_rows):
             for j in range(N_cols):
-                C = 1 / (sig ** 2 * 2 * np.pi)
                 X0 = spacing * (j - (N_cols / 2.0) + 0.5)
                 Y0 = spacing * (i - (N_rows / 2.0) + 0.5)
-                E_gaus = C * np.exp(-((self.XX - X0) ** 2 + (self.YY - Y0) ** 2) / (sig ** 2)).astype(complex)
+                E_gaus = np.exp(-((self.XX - X0) ** 2 + (self.YY - Y0) ** 2) / (sig ** 2)).astype(complex)
+                E_gaus /= np.sqrt(((np.abs(E_gaus)) ** 2).sum())
                 self.forward_fields[0, mode_no, :, :] = E_gaus
                 mode_no += 1
 
@@ -86,7 +85,7 @@ class MPLC:
         filtered_speckles = np.zeros_like(speckles)  # np.exp(1j*0) = 1
         filtered_speckles[self.active_slice] = speckles[self.active_slice]
 
-        filtered_speckles /= ((np.abs(filtered_speckles))**2).sum()
+        filtered_speckles /= np.sqrt(((np.abs(filtered_speckles))**2).sum())
         return filtered_speckles
 
     def find_phases(self):
@@ -196,7 +195,7 @@ class MPLC:
     def fix_mask(self, mask):
         new_mask = np.copy(mask)
 
-        # TODO: after calculation of each mask - do the zeroing, and also filter in k-space the e^(i*phi)
+        # TODO: filter in k-space the e^(i*phi)
         if self.k_space_filter:
             pass
 
@@ -253,26 +252,26 @@ class MPLC:
     def show_all(self, mode_no=0):
         fig, axes = plt.subplots(3, self.N_planes)
         for plane_no in range(self.N_planes):
-            im = axes[0, plane_no].imshow(np.angle(self.masks[plane_no]), cmap='gray')
+            im = axes[0, plane_no].imshow(np.angle(self.masks[plane_no][self.active_slice]), cmap='gray')
             fig.colorbar(im, ax=axes[0, plane_no])
 
-            im = axes[1, plane_no].imshow(np.abs(self.forward_fields[plane_no, mode_no, :, :])**2)
+            im = axes[1, plane_no].imshow(np.abs(self.forward_fields[plane_no, mode_no][self.active_slice])**2)
             fig.colorbar(im, ax=axes[1, plane_no])
             axes[1, plane_no].set_title(f'forward {plane_no=}')
 
-            im = axes[2, plane_no].imshow(np.abs(self.backward_fields[plane_no, mode_no, :, :])**2)
+            im = axes[2, plane_no].imshow(np.abs(self.backward_fields[plane_no, mode_no][self.active_slice])**2)
             fig.colorbar(im, ax=axes[2, plane_no])
             axes[2, plane_no].set_title(f'backward {plane_no=}')
 
         fig.show()
 
 
-N_N_modes = 1
+N_N_modes = 3
 # All in mm
 conf = {'wavelength': 810e-6,  # mm
         'plane_spacing': 87,  # mm
-        'N_planes': 4,
-        'N_iterations': 5,
+        'N_planes': 8,
+        'N_iterations': 30,
         'Nx': 140,  # Number of grid points x-axis
         'Ny': 180,  # Number of grid points y-axis
         'dx': 12.5e-3,  # mm - SLM pixel sizes
@@ -288,6 +287,17 @@ mplc = MPLC(conf=conf)
 mplc.set_input_spots_modes(sig=0.1, N_rows=N_N_modes, N_cols=N_N_modes, spacing=0.6)
 mplc.set_output_speckle_modes(sig=0.25, diffuser_pix_size=0.05)
 # mplc.show_field_intensity(mplc.get_speckles())
-# mplc.initialize_fields()
+mplc.initialize_fields()
 # mplc.find_phases()
-# mplc.show_all()
+mplc.show_all()
+
+# TODO:
+#  1) filter in k-space.
+#  2) understand the weird speckle features at the output, and why forward works better than backwards
+#  3) quantify with some fidelity matrix
+#  4) use denser grid for propagation with each pixel 2X2 for final results check
+#  (not for optimization becaues it will be slow)
+#  5) have a results object
+#  Further future:
+#  * have an SLM mask in mask 1 to negate the speckles (and then also an SLM + lens in planes 9+10?)
+#  * start actual scaling experiments
