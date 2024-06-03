@@ -1,11 +1,13 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+from mplc_result import MPLCResult
 
 
 class MPLC:
     def __init__(self, conf):
         self.conf = conf
+        self.res = MPLCResult()
         self.wl = self.wavelength = conf['wavelength']
         self.k = 2 * np.pi / self.wl
         self.L = self.plane_spacing = conf['plane_spacing']
@@ -30,7 +32,7 @@ class MPLC:
         self.dy = conf['dy']
         self.min_log_level = conf['min_log_level']
 
-        self.k_space_filter = conf['k_space_filter']
+        self.max_k_constraint = conf['max_k_constraint']
         self.use_mask_offset = conf['use_mask_offset']
         # TODO: this does not make sense, N_modes should be upstairs
         self.mask_offset = np.sqrt(1e-3/(self.Nx * self.Ny * self.N_modes))
@@ -40,6 +42,7 @@ class MPLC:
         self.Y = np.arange(-self.Ny / 2, self.Ny / 2) * self.dy
         self.XX, self.YY = np.meshgrid(self.X, self.Y)
         self.k_z_mat = self._generate_kz_mat()
+        self.k_constraint = self._generate_k_constraint()
 
         # masks are always exp(i*\phi(x, y))
         self.masks = np.exp(1j*np.zeros((self.N_planes, self.Ny, self.Nx), dtype=np.complex128))
@@ -196,8 +199,10 @@ class MPLC:
         new_mask = np.copy(mask)
 
         # TODO: filter in k-space the e^(i*phi)
-        if self.k_space_filter:
-            pass
+        if self.max_k_constraint:
+            mask_kspace = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(new_mask)))
+            mask_kspace = mask_kspace * self.k_constraint
+            new_mask = np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(mask_kspace)))
 
         # 3) remove padding from size factor
         if self._size_factor != 1:
@@ -221,6 +226,19 @@ class MPLC:
         k_z = np.sqrt(k_z_sqr)
 
         return k_z
+
+    def _generate_k_constraint(self):
+        # TODO: make this correct and check it works as expected etc.
+        # fs = 1 / ((max(max(self.X)) - min(min(self.X))))
+        # v_x = fs * ([-self.Nx / 2:self.Nx / 2-1])
+        # fs = 1 / (max(max(Y)) - min(min(Y)))
+        # v_y = fs * ([-self.Ny / 2: self.Ny / 2-1])
+        # [V_x, V_y] = np.meshgrid(v_x, v_y)
+        freq_x = np.fft.fftshift(np.fft.fftfreq(self.Nx, d=self.dx))
+        freq_y = np.fft.fftshift(np.fft.fftfreq(self.Ny, d=self.dy))
+        freq_XXs, freq_YYs = np.meshgrid(freq_x, freq_y)
+        k_constraint = np.sqrt(((freq_XXs**2 + freq_YYs**2) / max(max((freq_XXs**2 + freq_YYs**2))))) < self.max_k_constraint
+        return k_constraint
 
     def propagate_freespace(self, E, L, backprop=False):
         assert E.shape == self.XX.shape, 'Bad shape for E'
@@ -276,7 +294,7 @@ conf = {'wavelength': 810e-6,  # mm
         'Ny': 180,  # Number of grid points y-axis
         'dx': 12.5e-3,  # mm - SLM pixel sizes
         'dy': 12.5e-3,  # mm
-        'k_space_filter': 0.15,
+        'max_k_constraint': 0.15,
         'N_modes': N_N_modes*N_N_modes,
         'min_log_level': 2,
         'size_factor': 3,  # assumed to be odd. Have physical larger grid than the actual SLM planes
@@ -294,10 +312,15 @@ mplc.show_all()
 # TODO:
 #  1) filter in k-space.
 #  2) understand the weird speckle features at the output, and why forward works better than backwards
-#  3) quantify with some fidelity matrix
+#  3) quantify with some fidelity matrix (and fidelity of inverse matrix)
 #  4) use denser grid for propagation with each pixel 2X2 for final results check
 #  (not for optimization becaues it will be slow)
 #  5) have a results object
 #  Further future:
+#  * Add lens in plane 9 between 7 and 11
+#  * different free-space propagation between planes 5 and 6
+#  * different file for in-out modes creation
+#  * solutions for first phase mask to do things in many spots (also in the sides, also in the middle,
+#  with no "holes" of flat phase
 #  * have an SLM mask in mask 1 to negate the speckles (and then also an SLM + lens in planes 9+10?)
 #  * start actual scaling experiments
