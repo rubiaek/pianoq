@@ -3,6 +3,9 @@ import cv2
 
 
 def get_spots_modes(Nx, Ny, dx, dy, sig=0.1, N_rows=4, N_cols=4, spacing=0.6):
+    # Ohad:
+    # waist_in = 80e-6  # (play between 50 to 120)
+    # waist_out = 65e-6  #  (play between 40 to 90)
     X = np.arange(-Nx / 2, Nx / 2) * dx
     Y = np.arange(-Ny / 2, Ny / 2) * dy
     XX, YY = np.meshgrid(X, Y)

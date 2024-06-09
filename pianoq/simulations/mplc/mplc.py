@@ -1,18 +1,19 @@
-import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from pianoq.simulations.mplc.mplc_modes import get_speckle_modes, get_spots_modes
-# from mplc_result import MPLCResult
+from pianoq.simulations.mplc.mplc_result import MPLCResult
+from pianoq.simulations.mplc.mplc_utils import get_lens_mask
 
 
 class MPLC:
     def __init__(self, conf):
-        self.conf = conf
-        # self.res = MPLCResult()
+        self.res = MPLCResult(conf)
+
         self.wl = self.wavelength = conf['wavelength']
         self.k = 2 * np.pi / self.wl
-        self.L = self.plane_spacing = conf['plane_spacing']
-        self.N_planes = conf['N_planes']
+        self.dist_after_plane = conf['dist_after_plane']
+        self.active_planes = conf['active_planes']
+        self.N_planes = len(dist_after_plane) + 1
         self.N_iterations = conf['N_iterations']
         self.N_modes = conf['N_modes']
         self._size_factor = conf['size_factor']
@@ -26,8 +27,8 @@ class MPLC:
         self._active_y_end = self.active_Ny * (self._size_factor - self._pad_factor)
         self._active_x_start = self.active_Nx * self._pad_factor
         self._active_x_end = self.active_Nx * (self._size_factor - self._pad_factor)
-        self.active_slice = np.index_exp[self._active_y_start: self._active_y_end,
-                                         self._active_x_start: self._active_x_end]
+        self.res.active_slice = np.index_exp[self._active_y_start: self._active_y_end,
+                                             self._active_x_start: self._active_x_end]
 
         self.dx = conf['dx']
         self.dy = conf['dy']
@@ -38,7 +39,6 @@ class MPLC:
         # TODO: this does not make sense, N_modes should be upstairs
         self.mask_offset = np.sqrt(1e-3/(self.Nx * self.Ny * self.N_modes))
 
-        # TODO: have a finer dx for reality grid, with each SLM pixel being 2X2 reality pixels etc.?
         self.X = np.arange(-self.Nx / 2, self.Nx / 2) * self.dx
         self.Y = np.arange(-self.Ny / 2, self.Ny / 2) * self.dy
         self.XX, self.YY = np.meshgrid(self.X, self.Y)
@@ -46,18 +46,17 @@ class MPLC:
         self.k_constraint = self._generate_k_constraint()
 
         # masks are always exp(i*\phi(x, y))
-        self.masks = np.exp(1j*np.zeros((self.N_planes, self.Ny, self.Nx), dtype=np.complex128))
+        self.res.masks = np.exp(1j*np.zeros((self.N_planes, self.Ny, self.Nx), dtype=np.complex128))
         # forward_fields[0] will be the input spots
-        self.forward_fields = np.zeros((self.N_planes, self.N_modes, self.Ny, self.Nx), dtype=np.complex128)
+        self.res.forward_fields = np.zeros((self.N_planes, self.N_modes, self.Ny, self.Nx), dtype=np.complex128)
         # backward_fields[N_modes-1] will be the output speckles
-        self.backward_fields = np.zeros((self.N_planes, self.N_modes, self.Ny, self.Nx), dtype=np.complex128)
+        self.res.backward_fields = np.zeros((self.N_planes, self.N_modes, self.Ny, self.Nx), dtype=np.complex128)
 
-        self.show = self.show_field_intensity
         self.prop = self.propagate_freespace
 
     def set_modes(self, input_modes, output_modes):
-        self.forward_fields[0, :, :, :] = input_modes
-        self.backward_fields[self.N_planes - 1, :, :, :] = output_modes
+        self.res.forward_fields[0, :, :, :] = input_modes
+        self.res.backward_fields[self.N_planes - 1, :, :, :] = output_modes
 
     def find_phases(self):
         # Populate initial forward and backward fields in all planes.
@@ -75,10 +74,12 @@ class MPLC:
                 self.update_mask(plane_no)
                 # this should be done for all modes
                 for mode_no in range(self.N_modes):
-                    E = np.copy(self.forward_fields[plane_no, mode_no, :, :])
+                    E = np.copy(self.res.forward_fields[plane_no, mode_no, :, :])
                     # regular prop is with + in the exponent
-                    E *= np.exp(+1j*np.angle(self.masks[plane_no]))
-                    self.forward_fields[plane_no+1, mode_no, :, :] = self.prop(E, self.L, backprop=False)
+                    E *= np.exp(+1j*np.angle(self.res.masks[plane_no]))
+                    self.res.forward_fields[plane_no+1, mode_no, :, :] = self.prop(E,
+                                                                                   self.dist_after_plane[plane_no],
+                                                                                   backprop=False)
 
             # Same logic, but backwards. Last plane is 1, where field 0 is updated,
             # and mask 0 will be updated in next forward iteration.
@@ -86,34 +87,42 @@ class MPLC:
             for plane_no in range(self.N_planes - 1, 0, -1):
                 self.update_mask(plane_no)
                 for mode_no in range(self.N_modes):
-                    E = np.copy(self.backward_fields[plane_no, mode_no, :, :])
+                    E = np.copy(self.res.backward_fields[plane_no, mode_no, :, :])
                     # backward prop is with - in the exponent
-                    E *= np.exp(-1j*np.angle(self.masks[plane_no]))
-                    self.backward_fields[plane_no-1, mode_no, :, :] = self.prop(E, self.L, backprop=True)
+                    E *= np.exp(-1j*np.angle(self.res.masks[plane_no]))
+                    self.res.backward_fields[plane_no-1, mode_no, :, :] = self.prop(E,
+                                                                                    # when at plane i, want distance
+                                                                                    # after plane i-1
+                                                                                    self.dist_after_plane[plane_no-1],
+                                                                                    backprop=True)
 
     def initialize_fields(self):
         # propagate modes forwards and backwards, and record initial fields in each plane
         for plane_no in range(self.N_planes - 1):
             # Forward fields
             for mode_no in range(self.N_modes):
-                self.forward_fields[plane_no + 1, mode_no, :, :] = self.prop(
-                    self.forward_fields[plane_no, mode_no, :, :], self.L, backprop=False
+                self.res.forward_fields[plane_no + 1, mode_no, :, :] = self.prop(
+                    self.res.forward_fields[plane_no, mode_no, :, :], self.dist_after_plane[plane_no], backprop=False
                 )
 
         # planes N-1->1
         for plane_no in range(self.N_planes-1, 0, -1):
             for mode_no in range(self.N_modes):
-                self.backward_fields[plane_no - 1, mode_no, :, :] = self.prop(
-                    self.backward_fields[plane_no, mode_no, :, :], self.L, backprop=True
+                self.res.backward_fields[plane_no - 1, mode_no, :, :] = self.prop(
+                    self.res.backward_fields[plane_no, mode_no, :, :], self.dist_after_plane[plane_no-1], backprop=True
                 )
 
     def update_mask(self, plane_no):
+        # some planes have constant phase mask (lens, next to lens, etc.)
+        if not self.active_planes[plane_no]:
+            return
+
         # note that we work vectorially here on fields in all modes
         # Focusing on this plane
-        cur_mask = np.copy(np.exp(+1j*np.angle(self.masks[plane_no])))  # [N_x, N_y]
+        cur_mask = np.copy(np.exp(+1j*np.angle(self.res.masks[plane_no])))  # [N_x, N_y]
         self.log(f'{cur_mask.shape=}', 1)
-        F_fields = np.copy(self.forward_fields[plane_no, :, :, :])  # [N_modes, N_x, N_y]
-        B_fields = np.copy(self.backward_fields[plane_no, :, :, :])  # [N_modes, N_x, N_y]
+        F_fields = np.copy(self.res.forward_fields[plane_no, :, :, :])  # [N_modes, N_x, N_y]
+        B_fields = np.copy(self.res.backward_fields[plane_no, :, :, :])  # [N_modes, N_x, N_y]
         self.log(f'{F_fields.shape=}', 1)
 
         # normalize each mode to its total power, to give a fighting chance
@@ -161,7 +170,7 @@ class MPLC:
         fixed_mask = self.fix_mask(new_mask)
 
         # ensure phase mask really a phase mask with no varying amplitude
-        self.masks[plane_no] = np.exp(+1j * np.angle(fixed_mask))
+        self.res.masks[plane_no] = np.exp(+1j * np.angle(fixed_mask))
 
     def fix_mask(self, mask):
         new_mask = np.copy(mask)
@@ -174,12 +183,13 @@ class MPLC:
         # 3) remove padding from size factor
         if self._size_factor != 1:
             filtered_mask = np.ones_like(new_mask)  # np.exp(1j*0) = 1
-            filtered_mask[self.active_slice] = new_mask[self.active_slice]
+            filtered_mask[self.res.active_slice] = new_mask[self.res.active_slice]
             new_mask = filtered_mask
 
         return new_mask
 
     def _generate_kz_mat(self):
+        # Calculating once for efficiency
         freq_x = np.fft.fftshift(np.fft.fftfreq(self.Nx, d=self.dx))
         freq_y = np.fft.fftshift(np.fft.fftfreq(self.Ny, d=self.dy))
         freq_XXs, freq_YYs = np.meshgrid(freq_x, freq_y)
@@ -195,10 +205,12 @@ class MPLC:
         return k_z
 
     def _generate_k_constraint(self):
+        # Calculating once for efficiency
         freq_x = np.fft.fftshift(np.fft.fftfreq(self.Nx, d=self.dx))
         freq_y = np.fft.fftshift(np.fft.fftfreq(self.Ny, d=self.dy))
         freq_XXs, freq_YYs = np.meshgrid(freq_x, freq_y)
-        # TODO: Check this does what I expect, and ask Ohad why normalize?
+        # max freq is constant for constant pixel size, and max_k_constraint is determined by / related to this size
+        # so it makes sense to normalize by it, but it doesn't really matter, just changes the magic number
         k_constraint = np.sqrt(((freq_XXs**2 + freq_YYs**2) / (freq_XXs**2 + freq_YYs**2).max())) < self.max_k_constraint
         return k_constraint
 
@@ -215,48 +227,30 @@ class MPLC:
         E_out = np.fft.fftshift(np.fft.ifft2(np.fft.fftshift(E_K)))
         return E_out
 
-    @staticmethod
-    def show_field_intensity(E, ax=None, fig_show=True):
-        # TODO: colorize
-        if not ax:
-            fig, ax = plt.subplots()
-        im0 = ax.imshow(np.abs(E) ** 2)
-        ax.figure.colorbar(im0, ax=ax)
-        if fig_show:
-            ax.figure.show()
-
     def log(self, txt, level=3):
         if level >= self.min_log_level:
             print(txt)
 
-    def show_all(self, mode_no=0):
-        fig, axes = plt.subplots(3, self.N_planes)
-        for plane_no in range(self.N_planes):
-            im = axes[0, plane_no].imshow(np.angle(self.masks[plane_no][self.active_slice]), cmap='gray')
-            fig.colorbar(im, ax=axes[0, plane_no])
 
-            im = axes[1, plane_no].imshow(np.abs(self.forward_fields[plane_no, mode_no][self.active_slice])**2)
-            fig.colorbar(im, ax=axes[1, plane_no])
-            axes[1, plane_no].set_title(f'forward {plane_no=}')
+# prop_distances_after_plane[i] is distance between planes i and i+1 (counting from 0)
+dist_after_plane = 87*np.ones(10)
+dist_after_plane[4] = 138
 
-            im = axes[2, plane_no].imshow(np.abs(self.backward_fields[plane_no, mode_no][self.active_slice])**2)
-            fig.colorbar(im, ax=axes[2, plane_no])
-            axes[2, plane_no].set_title(f'backward {plane_no=}')
-
-        fig.show()
-
+# Lense in plane 9 between 7 and 11. Allow phases freedom in plane 11 since I measure intensity
+active_planes = np.array([True] * 11)
+active_planes[7:10] = False
 
 N_N_modes = 3
 # All in mm
 conf = {'wavelength': 810e-6,  # mm
-        'plane_spacing': 87,  # mm
-        'N_planes': 8,
+        'dist_after_plane': dist_after_plane,  # mm
+        'active_planes': active_planes,  # bool
         'N_iterations': 30,
         'Nx': 140,  # Number of grid points x-axis
         'Ny': 180,  # Number of grid points y-axis
         'dx': 12.5e-3,  # mm - SLM pixel sizes
         'dy': 12.5e-3,  # mm
-        'max_k_constraint': 0.15,
+        'max_k_constraint': 0.15,  # Ohad: better than 0.1 or 0.2, but not very fine-tuned
         'N_modes': N_N_modes*N_N_modes,
         'min_log_level': 2,
         'size_factor': 3,  # assumed to be odd. Have physical larger grid than the actual SLM planes
@@ -270,28 +264,18 @@ input_modes = get_spots_modes(Nx=conf['Nx']*conf['size_factor'], Ny=conf['Ny']*c
                               sig=0.1, N_rows=N_N_modes, N_cols=N_N_modes, spacing=0.6)
 output_modes = get_speckle_modes(Nx=conf['Nx']*conf['size_factor'], Ny=conf['Ny']*conf['size_factor'],
                                  dx=conf['dx'], dy=conf['dy'], N_modes=len(input_modes),
-                                 sig=0.25, diffuser_pix_size=0.05, active_slice=mplc.active_slice)
+                                 sig=0.25, diffuser_pix_size=0.05, active_slice=mplc.res.active_slice)
 mplc.set_modes(input_modes, output_modes)
 
+mplc.res.masks[8] = get_lens_mask(Nx=conf['Nx']*conf['size_factor'], Ny=conf['Ny']*conf['size_factor'],
+                                  dx=conf['dx'], dy=conf['dy'], wl=conf['wavelength'], f=2*87)
 
-# mplc.show_field_intensity(mplc.get_speckles())
 mplc.initialize_fields()
-# mplc.find_phases()
-mplc.show_all()
+mplc.find_phases()
 
 plt.show()
 
 # TODO:
-#  2) understand the weird speckle features at the output, and why forward works better than backwards
-#  3) quantify with some fidelity matrix (and fidelity of inverse matrix)
-#  4) use denser grid for propagation with each pixel 2X2 for final results check
-#  (not for optimization becaues it will be slow)
-#  5) have a results object
 #  Further future:
-#  * Add lens in plane 9 between 7 and 11
-#  * different free-space propagation between planes 5 and 6
-#  * different file for in-out modes creation
-#  * solutions for first phase mask to do things in many spots (also in the sides, also in the middle,
-#  with no "holes" of flat phase
-#  * have an SLM mask in mask 1 to negate the speckles (and then also an SLM + lens in planes 9+10?)
-#  * start actual scaling experiments
+#  * start actual scaling experiments with "SLMs" in planes 1, 7
+#  * see under MPLCResult
