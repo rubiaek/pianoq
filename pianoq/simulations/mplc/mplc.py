@@ -1,13 +1,14 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-from mplc_result import MPLCResult
+from pianoq.simulations.mplc.mplc_modes import get_speckle_modes, get_spots_modes
+# from mplc_result import MPLCResult
 
 
 class MPLC:
     def __init__(self, conf):
         self.conf = conf
-        self.res = MPLCResult()
+        # self.res = MPLCResult()
         self.wl = self.wavelength = conf['wavelength']
         self.k = 2 * np.pi / self.wl
         self.L = self.plane_spacing = conf['plane_spacing']
@@ -54,42 +55,9 @@ class MPLC:
         self.show = self.show_field_intensity
         self.prop = self.propagate_freespace
 
-    def set_input_spots_modes(self, sig=0.1, N_rows=4, N_cols=4, spacing=0.6):
-        mode_no = 0
-        for i in range(N_rows):
-            for j in range(N_cols):
-                X0 = spacing * (j - (N_cols / 2.0) + 0.5)
-                Y0 = spacing * (i - (N_rows / 2.0) + 0.5)
-                E_gaus = np.exp(-((self.XX - X0) ** 2 + (self.YY - Y0) ** 2) / (sig ** 2)).astype(complex)
-                E_gaus /= np.sqrt(((np.abs(E_gaus)) ** 2).sum())
-                self.forward_fields[0, mode_no, :, :] = E_gaus
-                mode_no += 1
-
-    def set_output_speckle_modes(self, sig=0.05, diffuser_pix_size=0.025):
-        for mode_no in range(self.N_modes):
-            speckles = self.get_speckles(sig=sig, diffuser_pix_size=diffuser_pix_size)
-            self.backward_fields[self.N_planes-1, mode_no, :, :] = speckles
-
-    def get_speckles(self, sig=0.4, diffuser_pix_size=0.02):
-        X0 = 0
-        Y0 = 0
-        E_gaus = np.exp(-((self.XX - X0) ** 2 + (self.YY - Y0) ** 2) / (sig ** 2)).astype(complex)
-
-        N_pixs_x = int(self.Nx*self.dx / diffuser_pix_size)
-        N_pixs_y = int(self.Ny*self.dy / diffuser_pix_size)
-        A = 2 * np.pi * np.random.rand(N_pixs_y, N_pixs_x)
-        # .shape conventions on numpy and cv2 is the opposite
-        A2 = cv2.resize(A, self.XX.shape[::-1], interpolation=cv2.INTER_NEAREST)
-        E_gaus *= np.exp(1j*A2)
-
-        speckles = np.fft.fftshift(np.fft.fft2(np.fft.fftshift(E_gaus)))
-
-        # cut around the middle "real" mask
-        filtered_speckles = np.zeros_like(speckles)  # np.exp(1j*0) = 1
-        filtered_speckles[self.active_slice] = speckles[self.active_slice]
-
-        filtered_speckles /= np.sqrt(((np.abs(filtered_speckles))**2).sum())
-        return filtered_speckles
+    def set_modes(self, input_modes, output_modes):
+        self.forward_fields[0, :, :, :] = input_modes
+        self.backward_fields[self.N_planes - 1, :, :, :] = output_modes
 
     def find_phases(self):
         # Populate initial forward and backward fields in all planes.
@@ -198,7 +166,6 @@ class MPLC:
     def fix_mask(self, mask):
         new_mask = np.copy(mask)
 
-        # TODO: filter in k-space the e^(i*phi)
         if self.max_k_constraint:
             mask_kspace = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(new_mask)))
             mask_kspace = mask_kspace * self.k_constraint
@@ -228,16 +195,11 @@ class MPLC:
         return k_z
 
     def _generate_k_constraint(self):
-        # TODO: make this correct and check it works as expected etc.
-        # fs = 1 / ((max(max(self.X)) - min(min(self.X))))
-        # v_x = fs * ([-self.Nx / 2:self.Nx / 2-1])
-        # fs = 1 / (max(max(Y)) - min(min(Y)))
-        # v_y = fs * ([-self.Ny / 2: self.Ny / 2-1])
-        # [V_x, V_y] = np.meshgrid(v_x, v_y)
         freq_x = np.fft.fftshift(np.fft.fftfreq(self.Nx, d=self.dx))
         freq_y = np.fft.fftshift(np.fft.fftfreq(self.Ny, d=self.dy))
         freq_XXs, freq_YYs = np.meshgrid(freq_x, freq_y)
-        k_constraint = np.sqrt(((freq_XXs**2 + freq_YYs**2) / max(max((freq_XXs**2 + freq_YYs**2))))) < self.max_k_constraint
+        # TODO: Check this does what I expect, and ask Ohad why normalize?
+        k_constraint = np.sqrt(((freq_XXs**2 + freq_YYs**2) / (freq_XXs**2 + freq_YYs**2).max())) < self.max_k_constraint
         return k_constraint
 
     def propagate_freespace(self, E, L, backprop=False):
@@ -302,15 +264,24 @@ conf = {'wavelength': 810e-6,  # mm
         }
 
 mplc = MPLC(conf=conf)
-mplc.set_input_spots_modes(sig=0.1, N_rows=N_N_modes, N_cols=N_N_modes, spacing=0.6)
-mplc.set_output_speckle_modes(sig=0.25, diffuser_pix_size=0.05)
+
+input_modes = get_spots_modes(Nx=conf['Nx']*conf['size_factor'], Ny=conf['Ny']*conf['size_factor'],
+                              dx=conf['dx'], dy=conf['dy'],
+                              sig=0.1, N_rows=N_N_modes, N_cols=N_N_modes, spacing=0.6)
+output_modes = get_speckle_modes(Nx=conf['Nx']*conf['size_factor'], Ny=conf['Ny']*conf['size_factor'],
+                                 dx=conf['dx'], dy=conf['dy'], N_modes=len(input_modes),
+                                 sig=0.25, diffuser_pix_size=0.05, active_slice=mplc.active_slice)
+mplc.set_modes(input_modes, output_modes)
+
+
 # mplc.show_field_intensity(mplc.get_speckles())
 mplc.initialize_fields()
 # mplc.find_phases()
 mplc.show_all()
 
+plt.show()
+
 # TODO:
-#  1) filter in k-space.
 #  2) understand the weird speckle features at the output, and why forward works better than backwards
 #  3) quantify with some fidelity matrix (and fidelity of inverse matrix)
 #  4) use denser grid for propagation with each pixel 2X2 for final results check
