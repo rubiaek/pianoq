@@ -1,8 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from pianoq.simulations.mplc.mplc_modes import get_speckle_modes, get_spots_modes
 from pianoq.simulations.mplc.mplc_result import MPLCResult
-from pianoq.simulations.mplc.mplc_utils import get_lens_mask
 
 
 class MPLC:
@@ -13,7 +10,7 @@ class MPLC:
         self.k = 2 * np.pi / self.wl
         self.dist_after_plane = conf['dist_after_plane']
         self.active_planes = conf['active_planes']
-        self.N_planes = len(dist_after_plane) + 1
+        self.N_planes = len(self.dist_after_plane) + 1
         self.N_iterations = conf['N_iterations']
         self.N_modes = conf['N_modes']
         self._size_factor = conf['size_factor']
@@ -36,7 +33,7 @@ class MPLC:
 
         self.max_k_constraint = conf['max_k_constraint']
         self.use_mask_offset = conf['use_mask_offset']
-        # TODO: this does not make sense, N_modes should be upstairs
+        # TODO: this does not make sense, N_modes has opposite effect than Nx, Ny
         self.mask_offset = np.sqrt(1e-3/(self.Nx * self.Ny * self.N_modes))
 
         self.X = np.arange(-self.Nx / 2, self.Nx / 2) * self.dx
@@ -97,20 +94,28 @@ class MPLC:
                                                                                     backprop=True)
 
     def initialize_fields(self):
+        # TODO: fix code duplication from find_phases
         # propagate modes forwards and backwards, and record initial fields in each plane
         for plane_no in range(self.N_planes - 1):
             # Forward fields
             for mode_no in range(self.N_modes):
-                self.res.forward_fields[plane_no + 1, mode_no, :, :] = self.prop(
-                    self.res.forward_fields[plane_no, mode_no, :, :], self.dist_after_plane[plane_no], backprop=False
-                )
-
+                E = np.copy(self.res.forward_fields[plane_no, mode_no, :, :])
+                # regular prop is with + in the exponent
+                E *= np.exp(+1j * np.angle(self.res.masks[plane_no]))
+                self.res.forward_fields[plane_no + 1, mode_no, :, :] = self.prop(E,
+                                                                                 self.dist_after_plane[plane_no],
+                                                                                 backprop=False)
         # planes N-1->1
         for plane_no in range(self.N_planes-1, 0, -1):
             for mode_no in range(self.N_modes):
-                self.res.backward_fields[plane_no - 1, mode_no, :, :] = self.prop(
-                    self.res.backward_fields[plane_no, mode_no, :, :], self.dist_after_plane[plane_no-1], backprop=True
-                )
+                E = np.copy(self.res.backward_fields[plane_no, mode_no, :, :])
+                # backward prop is with - in the exponent
+                E *= np.exp(-1j * np.angle(self.res.masks[plane_no]))
+                self.res.backward_fields[plane_no - 1, mode_no, :, :] = self.prop(E,
+                                                                                  # when at plane i, want distance
+                                                                                  # after plane i-1
+                                                                                  self.dist_after_plane[plane_no - 1],
+                                                                                  backprop=True)
 
     def update_mask(self, plane_no):
         # some planes have constant phase mask (lens, next to lens, etc.)
@@ -209,7 +214,7 @@ class MPLC:
         freq_x = np.fft.fftshift(np.fft.fftfreq(self.Nx, d=self.dx))
         freq_y = np.fft.fftshift(np.fft.fftfreq(self.Ny, d=self.dy))
         freq_XXs, freq_YYs = np.meshgrid(freq_x, freq_y)
-        # max freq is constant for constant pixel size, and max_k_constraint is determined by / related to this size
+        # max freq is constant for constant pixel size, and max_k_constraint is determined by / related to this size,
         # so it makes sense to normalize by it, but it doesn't really matter, just changes the magic number
         k_constraint = np.sqrt(((freq_XXs**2 + freq_YYs**2) / (freq_XXs**2 + freq_YYs**2).max())) < self.max_k_constraint
         return k_constraint
@@ -232,48 +237,6 @@ class MPLC:
             print(txt)
 
 
-# prop_distances_after_plane[i] is distance between planes i and i+1 (counting from 0)
-dist_after_plane = 87*np.ones(10)
-dist_after_plane[4] = 138
-
-# Lense in plane 9 between 7 and 11. Allow phases freedom in plane 11 since I measure intensity
-active_planes = np.array([True] * 11)
-active_planes[7:10] = False
-
-N_N_modes = 3
-# All in mm
-conf = {'wavelength': 810e-6,  # mm
-        'dist_after_plane': dist_after_plane,  # mm
-        'active_planes': active_planes,  # bool
-        'N_iterations': 30,
-        'Nx': 140,  # Number of grid points x-axis
-        'Ny': 180,  # Number of grid points y-axis
-        'dx': 12.5e-3,  # mm - SLM pixel sizes
-        'dy': 12.5e-3,  # mm
-        'max_k_constraint': 0.15,  # Ohad: better than 0.1 or 0.2, but not very fine-tuned
-        'N_modes': N_N_modes*N_N_modes,
-        'min_log_level': 2,
-        'size_factor': 3,  # assumed to be odd. Have physical larger grid than the actual SLM planes
-        'use_mask_offset': True,
-        }
-
-mplc = MPLC(conf=conf)
-
-input_modes = get_spots_modes(Nx=conf['Nx']*conf['size_factor'], Ny=conf['Ny']*conf['size_factor'],
-                              dx=conf['dx'], dy=conf['dy'],
-                              sig=0.1, N_rows=N_N_modes, N_cols=N_N_modes, spacing=0.6)
-output_modes = get_speckle_modes(Nx=conf['Nx']*conf['size_factor'], Ny=conf['Ny']*conf['size_factor'],
-                                 dx=conf['dx'], dy=conf['dy'], N_modes=len(input_modes),
-                                 sig=0.25, diffuser_pix_size=0.05, active_slice=mplc.res.active_slice)
-mplc.set_modes(input_modes, output_modes)
-
-mplc.res.masks[8] = get_lens_mask(Nx=conf['Nx']*conf['size_factor'], Ny=conf['Ny']*conf['size_factor'],
-                                  dx=conf['dx'], dy=conf['dy'], wl=conf['wavelength'], f=2*87)
-
-mplc.initialize_fields()
-mplc.find_phases()
-
-plt.show()
 
 # TODO:
 #  Further future:

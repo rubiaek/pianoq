@@ -25,18 +25,21 @@ class MPLCResult:
         if fig_show:
             ax.figure.show()
 
-    def show_all(self, mode_no=0):
+    def show_all(self, mode_no=0, only_active_slice=True):
         fig, axes = plt.subplots(3, self.N_planes)
         for plane_no in range(self.N_planes):
-            im = axes[0, plane_no].imshow(np.angle(self.masks[plane_no][self.active_slice]), cmap='gray')
-            fig.colorbar(im, ax=axes[0, plane_no])
+            mask = self.masks[plane_no][self.active_slice] if only_active_slice else self.masks[plane_no]
+            imm = axes[0, plane_no].imshow(np.angle(mask), cmap='gray')
+            fig.colorbar(imm, ax=axes[0, plane_no])
 
-            im = axes[1, plane_no].imshow(np.abs(self.forward_fields[plane_no, mode_no][self.active_slice])**2)
-            fig.colorbar(im, ax=axes[1, plane_no])
+            im = self.forward_fields[plane_no, mode_no][self.active_slice] if only_active_slice else self.forward_fields[plane_no, mode_no]
+            imm = axes[1, plane_no].imshow(np.abs(im)**2)
+            fig.colorbar(imm, ax=axes[1, plane_no])
             axes[1, plane_no].set_title(f'forward {plane_no=}')
 
-            im = axes[2, plane_no].imshow(np.abs(self.backward_fields[plane_no, mode_no][self.active_slice])**2)
-            fig.colorbar(im, ax=axes[2, plane_no])
+            im = self.backward_fields[plane_no, mode_no][self.active_slice] if only_active_slice else self.backward_fields[plane_no, mode_no]
+            imm = axes[2, plane_no].imshow(np.abs(im)**2)
+            fig.colorbar(imm, ax=axes[2, plane_no])
             axes[2, plane_no].set_title(f'backward {plane_no=}')
 
         fig.show()
