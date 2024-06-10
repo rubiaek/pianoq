@@ -12,7 +12,7 @@ class MPLCResult:
         self.active_slice = None
         self.N_modes = 0
         self.__dict__.update(self.conf)
-        self.N_planes = len(self.conf.get('active_planes'), ())
+        self.N_planes = len(self.conf.get('active_planes', ()))
 
         self.forward_fidelity = np.zeros((self.N_modes, self.N_modes), dtype=np.complex128)
         self.backward_fidelity = np.zeros((self.N_modes, self.N_modes), dtype=np.complex128)
