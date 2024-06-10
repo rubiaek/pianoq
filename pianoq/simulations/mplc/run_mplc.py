@@ -57,7 +57,7 @@ def short():
     conf = {'wavelength': 810e-6,  # mm
             'dist_after_plane': dist_after_plane,  # mm
             'active_planes': active_planes,  # bool
-            'N_iterations': 15,
+            'N_iterations': 30,
             'Nx': 140,  # Number of grid points x-axis
             'Ny': 180,  # Number of grid points y-axis
             'dx': 12.5e-3,  # mm - SLM pixel sizes
@@ -78,6 +78,7 @@ def short():
     return mplc
 
 
-mplc = real_with_lens()
-# mplc = short()
+# TODO: speckles for input and output modes
+# mplc = real_with_lens()
+mplc = short()
 plt.show()
