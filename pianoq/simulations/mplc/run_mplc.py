@@ -75,7 +75,6 @@ def short():
     output_modes = get_speckle_modes_conf(conf, N_modes=len(input_modes),
                                           sig=0.25, diffuser_pix_size=0.05, active_slice=mplc.res.active_slice)
     mplc.set_modes(input_modes, output_modes)
-    mplc.initialize_fields()
     mplc.find_phases()
     return mplc
 

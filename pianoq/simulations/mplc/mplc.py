@@ -55,12 +55,11 @@ class MPLC:
         self.res.forward_fields[0, :, :, :] = input_modes
         self.res.backward_fields[self.N_planes - 1, :, :, :] = output_modes
 
-    def find_phases(self):
-        # Populate initial forward and backward fields in all planes.
-        self.initialize_fields()
-
-        for i in range(self.N_iterations):
-            self.log(f'Iter num: {i}')
+    def find_phases(self, iterations=None):
+        # Running with iterations = 1 will result with only field initialization
+        iterations = iterations or self.N_iterations
+        for iter_no in range(iterations):
+            self.log(f'Iter num: {iter_no}')
 
             # Given current fields, update mask 1. Then update forward field in mask 2, and update it, etc.
             # the backward fields don't need to be updated till we get to the last plane, N-1, where
@@ -68,7 +67,9 @@ class MPLC:
             # In reality we do not have an SLM at the measurement plane ("plane 11"), but since we don't care
             # about the phases there, we let the algorithm optimize the phases over there.
             for plane_no in range(self.N_planes - 1):
-                self.update_mask(plane_no)
+                # In first iteration we populate the initial fields for each mode in each plane
+                if iter_no != 0:
+                    self.update_mask(plane_no)
                 # this should be done for all modes
                 for mode_no in range(self.N_modes):
                     E = np.copy(self.res.forward_fields[plane_no, mode_no, :, :])
@@ -82,7 +83,9 @@ class MPLC:
             # and mask 0 will be updated in next forward iteration.
             # starts from N-1 because that is the N'th element of the vector...
             for plane_no in range(self.N_planes - 1, 0, -1):
-                self.update_mask(plane_no)
+                # In first iteration we populate the initial fields for each mode in each plane
+                if iter_no != 0:
+                    self.update_mask(plane_no)
                 for mode_no in range(self.N_modes):
                     E = np.copy(self.res.backward_fields[plane_no, mode_no, :, :])
                     # backward prop is with - in the exponent
@@ -92,30 +95,6 @@ class MPLC:
                                                                                     # after plane i-1
                                                                                     self.dist_after_plane[plane_no-1],
                                                                                     backprop=True)
-
-    def initialize_fields(self):
-        # TODO: fix code duplication from find_phases
-        # propagate modes forwards and backwards, and record initial fields in each plane
-        for plane_no in range(self.N_planes - 1):
-            # Forward fields
-            for mode_no in range(self.N_modes):
-                E = np.copy(self.res.forward_fields[plane_no, mode_no, :, :])
-                # regular prop is with + in the exponent
-                E *= np.exp(+1j * np.angle(self.res.masks[plane_no]))
-                self.res.forward_fields[plane_no + 1, mode_no, :, :] = self.prop(E,
-                                                                                 self.dist_after_plane[plane_no],
-                                                                                 backprop=False)
-        # planes N-1->1
-        for plane_no in range(self.N_planes-1, 0, -1):
-            for mode_no in range(self.N_modes):
-                E = np.copy(self.res.backward_fields[plane_no, mode_no, :, :])
-                # backward prop is with - in the exponent
-                E *= np.exp(-1j * np.angle(self.res.masks[plane_no]))
-                self.res.backward_fields[plane_no - 1, mode_no, :, :] = self.prop(E,
-                                                                                  # when at plane i, want distance
-                                                                                  # after plane i-1
-                                                                                  self.dist_after_plane[plane_no - 1],
-                                                                                  backprop=True)
 
     def update_mask(self, plane_no):
         # some planes have constant phase mask (lens, next to lens, etc.)
@@ -235,7 +214,6 @@ class MPLC:
     def log(self, txt, level=3):
         if level >= self.min_log_level:
             print(txt)
-
 
 
 # TODO:

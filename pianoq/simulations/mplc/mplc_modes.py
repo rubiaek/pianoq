@@ -3,7 +3,7 @@ import cv2
 
 
 def get_spots_modes_conf(conf, N_rows=3, N_cols=3, sig=0.1, spacing=0.6):
-    get_spots_modes(Nx=conf['Nx'] * conf['size_factor'], Ny=conf['Ny'] * conf['size_factor'],
+    return get_spots_modes(Nx=conf['Nx'] * conf['size_factor'], Ny=conf['Ny'] * conf['size_factor'],
                     dx=conf['dx'], dy=conf['dy'],
                     sig=sig, N_rows=N_rows, N_cols=N_cols, spacing=spacing)
 
