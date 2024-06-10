@@ -38,10 +38,9 @@ def real_with_lens():
                                           sig=0.25, diffuser_pix_size=0.05, active_slice=mplc.res.active_slice)
     mplc.set_modes(input_modes, output_modes)
 
-    mplc.res.masks[8] = get_lens_mask_conf(conf, f=2*87)
+    mplc.res.masks[8][mplc.res.active_slice] = get_lens_mask_conf(conf, f=2*87)[mplc.res.active_slice]
 
-    mplc.initialize_fields()
-    # mplc.find_phases()
+    mplc.find_phases()
     return mplc
 
 
@@ -79,6 +78,6 @@ def short():
     return mplc
 
 
-# mplc = real_with_lens()
-mplc = short()
+mplc = real_with_lens()
+# mplc = short()
 plt.show()

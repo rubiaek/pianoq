@@ -1,19 +1,28 @@
+from pianoq.simulations.mplc.mplc_utils import get_lens_mask
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 from pianoq.simulations.mplc.mplc import MPLC
 
-N_N_modes = 3
+
+dist_after_plane = 87 * np.ones(6)
+dist_after_plane[4] = 138
+
+# Lense in plane 9 between 7 and 11. Allow phases freedom in plane 11 since I measure intensity
+active_planes = np.array([True] * 7)
+
+N_N_modes = 2
+# All in mm
 conf = {'wavelength': 810e-6,  # mm
-        'plane_spacing': 87,  # mm
-        'N_planes': 8,
-        'N_iterations': 30,
+        'dist_after_plane': dist_after_plane,  # mm
+        'active_planes': active_planes,  # bool
+        'N_iterations': 15,
         'Nx': 140,  # Number of grid points x-axis
         'Ny': 180,  # Number of grid points y-axis
         'dx': 12.5e-3,  # mm - SLM pixel sizes
         'dy': 12.5e-3,  # mm
-        'max_k_constraint': 0.15,
-        'N_modes': N_N_modes*N_N_modes,
+        'max_k_constraint': 0.15,  # Ohad: better than 0.1 or 0.2, but not very fine-tuned
+        'N_modes': N_N_modes * N_N_modes,
         'min_log_level': 2,
         'size_factor': 3,  # assumed to be odd. Have physical larger grid than the actual SLM planes
         'use_mask_offset': True,
@@ -89,7 +98,33 @@ def test_k_filter():
     axes[1].set_title('k-space fixed')
 
 
-test_k_filter()
-# test_freespace_prop()
+def test_lens(lens=True):
+    mplc = MPLC(conf=conf)
+    sig = 0.5
+    E_gaus = np.exp(-(mplc.XX ** 2 + mplc.YY ** 2) / (2 * sig ** 2)).astype(complex)
 
-plt.show()
+    fig, axes = plt.subplots(1, 3, figsize=(12, 4), constrained_layout=True)
+    axes[0].set_title(f'z=0')
+    axes[0].imshow(np.abs(E_gaus)**2)
+
+    E_gaus = mplc.prop(E_gaus, 100)
+    axes[1].set_title(f'z=100')
+    axes[1].imshow(np.abs(E_gaus)**2)
+
+    if lens:
+        mask = get_lens_mask(mplc.Nx, mplc.Ny, mplc.dx, mplc.dy, mplc.wl, f=100)
+        E_gaus = E_gaus * mask
+    E_gaus = mplc.prop(E_gaus, 100)
+    axes[2].set_title(f'z=200')
+    axes[2].imshow(np.abs(E_gaus)**2)
+
+    fig.suptitle(f'{lens=}')
+    fig.show()
+
+
+# test_k_filter()
+# test_freespace_prop()
+test_lens(True)
+test_lens(False)
+
+# plt.show()
