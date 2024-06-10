@@ -7,19 +7,22 @@ class MPLCResult:
     def __init__(self, conf=None):
         self.conf = conf or {}
         self.masks = np.array([])
-        self.forward_fields = np.array([])
-        self.backward_fields = np.array([])
+        self.forward_fields = np.array([], dtype=np.complex128)
+        self.backward_fields = np.array([], dtype=np.complex128)
         self.active_slice = None
         self.N_modes = 0
         self.__dict__.update(self.conf)
         self.N_planes = len(self.conf.get('active_planes', ()))
 
-        self.forward_fidelity = np.zeros((self.N_modes, self.N_modes), dtype=np.complex128)
-        self.backward_fidelity = np.zeros((self.N_modes, self.N_modes), dtype=np.complex128)
+        self.forward_fidelity = np.array([], dtype=np.complex128)
+        self.backward_fidelity = np.array([], dtype=np.complex128)
         self.forward_losses = np.zeros(self.N_modes)
         self.backward_losses = np.zeros(self.N_modes)
 
     def _calc_fidelity(self):
+        self.forward_fidelity = np.zeros((self.N_modes, self.N_modes), dtype=np.complex128)
+        self.backward_fidelity = np.zeros((self.N_modes, self.N_modes), dtype=np.complex128)
+
         # TODO: have a finer dx for reality grid, with each SLM pixel being 2X2 reality pixels etc.?
         for in_mode in range(self.N_modes):
             for out_mode in range(self.N_modes):
@@ -98,6 +101,7 @@ class MPLCResult:
         f = open(path, 'rb')
         data = np.load(f, allow_pickle=True)
         for k, v in data.items():
+            # TODO: this doesn't quite work
             self.k = v
         f.close()
 
