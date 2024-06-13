@@ -102,7 +102,11 @@ class MPLCResult:
         data = np.load(f, allow_pickle=True)
         for k, v in data.items():
             # TODO: this doesn't quite work
-            self.k = v
+            if v.shape == ():
+                self.__dict__[k] = v.item()
+            else:
+                self.__dict__[k] = v
+        self.active_slice = tuple(self.active_slice)
         f.close()
 
     def saveto(self, path):

@@ -1,4 +1,5 @@
 import numpy as np
+from tqdm import tqdm
 from pianoq.simulations.mplc.mplc_result import MPLCResult
 
 
@@ -58,9 +59,7 @@ class MPLC:
     def find_phases(self, iterations=None):
         # Running with iterations = 1 will result with only field initialization
         iterations = iterations or self.N_iterations
-        for iter_no in range(iterations):
-            self.log(f'Iter num: {iter_no}')
-
+        for iter_no in tqdm(range(iterations)):
             # Given current fields, update mask 1. Then update forward field in mask 2, and update it, etc.
             # the backward fields don't need to be updated till we get to the last plane, N-1, where
             # we update field N, and the Mask N is updated in the first iteration of backwards loop
