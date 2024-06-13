@@ -79,21 +79,27 @@ class MPLCResult:
         return self.backward_fields[self.N_planes - 1, :, :, :]
 
     def show_all(self, mode_no=0, only_active_slice=True):
-        fig, axes = plt.subplots(3, self.N_planes)
+        fig, axes = plt.subplots(3, self.N_planes, figsize=(13, 5), constrained_layout=True)
         for plane_no in range(self.N_planes):
             mask = self.masks[plane_no][self.active_slice] if only_active_slice else self.masks[plane_no]
             imm = axes[0, plane_no].imshow(np.angle(mask), cmap='gray')
             fig.colorbar(imm, ax=axes[0, plane_no])
+            axes[0, plane_no].tick_params(axis='both', which='both', left=False, bottom=False, labelleft=False,
+                                          labelbottom=False)
 
             im = self.forward_fields[plane_no, mode_no][self.active_slice] if only_active_slice else self.forward_fields[plane_no, mode_no]
             imm = axes[1, plane_no].imshow(np.abs(im)**2)
             fig.colorbar(imm, ax=axes[1, plane_no])
             axes[1, plane_no].set_title(f'forward {plane_no=}')
+            axes[1, plane_no].tick_params(axis='both', which='both', left=False, bottom=False, labelleft=False,
+                                          labelbottom=False)
 
             im = self.backward_fields[plane_no, mode_no][self.active_slice] if only_active_slice else self.backward_fields[plane_no, mode_no]
             imm = axes[2, plane_no].imshow(np.abs(im)**2)
             fig.colorbar(imm, ax=axes[2, plane_no])
             axes[2, plane_no].set_title(f'backward {plane_no=}')
+            axes[2, plane_no].tick_params(axis='both', which='both', left=False, bottom=False, labelleft=False,
+                                          labelbottom=False)
 
         fig.show()
 
@@ -101,7 +107,6 @@ class MPLCResult:
         f = open(path, 'rb')
         data = np.load(f, allow_pickle=True)
         for k, v in data.items():
-            # TODO: this doesn't quite work
             if v.shape == ():
                 self.__dict__[k] = v.item()
             else:
