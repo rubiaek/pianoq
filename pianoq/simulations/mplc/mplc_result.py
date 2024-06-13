@@ -36,6 +36,16 @@ class MPLCResult:
                                      ).sum()
                 self.backward_fidelity[in_mode, out_mode] = backward_fidelity
 
+    def _calc_loss(self):
+        # TODO: check this
+        forward_losses = np.zeros(self.N_modes)
+        for mode_no in range(self.N_modes):
+            forward_losses[mode_no] = (np.abs(self.forward_fields[-1, mode_no]) ** 2)[self.active_slice].sum()
+
+        backward_losses = np.zeros(self.N_modes)
+        for mode_no in range(self.N_modes):
+            backward_losses[mode_no] = (np.abs(self.backward_fields[0, mode_no]) ** 2)[self.active_slice].sum()
+
     def show_fidelity(self):
         self._calc_fidelity()
         fig, axes = plt.subplots(1, 2, constrained_layout=True)

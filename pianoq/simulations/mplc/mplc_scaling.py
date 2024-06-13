@@ -12,5 +12,6 @@ res.loadfrom("C:\\temp\\speckle_speckle.mplc")
 #  Practically:
 #  * implement `propagate_MPLC(initial_field=E, backward=True)`, which will need a `freespace(E, L)` helper function
 #   - note that "backwards" has two meanings: 1) exp(-1*j), 2) start from plane N-1.
+#   - do this in current MPLC class. maybe `propagate_MPLC(initial_field=E, start_plane=N-1, end_plane=6)`
 #  * implement `find phase` which should be pretty easy
 #  * implement some incomplete control mechanism
