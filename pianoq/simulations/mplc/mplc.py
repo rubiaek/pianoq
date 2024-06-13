@@ -4,6 +4,10 @@ from pianoq.simulations.mplc.mplc_result import MPLCResult
 
 
 class MPLC:
+    """
+        This class is mainly for performing the wavefront matching protocol, but I will also use it in general
+        for propagating fields through many phase masks
+    """
     def __init__(self, conf):
         self.res = MPLCResult(conf)
 
@@ -40,6 +44,14 @@ class MPLC:
         self.X = np.arange(-self.Nx / 2, self.Nx / 2) * self.dx
         self.Y = np.arange(-self.Ny / 2, self.Ny / 2) * self.dy
         self.XX, self.YY = np.meshgrid(self.X, self.Y)
+        self.freq_x = np.fft.fftshift(np.fft.fftfreq(self.Nx, d=self.dx))
+        self.freq_y = np.fft.fftshift(np.fft.fftfreq(self.Ny, d=self.dy))
+        self.freq_XXs, self.freq_YYs = np.meshgrid(self.freq_x, self.freq_y)
+        self.light_k = 2 * np.pi / self.wl
+        self.k_xx = self.freq_XXs * 2 * np.pi
+        self.k_yy = self.freq_YYs * 2 * np.pi
+
+
         self.k_z_mat = self._generate_kz_mat()
         self.k_constraint = self._generate_k_constraint()
 
@@ -173,14 +185,7 @@ class MPLC:
 
     def _generate_kz_mat(self):
         # Calculating once for efficiency
-        freq_x = np.fft.fftshift(np.fft.fftfreq(self.Nx, d=self.dx))
-        freq_y = np.fft.fftshift(np.fft.fftfreq(self.Ny, d=self.dy))
-        freq_XXs, freq_YYs = np.meshgrid(freq_x, freq_y)
-        light_k = 2 * np.pi / self.wl
-        k_xx = freq_XXs * 2 * np.pi
-        k_yy = freq_YYs * 2 * np.pi
-
-        k_z_sqr = light_k ** 2 - (k_xx ** 2 + k_yy ** 2)
+        k_z_sqr = self.light_k ** 2 - (self.k_xx ** 2 + self.k_yy ** 2)
         # Remove all the negative component, as they represent evanescent waves, see Fourier Optics page 58
         np.maximum(k_z_sqr, 0, out=k_z_sqr)
         k_z = np.sqrt(k_z_sqr)
@@ -188,13 +193,10 @@ class MPLC:
         return k_z
 
     def _generate_k_constraint(self):
-        # Calculating once for efficiency
-        freq_x = np.fft.fftshift(np.fft.fftfreq(self.Nx, d=self.dx))
-        freq_y = np.fft.fftshift(np.fft.fftfreq(self.Ny, d=self.dy))
-        freq_XXs, freq_YYs = np.meshgrid(freq_x, freq_y)
         # max freq is constant for constant pixel size, and max_k_constraint is determined by / related to this size,
         # so it makes sense to normalize by it, but it doesn't really matter, just changes the magic number
-        k_constraint = np.sqrt(((freq_XXs**2 + freq_YYs**2) / (freq_XXs**2 + freq_YYs**2).max())) < self.max_k_constraint
+        k_constraint = np.sqrt(((self.freq_XXs**2 + self.freq_YYs**2) / (self.freq_XXs**2 + self.freq_YYs**2).max())) \
+                       < self.max_k_constraint
         return k_constraint
 
     def propagate_freespace(self, E, L, backprop=False):
