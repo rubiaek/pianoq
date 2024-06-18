@@ -1,4 +1,6 @@
+import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.patches import Rectangle
 
 
 def get_lens_mask_conf(conf, f):
@@ -15,3 +17,18 @@ def get_lens_mask(Nx, Ny, dx, dy, wl, f):
     mask = np.exp(-1j * (XX**2 + YY**2) * k / (2 * f))
 
     return mask
+
+
+def show_field(E, figshow=True, active_slice=None):
+    fig, ax = plt.subplots()
+    imm = ax.imshow(np.abs(E)**2)
+
+    if active_slice:
+        rows = active_slice[0]
+        cols = active_slice[1]
+        ax.add_patch(Rectangle((cols.start, rows.start), cols.stop - cols.start, rows.stop-rows.start,
+                               facecolor="none", ec='k', lw=2))
+
+    fig.colorbar(imm, ax=ax)
+    if figshow:
+        fig.show()
