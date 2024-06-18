@@ -1,6 +1,7 @@
 import traceback
 import numpy as np
 import matplotlib.pyplot as plt
+import copy
 
 
 class MPLCResult:
@@ -26,8 +27,8 @@ class MPLCResult:
         # TODO: have a finer dx for reality grid, with each SLM pixel being 2X2 reality pixels etc.?
         for in_mode in range(self.N_modes):
             for out_mode in range(self.N_modes):
-                forward_fidelity = (self.forward_fields[self.N_planes-1, in_mode] *
-                                    self.backward_fields[self.N_planes-1, out_mode].conj()
+                forward_fidelity = (self.forward_fields[-1, in_mode] *
+                                    self.backward_fields[-1, out_mode].conj()
                                     ).sum()
                 self.forward_fidelity[in_mode, out_mode] = forward_fidelity
 
@@ -88,9 +89,18 @@ class MPLCResult:
     def output_modes(self):
         return self.backward_fields[self.N_planes - 1, :, :, :]
 
-    def show_all(self, mode_no=0, only_active_slice=True):
-        fig, axes = plt.subplots(3, self.N_planes, figsize=(13, 5), constrained_layout=True)
+    def show_masks(self):
+        fig, axes = plt.subplots(3, len(self.N_planes), figsize=(13, 5), constrained_layout=True)
         for plane_no in range(self.N_planes):
+            mask = self.masks[plane_no][self.active_slice]
+            imm = axes[0, plane_no].imshow(np.angle(mask), cmap='gray')
+            fig.colorbar(imm, ax=axes[0, plane_no])
+            axes[0, plane_no].tick_params(axis='both', which='both', left=False, bottom=False, labelleft=False,
+                                          labelbottom=False)
+
+    def show_all(self, mode_no=0, only_active_slice=True):
+        fig, axes = plt.subplots(3, len(self.forward_fields), figsize=(13, 5), constrained_layout=True)
+        for plane_no in range(len(self.forward_fields)):
             mask = self.masks[plane_no][self.active_slice] if only_active_slice else self.masks[plane_no]
             imm = axes[0, plane_no].imshow(np.angle(mask), cmap='gray')
             fig.colorbar(imm, ax=axes[0, plane_no])
@@ -124,10 +134,20 @@ class MPLCResult:
         self.active_slice = tuple(self.active_slice)
         f.close()
 
-    def saveto(self, path):
+    def saveto(self, path, smaller=True):
         try:
             f = open(path, 'wb')
-            np.savez(f, **self.__dict__)
+            if smaller:
+                # TODO: could reduce 9X the masks, since by definition only the middle is full, and the rest is zero
+                d = copy.deepcopy(self.__dict__)
+                ff = d.pop('forward_fields')
+                bf = d.pop('backward_fields')
+                d['forward_fields'] = [ff[0], ff[-1]]
+                d['backward_fields'] = [bf[0], bf[-1]]
+                np.savez(f, **d)
+                del d
+            else:
+               np.savez(f, **self.__dict__)
             f.close()
         except Exception as e:
             print(e)
