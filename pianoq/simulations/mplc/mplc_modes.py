@@ -28,6 +28,16 @@ def get_spots_modes(Nx, Ny, dx, dy, sig=0.1, N_rows=4, N_cols=4, spacing=0.6):
     return np.array(modes)
 
 
+def get_spot_conf(conf, sig, Dx0, Dy0):
+    Nx = conf['Nx'] * conf['size_factor']
+    Ny = conf['Ny'] * conf['size_factor']
+    X = np.arange(-Nx / 2, Nx / 2) * conf['dx']
+    Y = np.arange(-Ny / 2, Ny / 2) * conf['dy']
+    XX, YY = np.meshgrid(X, Y)
+    E_gaus = np.exp(-((XX - Dx0) ** 2 + (YY - Dy0) ** 2) / (sig ** 2)).astype(complex)
+    return E_gaus
+
+
 def get_speckle_modes_conf(conf, N_modes, sig=0.05, diffuser_pix_size=0.025, active_slice=None):
     return get_speckle_modes(Nx=conf['Nx'] * conf['size_factor'], Ny=conf['Ny'] * conf['size_factor'],
                              dx=conf['dx'], dy=conf['dy'],
@@ -35,6 +45,8 @@ def get_speckle_modes_conf(conf, N_modes, sig=0.05, diffuser_pix_size=0.025, act
 
 
 def get_speckle_modes(Nx, Ny, dx, dy, N_modes, sig=0.05, diffuser_pix_size=0.025, active_slice=None):
+    # TODO: less harsh cutoff with active_slice
+
     modes = []
     X = np.arange(-Nx / 2, Nx / 2) * dx
     Y = np.arange(-Ny / 2, Ny / 2) * dy
