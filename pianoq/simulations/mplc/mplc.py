@@ -219,6 +219,7 @@ class MPLC:
         return E_out
 
     def propagate_mplc(self, initial_field, start_plane=None, end_plane=None):
+        """ ends at end_plane without propagating through its phase mask"""
         start_plane = start_plane or 0
         end_plane = end_plane or self.N_planes - 1
         assert start_plane < end_plane, "If you want to propagate backwards just create an mplc with masks[::-1]"
@@ -227,7 +228,6 @@ class MPLC:
         for plane_no in range(start_plane, end_plane):
             field *= np.exp(+1j*np.angle(self.res.masks[plane_no]))
             field = self.propagate_freespace(field, self.dist_after_plane[plane_no])
-        field *= np.exp(+1j*np.angle(self.res.masks[end_plane]))
 
         return field
 

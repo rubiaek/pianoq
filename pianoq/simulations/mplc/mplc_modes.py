@@ -35,6 +35,8 @@ def get_spot_conf(conf, sig, Dx0, Dy0):
     Y = np.arange(-Ny / 2, Ny / 2) * conf['dy']
     XX, YY = np.meshgrid(X, Y)
     E_gaus = np.exp(-((XX - Dx0) ** 2 + (YY - Dy0) ** 2) / (sig ** 2)).astype(complex)
+    norm_factor = ((np.abs(E_gaus)) ** 2).sum()
+    E_gaus /= np.sqrt(norm_factor)
     return E_gaus
 
 
@@ -73,6 +75,8 @@ def get_speckle_modes(Nx, Ny, dx, dy, N_modes, sig=0.05, diffuser_pix_size=0.025
             filtered_speckles /= np.sqrt(norm_factor)
             modes.append(filtered_speckles)
         else:
+            norm_factor = ((np.abs(speckles))**2).sum()
+            speckles /= np.sqrt(norm_factor)
             modes.append(speckles)
 
     return np.array(modes)
