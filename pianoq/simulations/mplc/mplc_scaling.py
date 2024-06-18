@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from pianoq.simulations.mplc.mplc_result import MPLCResult
 from pianoq.simulations.mplc.mplc import MPLC
 from pianoq.simulations.mplc.mplc_modes import get_spot_conf
@@ -6,6 +7,32 @@ from pianoq.simulations.mplc.mplc_utils import show_field
 
 
 class MPLCScalingSimulation:
+    """
+        Either SLM1 - at the first MPLC (plane 7 or rather 11-7)
+        Or SLM2 - again at the first MPLC (first or rather last plane)
+        ["rather" because we go backwards in Klyshko]
+        I think of MPLC[0=phases not interesting,
+                       1=empty,
+                       2=Lense,
+                       3=empty,
+                       4=Diffuser+SLM1,
+                       5=Diffuser, ...
+                       10=Diffuser+SLM2]
+                       - flipUD -
+                   MPLC2[0=diffuser,
+                         1=diffuser, ...
+                         6=diffuser,
+                         7=empty,
+                         8=lense
+                         9=empty
+                         10=phases not interesting],
+        so backprop is always also from large to small number
+      # TODO: think again about these not interesting phases + whether I want a lens also on MPLC2?
+         probably. for symmetry, and to be the same when both diffusers are the same diffuser
+    """
+    SLM1_plane = 4
+    SLM2_plane = 10
+
     def __init__(self, path1, path2):
         self.path1 = path1
         self.path2 = path2
@@ -16,9 +43,10 @@ class MPLCScalingSimulation:
         self.res2 = MPLCResult()
         self.res2.loadfrom(path2)
         self.initial_field = None
+        self.out_desired_spot = None
         self.out_field = None
-        self.slm1_phase = None
-        self.slm2_phase = None
+        self.slm1_phase = 0
+        self.slm2_phase = 0
 
         # first is from fiber to crystal, second from crystal to collection
         self.mplc = MPLC(conf=self.res.conf)
@@ -27,18 +55,24 @@ class MPLCScalingSimulation:
         self.mplc2 = MPLC(conf=self.res2.conf)
         self.mplc2.res.masks = self.res2.masks
 
-    def set_intial_spot(self, Dx0=-0.2, Dy0=0.2):
-        spot = get_spot_conf(self.res.conf, sig=0.1, Dx0=Dx0, Dy0=Dy0)
+    def set_intial_spot(self, sig=0.1, Dx0=0.0, Dy0=0.0):
+        spot = get_spot_conf(self.res.conf, sig=sig, Dx0=Dx0, Dy0=Dy0)
         self.initial_field = spot
+
+    def set_out_desired_spot(self, sig=0.1, Dx0=0.0, Dy0=0.0):
+        spot = get_spot_conf(self.res.conf, sig=sig, Dx0=Dx0, Dy0=Dy0)
+        self.out_desired_spot = spot
 
     def propagate_klyshko(self, use_slm1=False, use_slm2=False):
         # propagate Klyshko
         # 4 is plane 7 backwards
-        E_SLM1_plane = self.mplc.propagate_mplc(initial_field=self.initial_field, end_plane=4)
+        E_SLM1_plane = self.mplc.propagate_mplc(initial_field=self.initial_field, end_plane=self.SLM1_plane,
+                                                prop_last_mask=False)
         if use_slm1:
             E_SLM1_plane *= np.exp(+1j*self.slm1_phase)
 
-        E_crystal_plane = self.mplc.propagate_mplc(initial_field=E_SLM1_plane, start_plane=4)
+        E_crystal_plane = self.mplc.propagate_mplc(initial_field=E_SLM1_plane, start_plane=self.SLM1_plane,
+                                                   prop_last_mask=True)
 
         if use_slm2:
             E_crystal_plane *= np.exp(+1j*self.slm2_phase)
@@ -48,17 +82,44 @@ class MPLCScalingSimulation:
 
         E_out = self.mplc2.propagate_mplc(initial_field=E_crystal_plane)
         self.out_field = E_out
+        return E_out
 
-    def get_phase_SLM1(self, degree_of_control=1):
+    def get_phase_SLM(self, slm_plane=SLM1_plane, degree_of_control=1):
+        E_SLM1_plane_forward = self.mplc.propagate_mplc(initial_field=self.initial_field, end_plane=slm_plane,
+                                                        prop_last_mask=True)
 
-        pass
+        # backprop all second MPLC
+        E_back_crystal = self.mplc2.propagate_mplc(initial_field=self.out_desired_spot,
+                                                   backprop=True, prop_last_mask=True)
+
+        E_back_crystal = np.flipud(E_back_crystal)
+        # forward wave props this mask, so the backward wave shouldn't
+        E_SLM1_plane_backward = self.mplc.propagate_mplc(initial_field=E_back_crystal, end_plane=slm_plane,
+                                                         backprop=True, prop_last_mask=False)
+
+        SLM_phase = np.angle(np.conj(E_SLM1_plane_forward) * E_SLM1_plane_backward)
+        if degree_of_control == 1:
+            return SLM_phase
+        else:
+            pass
+        # TODO: incomplete control
 
 
 path1 = "C:\\temp\\speckle_speckle3.mplc"
 path2 = "C:\\temp\\speckle_speckle4.mplc"
 s = MPLCScalingSimulation(path1, path2)
-
-
+s.set_intial_spot(sig=0.08, Dx0=-0.3, Dy0=-0.4)
+s.set_out_desired_spot(sig=0.06, Dx0=0.3, Dy0=0.5)
+speckles = s.propagate_klyshko()
+s.slm1_phase = s.get_phase_SLM(s.SLM1_plane)
+s.slm2_phase = s.get_phase_SLM(s.SLM2_plane)
+fixed_SLM1 = s.propagate_klyshko(use_slm1=True)
+fixed_SLM2 = s.propagate_klyshko(use_slm2=True)
+show_field(s.initial_field, active_slice=s.mplc.res.active_slice, title='initial_field')
+show_field(speckles, active_slice=s.mplc.res.active_slice, title='speckles')
+show_field(fixed_SLM1, active_slice=s.mplc.res.active_slice, title='fixed_SLM1')
+show_field(fixed_SLM2, active_slice=s.mplc.res.active_slice, title='fixed_SLM2')
+plt.show()
 # show_field(spot, active_slice=res.active_slice)
 # spot_power = ((np.abs(spot)**2)[res.active_slice]).sum()
 # print(f'{spot_power=}')
@@ -71,3 +132,4 @@ s = MPLCScalingSimulation(path1, path2)
 #  Practically:
 #  * implement SLM WFS `find phase` which should be pretty easy
 #  * implement some incomplete control mechanism
+#  * SLM2 probably has much more active pixels. Check what happens to the spot after the lens in MPLC 1

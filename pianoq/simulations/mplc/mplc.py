@@ -130,6 +130,7 @@ class MPLC:
         # Power may be lost in k-space filter
         F_powers = (np.abs(F_fields)**2).sum(axis=(1, 2))  # [N_modes]
         B_powers = (np.abs(F_fields)**2).sum(axis=(1, 2))  # [N_modes]
+        # Maybe instead of np.newaxis it is better just to do sum(keepdims=True)
         F_powers = F_powers[:, np.newaxis, np.newaxis]  # for dividing (N_modes, Nx, Ny) by (N_modes)
         B_powers = B_powers[:, np.newaxis, np.newaxis]  # for dividing (N_modes, Nx, Ny) by (N_modes)
         self.log(f'{F_powers.shape=}', 1)
@@ -218,16 +219,30 @@ class MPLC:
         E_out = np.fft.fftshift(np.fft.ifft2(np.fft.fftshift(E_K)))
         return E_out
 
-    def propagate_mplc(self, initial_field, start_plane=None, end_plane=None):
-        """ ends at end_plane without propagating through its phase mask"""
-        start_plane = start_plane or 0
-        end_plane = end_plane or self.N_planes - 1
-        assert start_plane < end_plane, "If you want to propagate backwards just create an mplc with masks[::-1]"
+    def propagate_mplc(self, initial_field, start_plane=None, end_plane=None, backprop=False, prop_last_mask=False):
+        """ backprop means also that you use the -i, for WFM or finding the SLM phase """
+        if not backprop:
+            start_plane = start_plane or 0
+            end_plane = end_plane or self.N_planes - 1
+            assert start_plane <= end_plane, "If you want to plainly propagate backwards just create an mplc with " \
+                                             "masks[::-1]"
+        else:
+            start_plane = start_plane or self.N_planes - 1
+            end_plane = end_plane or 0
+            assert start_plane >= end_plane, "If you want to propagate backwards just create an mplc with masks[::-1]"
 
         field = initial_field.copy()
-        for plane_no in range(start_plane, end_plane):
-            field *= np.exp(+1j*np.angle(self.res.masks[plane_no]))
-            field = self.propagate_freespace(field, self.dist_after_plane[plane_no])
+
+        if not backprop:
+            for plane_no in range(start_plane, end_plane):
+                field *= np.exp(+1j*np.angle(self.res.masks[plane_no]))
+                field = self.propagate_freespace(field, self.dist_after_plane[plane_no], backprop=backprop)
+        else:
+            for plane_no in range(start_plane, end_plane, -1):
+                field *= np.exp(-1j*np.angle(self.res.masks[plane_no]))
+                field = self.propagate_freespace(field, self.dist_after_plane[plane_no - 1], backprop=backprop)
+        if prop_last_mask:
+            field *= np.exp(+1j * np.angle(self.res.masks[end_plane]))
 
         return field
 

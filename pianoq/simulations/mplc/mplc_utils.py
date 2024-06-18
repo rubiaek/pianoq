@@ -19,9 +19,10 @@ def get_lens_mask(Nx, Ny, dx, dy, wl, f):
     return mask
 
 
-def show_field(E, figshow=True, active_slice=None):
+def show_field(E, figshow=True, active_slice=None, title=''):
     fig, ax = plt.subplots()
     imm = ax.imshow(np.abs(E)**2)
+    ax.set_title(title)
 
     if active_slice:
         rows = active_slice[0]
