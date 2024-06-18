@@ -108,7 +108,7 @@ class MPLCScalingSimulation:
 path1 = "C:\\temp\\speckle_speckle3.mplc"
 path2 = "C:\\temp\\speckle_speckle4.mplc"
 s = MPLCScalingSimulation(path1, path2)
-s.set_intial_spot(sig=0.08, Dx0=-0.3, Dy0=-0.4)
+s.set_intial_spot(sig=0.1, Dx0=-0.3, Dy0=-0.4)
 s.set_out_desired_spot(sig=0.06, Dx0=0.3, Dy0=0.5)
 speckles = s.propagate_klyshko()
 s.slm1_phase = s.get_phase_SLM(s.SLM1_plane)
@@ -123,6 +123,9 @@ plt.show()
 # show_field(spot, active_slice=res.active_slice)
 # spot_power = ((np.abs(spot)**2)[res.active_slice]).sum()
 # print(f'{spot_power=}')
+
+# TODO: why do the speckles look weird.
+# TODO: given I will have some sort of CR mask - maybe next to the np.flipud also truncate the field?
 
 
 # TODO: Plan
