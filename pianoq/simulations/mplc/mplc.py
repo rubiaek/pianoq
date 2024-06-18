@@ -68,7 +68,7 @@ class MPLC:
         self.res.forward_fields[0, :, :, :] = input_modes
         self.res.backward_fields[self.N_planes - 1, :, :, :] = output_modes
 
-    def find_phases(self, iterations=None):
+    def find_phases(self, iterations=None, show_mean_fidelities=True):
         # Running with iterations = 1 will result with only field initialization
         iterations = iterations or self.N_iterations
         for iter_no in tqdm(range(iterations)):
@@ -106,6 +106,12 @@ class MPLC:
                                                                                     # after plane i-1
                                                                                     self.dist_after_plane[plane_no-1],
                                                                                     backprop=True)
+
+            if show_mean_fidelities:
+                self.res._calc_fidelity()
+                ff = np.abs(np.diag(self.res.forward_fidelity)).mean()
+                bf = np.abs(np.diag(self.res.backward_fidelity)).mean()
+                self.log(f'F-fidelity: {ff}. B-fidelity: {bf}.')
 
     def update_mask(self, plane_no):
         # some planes have constant phase mask (lens, next to lens, etc.)
@@ -212,12 +218,19 @@ class MPLC:
         E_out = np.fft.fftshift(np.fft.ifft2(np.fft.fftshift(E_K)))
         return E_out
 
+    def propagate_mplc(self, initial_field, start_plane=None, end_plane=None):
+        start_plane = start_plane or 0
+        end_plane = end_plane or self.N_planes - 1
+        assert start_plane < end_plane, "If you want to propagate backwards just create an mplc with masks[::-1]"
+
+        field = initial_field.copy()
+        for plane_no in range(start_plane, end_plane):
+            field *= np.exp(+1j*np.angle(self.res.masks[plane_no]))
+            field = self.propagate_freespace(field, self.dist_after_plane[plane_no])
+        field *= np.exp(+1j*np.angle(self.res.masks[end_plane]))
+
+        return field
+
     def log(self, txt, level=3):
         if level >= self.min_log_level:
             print(txt)
-
-
-# TODO:
-#  Further future:
-#  * start actual scaling experiments with "SLMs" in planes 1, 7
-#  * see under MPLCResult
