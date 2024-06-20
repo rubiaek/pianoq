@@ -89,14 +89,21 @@ class MPLCResult:
     def output_modes(self):
         return self.backward_fields[self.N_planes - 1, :, :, :]
 
+    def show_mask(self, plane_no):
+        fig, ax = plt.subplots()
+        mask = self.masks[plane_no][self.active_slice]
+        imm = ax.imshow(np.angle(mask), cmap='gray')
+        fig.colorbar(imm, ax=ax)
+        ax.tick_params(axis='both', which='both', left=False, bottom=False, labelleft=False, labelbottom=False)
+
     def show_masks(self):
-        fig, axes = plt.subplots(3, len(self.N_planes), figsize=(13, 5), constrained_layout=True)
+        fig, axes = plt.subplots(1, self.N_planes, figsize=(13, 8), constrained_layout=True)
         for plane_no in range(self.N_planes):
             mask = self.masks[plane_no][self.active_slice]
-            imm = axes[0, plane_no].imshow(np.angle(mask), cmap='gray')
-            fig.colorbar(imm, ax=axes[0, plane_no])
-            axes[0, plane_no].tick_params(axis='both', which='both', left=False, bottom=False, labelleft=False,
-                                          labelbottom=False)
+            imm = axes[plane_no].imshow(np.angle(mask), cmap='gray')
+            fig.colorbar(imm, ax=axes[plane_no])
+            axes[plane_no].tick_params(axis='both', which='both', left=False, bottom=False, labelleft=False,
+                                       labelbottom=False)
 
     def show_all(self, mode_no=0, only_active_slice=True):
         fig, axes = plt.subplots(3, len(self.forward_fields), figsize=(13, 5), constrained_layout=True)

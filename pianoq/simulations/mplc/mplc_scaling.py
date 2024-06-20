@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from pianoq.simulations.mplc.mplc_result import MPLCResult
 from pianoq.simulations.mplc.mplc import MPLC
 from pianoq.simulations.mplc.mplc_modes import get_spot_conf
-from pianoq.simulations.mplc.mplc_utils import show_field
+from pianoq.simulations.mplc.mplc_utils import show_field, downsample_with_mean, corr
 
 
 class MPLCScalingSimulation:
@@ -84,7 +84,7 @@ class MPLCScalingSimulation:
         self.out_field = E_out
         return E_out
 
-    def get_phase_SLM(self, slm_plane=SLM1_plane, degree_of_control=1):
+    def get_fixing_phase_SLM(self, slm_plane=SLM1_plane):
         E_SLM1_plane_forward = self.mplc.propagate_mplc(initial_field=self.initial_field, end_plane=slm_plane,
                                                         prop_last_mask=True)
 
@@ -98,21 +98,34 @@ class MPLCScalingSimulation:
                                                          backprop=True, prop_last_mask=False)
 
         SLM_phase = np.angle(np.conj(E_SLM1_plane_forward) * E_SLM1_plane_backward)
-        if degree_of_control == 1:
-            return SLM_phase
-        else:
-            pass
-        # TODO: incomplete control
+        display_phase = np.zeros_like(SLM_phase)
+        display_phase[self.res.active_slice] = SLM_phase[self.res.active_slice]
+
+        # TODO: why does this return a binary 0 or pi mask???
+
+        return display_phase
+
+    def get_mask_with_degree_of_control(self, mask, degree_of_control):
+        phase = np.angle(mask[self.res.active_slice])
+        # Nrows, Ncols = phase.shape
+        # new_Nrows, new_Ncols = int(degree_of_control*Nrows), int(degree_of_control*Ncols)
+        block_size = (int(1/degree_of_control), int(1/degree_of_control))
+
+        downsampled_phase = downsample_with_mean(phase, block_size)
+
+        new_mask = np.zeros_like(mask)
+        new_mask[self.res.active_slice] = downsampled_phase
+        return np.exp(1j*new_mask)
 
 
 path1 = "C:\\temp\\speckle_speckle3.mplc"
 path2 = "C:\\temp\\speckle_speckle4.mplc"
 s = MPLCScalingSimulation(path1, path2)
 s.set_intial_spot(sig=0.1, Dx0=-0.3, Dy0=-0.4)
-s.set_out_desired_spot(sig=0.06, Dx0=0.3, Dy0=0.5)
+s.set_out_desired_spot(sig=0.6, Dx0=0.3, Dy0=0.5)
 speckles = s.propagate_klyshko()
-s.slm1_phase = s.get_phase_SLM(s.SLM1_plane)
-s.slm2_phase = s.get_phase_SLM(s.SLM2_plane)
+s.slm1_phase = s.get_fixing_phase_SLM(s.SLM1_plane)
+s.slm2_phase = s.get_fixing_phase_SLM(s.SLM2_plane)
 fixed_SLM1 = s.propagate_klyshko(use_slm1=True)
 fixed_SLM2 = s.propagate_klyshko(use_slm2=True)
 show_field(s.initial_field, active_slice=s.mplc.res.active_slice, title='initial_field')

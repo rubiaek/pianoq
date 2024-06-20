@@ -33,3 +33,56 @@ def show_field(E, figshow=True, active_slice=None, title=''):
     fig.colorbar(imm, ax=ax)
     if figshow:
         fig.show()
+
+
+def downsample_with_mean(data, block_size):
+    # Ugly code by chatgpt
+    i, j = block_size
+    N, M = data.shape
+
+    # Calculate the number of full blocks in each dimension
+    num_full_blocks_x = N // i
+    num_full_blocks_y = M // j
+
+    # Initialize the downsampled array
+    downsampled = np.zeros((N, M))
+
+    # Handle the main body with full blocks
+    main_body = data[:num_full_blocks_x * i, :num_full_blocks_y * j]
+    reshaped = main_body.reshape(num_full_blocks_x, i, num_full_blocks_y, j)
+    block_means = reshaped.mean(axis=(1, 3))
+
+    # Fill the main body of the downsampled array
+    downsampled[:num_full_blocks_x * i, :num_full_blocks_y * j] = np.kron(block_means, np.ones((i, j)))
+
+    # Handle the right edge
+    if M % j != 0:
+        right_edge_start_y = num_full_blocks_y * j
+        for bx in range(num_full_blocks_x):
+            start_x = bx * i
+            end_x = start_x + i
+            block = data[start_x:end_x, right_edge_start_y:M]
+            block_mean = block.mean()
+            downsampled[start_x:end_x, right_edge_start_y:M] = block_mean
+
+    # Handle the bottom edge
+    if N % i != 0:
+        bottom_edge_start_x = num_full_blocks_x * i
+        for by in range(num_full_blocks_y):
+            start_y = by * j
+            end_y = start_y + j
+            block = data[bottom_edge_start_x:N, start_y:end_y]
+            block_mean = block.mean()
+            downsampled[bottom_edge_start_x:N, start_y:end_y] = block_mean
+
+    # Handle the bottom-right corner
+    if N % i != 0 and M % j != 0:
+        bottom_right_block = data[bottom_edge_start_x:N, right_edge_start_y:M]
+        block_mean = bottom_right_block.mean()
+        downsampled[bottom_edge_start_x:N, right_edge_start_y:M] = block_mean
+
+    return downsampled
+
+
+def corr(A, B):
+    return (np.abs(A.conj() * B)**2).sum()
