@@ -1,94 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import unitary_group
-from pianoq.misc.mplt import *
-from scipy.optimize import curve_fit
+# from pianoq.misc.mplt import *
+from pianoq.simulations.abstract_quantum_scaling.a_scaling_result import QScalingSimulationResult
 
 
-class KlyshkoBeaconSimulationResult(object):
-    def __init__(self):
-        self.ctrls = np.linspace(0, 1, 10)
-        self.klyshkos = []
-        self.klyshko_stds = []
-        self.beacon_one_ways = []
-        self.beacon_one_way_stds = []
-        self.beacon_two_ways = []
-        self.beacon_two_way_stds = []
-        self.QOPCs = []
-        self.QOPC_stds = []
-
-        self.T_mode = ''
-        self.incomplete_control_method = ''
-
-    def show(self, fits=None, show_legend=True):
-        dummy_x = np.linspace(self.ctrls[0], self.ctrls[-1], 100)
-        fig, ax = plt.subplots(figsize=(9, 4))
-        b1_lines = ax.errorbar(self.ctrls, self.beacon_one_ways, yerr=self.beacon_one_way_stds, fmt='o', label='classical')
-        klyshko_lines = ax.errorbar(self.ctrls, self.klyshkos, yerr=self.klyshko_stds, fmt='o', label='Klyshko optimization')
-        b2_lines = ax.errorbar(self.ctrls, self.beacon_two_ways, yerr=self.beacon_two_way_stds, fmt='o', label='double beacon')
-        QOPC_lines = ax.errorbar(self.ctrls, self.QOPCs, yerr=self.QOPC_stds, fmt='o', label='Quantum OPC')
-
-        if fits:
-            if isinstance(fits, bool):
-                k = True
-                b1 = True
-                b2 = True
-                qopc = True
-            else:
-                k, b1, b2, qopc = fits
-
-            fit_freedom = 0.02
-            pow = (2 if k else 1)
-            popt, pcov = curve_fit(lambda a, x: a * x ** pow, self.ctrls, self.klyshkos,
-                                   bounds=((np.pi/4)**2 - fit_freedom, (np.pi/4)**2 + fit_freedom))
-            ax.plot(dummy_x, popt[0] * dummy_x ** pow, linestyle='--', color=klyshko_lines[0].get_c())  # label='Klyshko sqr_fit',
-
-            pow = (2 if b1 else 1)
-            popt, pcov = curve_fit(lambda a, x: a * x ** pow, self.ctrls, self.beacon_one_ways,
-                                   bounds=(np.pi/4 - fit_freedom, np.pi/4 + fit_freedom))
-            ax.plot(dummy_x, popt[0] * dummy_x ** pow, linestyle='--', color=b1_lines[0].get_c())  # label='beacon 1 way sqr_fit',
-
-            pow = (2 if b2 else 1)
-            popt, pcov = curve_fit(lambda a, x: a * x ** pow, self.ctrls, self.beacon_two_ways,
-                                   bounds=((np.pi/4)**2 - fit_freedom, (np.pi/4)**2 + fit_freedom))
-            ax.plot(dummy_x, popt[0] * dummy_x ** pow, linestyle='--', color=b2_lines[0].get_c())  # , label='beacon 2 ways sqr_fit'
-
-            pow = (2 if qopc else 1)
-            popt, pcov = curve_fit(lambda a, x: a * x ** pow, self.ctrls, self.QOPCs,
-                                   bounds=(1 - fit_freedom, 1 + fit_freedom))
-            ax.plot(dummy_x, popt[0] * dummy_x ** pow, linestyle='--', color=QOPC_lines[0].get_c())  # label='QOPC sqr_fit'
-
-        ax.set_xlabel('Degree of control', size=18)
-        ax.set_ylabel('Phase only efficiency', size=18)
-        ax.axhline(y=1, color='c', linestyle='--')
-        ax.axhline(y=np.pi/4, color='g', linestyle='--')
-        ax.axhline(y=(np.pi/4)**2, color='b', linestyle='--')
-        ax.annotate(r'$\frac{\pi}{4}$', xy=(0.3, np.pi/4), xytext=(0.2, 0.9), arrowprops=dict(facecolor='black', shrink=0.05, width=2), fontsize=16)
-        ax.annotate(r'$\left(\frac{\pi}{4}\right)^{2}$', xy=(0.3, (np.pi/4)**2), xytext=(0.2, 0.4), arrowprops=dict(facecolor='black', shrink=0.05, width=2), fontsize=16)
-        ax.tick_params(axis='both', labelsize=16)
-
-        if show_legend:
-            fig.legend(loc='upper left')  # plt.rcParams['legend.loc'] = 'upper left'
-        # fig.suptitle(f'incomplete_method: {self.incomplete_control_method}, T_mode: {self.T_mode}')
-        fig.show()
-        return fig, ax
-
-
-def fit_sqr_and_linear(x, y):
-    lin_popt, lin_pcov = curve_fit(lambda a, x: a * x, x, y, bounds=(0, 5))
-    sqr_popt, sqr_pcov = curve_fit(lambda a, x: a * x**2, x, y, bounds=(0, 5))
-
-    fig, ax = plt.subplots()
-    ax.plot(x, y, 'o', label='klyshkos')
-    dummy_x = np.linspace(x[0], x[-1], 100)
-    ax.plot(dummy_x, lin_popt[0]*dummy_x, '--', label='lin_fit')
-    ax.plot(dummy_x, sqr_popt[0]*dummy_x**2, '--', label='sqr_fit')
-
-    fig.legend()
-    fig.show()
-
-
-class KlyshkoBeaconSimulation(object):
+class QScalingSimulation(object):
     """
         SLM is in real basis, also the diffuser is in real basis, and also measurement.
         The input state should be in Fourier basis, so the SLM will do something nontrivial.
@@ -215,7 +132,10 @@ class KlyshkoBeaconSimulation(object):
         if 0 < deg_of_control < 1:
             if self.incomplete_control_method == 'zero':
                 N_to_remove = round(self.N * (1-deg_of_control))
-                S[self.N-N_to_remove:] = 0
+                # make sure that the field from the zeroed and non-zeroed interfere constructively
+                global_phase = np.angle(at_slm[self.N-N_to_remove:].sum())
+                # Adding the global phase on the zeroed or non-zeroed is the same (up to a really global phase :))
+                S[self.N-N_to_remove:] = global_phase  # TODO: not quite working?
             elif self.incomplete_control_method == 'macro_pixels':
                 # see doc in similar below at self.get_optimal_beacon_conj()
                 macro_pixel_size = round(1 / deg_of_control)
@@ -229,7 +149,6 @@ class KlyshkoBeaconSimulation(object):
         elif deg_of_control == 0:
             # Global phase does nothing
             S = np.zeros(self.N)
-
 
         # dividing by 2 because we go twice on the SLM in Klyshko picture
         return S / 2
@@ -245,6 +164,7 @@ class KlyshkoBeaconSimulation(object):
         # returns angles (0, 2*pi)
         desired_vec = np.zeros(self.N, complex)
         desired_vec[O] = 1
+        # TODO: should this be T.transpose or T.dagger?
         at_slm = self.T.transpose() @ desired_vec
         angles_from_out = np.angle(at_slm)
 
@@ -264,7 +184,10 @@ class KlyshkoBeaconSimulation(object):
         if 0 < deg_of_control < 1:
             if self.incomplete_control_method == 'zero':
                 N_to_remove = round(self.N * (1-deg_of_control))
-                S[self.N-N_to_remove:] = 0
+                # make sure that the field from the zeroed and non-zeroed interfere constructively
+                global_phase = np.angle(at_slm[self.N-N_to_remove:].sum())
+                # Adding the global phase on the zeroed or non-zeroed is the same (up to a really global phase :))
+                S[self.N-N_to_remove:] = global_phase  # TODO: not quite working?
             elif self.incomplete_control_method == 'macro_pixels':
                 # Naively for a 2-pix macro-pixel I would put the average phase, but in practice I should give them
                 # weights according to their contribution to the final mode (their phasor arrow lengths). To do this I
@@ -362,7 +285,7 @@ class KlyshkoBeaconSimulation(object):
         return effs.mean(), effs.std()
 
     def run(self, N_average=10, N_ctrls=10, ctrls=()):
-        res = KlyshkoBeaconSimulationResult()
+        res = QScalingSimulationResult()
         res.T_mode = self.T_mode
         res.incomplete_control_method = self.incomplete_control_method
 
@@ -371,7 +294,7 @@ class KlyshkoBeaconSimulation(object):
         res.ctrls = ctrls
 
         for ctrl in ctrls:
-            print(ctrl)
+            # print(ctrl)
             eff, std = self.get_klyshko_efficiency(N_average=N_average, deg_of_control=ctrl)
             res.klyshkos.append(eff)
             res.klyshko_stds.append(std)
@@ -395,28 +318,6 @@ class KlyshkoBeaconSimulation(object):
 
         return res
 
-    def plot_res(self, S, axes=None):
-        if axes is None:
-            fig, axes = plt.subplots(1, 2, figsize=(9, 3))
-        final_mat = self.T @ np.diag(np.exp(1j*S))**2 @ self.T.transpose().conjugate()
-
-        X_MARKER_COLOR = '#929591'
-        X_MARKER_EDGEWITDH = 1.5
-
-        axes[0].set_title('original $T*T^t$')
-        imm = axes[0].imshow(np.abs(self.T @ self.T.transpose())**2)
-        axes[0].plot(self.O2, self.O1, '+', markeredgecolor=X_MARKER_COLOR, markersize=11, markeredgewidth=X_MARKER_EDGEWITDH)
-        axes[0].figure.colorbar(imm, ax=axes[0])
-
-        axes[1].set_title('optimized $T*S^2*T^t$')
-        imm = axes[1].imshow(np.abs(final_mat)**2)
-        axes[1].plot(self.O2, self.O1, '+', markeredgecolor=X_MARKER_COLOR, markersize=11, markeredgewidth=X_MARKER_EDGEWITDH)
-        axes[1].figure.colorbar(imm, ax=axes[1])
-        axes[1].figure.show()
-
-        print(S)
-        plt.show(block=False)
-
 
 if __name__ == "__main__":
     # S, all_costs = optimize_klyshko()
@@ -426,7 +327,7 @@ if __name__ == "__main__":
     # S2, all_costs = optimize_beacon()
     # fig, axes = plt.subplots(1, 2, figsize=(9, 3))
     # plot_res(S2, all_costs, axes)
-    s = KlyshkoBeaconSimulation(T_mode='gaus_iid')
+    s = QScalingSimulation(T_mode='gaus_iid')
     res = s.run(3, 20, 1 / np.linspace(1, 20, 20))
     res.show((False, False, True, False), show_legend=False)
     plt.show()
