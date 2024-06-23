@@ -85,4 +85,4 @@ def downsample_with_mean(data, block_size):
 
 
 def corr(A, B):
-    return (np.abs(A.conj() * B)**2).sum()
+    return np.abs((A.conj() * B).sum())
