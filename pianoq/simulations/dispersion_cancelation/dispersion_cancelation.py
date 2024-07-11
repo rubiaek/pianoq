@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 from pianoq.simulations.dispersion_cancelation.many_wl_fiber import ManyWavelengthFiber
 
 
@@ -6,13 +7,15 @@ def main():
     mode_mixing = 0
     dz = 50
 
-    s = ManyWavelengthFiber(wl0=0.810, Dwl=0.080, N_wl=161, fiber_L=5e6)
+    s = ManyWavelengthFiber(wl0=0.810, Dwl=0.080, N_wl=161, fiber_L=0.4e6)
     # s.run_PCCs_different_dz(dzs=(0, 20, 40, 60, 150))
-    s.run_PCCs_different_dz(dzs=(0, 20, 80))
+    s.run_PCCs_different_dz(dzs=(0, 20, 80), N_classical=5, N_klyshko=3)
 
 
 if __name__ == "__main__":
     main()
+
+plt.show()
 
 #
 # f = s.fibers[0]
