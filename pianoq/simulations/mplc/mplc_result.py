@@ -139,6 +139,11 @@ class MPLCResult:
             else:
                 self.__dict__[k] = v
         self.active_slice = tuple(self.active_slice)
+        if self.masks[0].shape != self.forward_fields.shape[-2:]:
+            new_masks = np.zeros((len(self.masks), *self.forward_fields.shape[-2:]))
+            m_shape = new_masks.shape
+            new_masks[:, m_shape[1] // 3: 2*m_shape[1] // 3, m_shape[2] // 3: 2*m_shape[2] // 3] = self.masks
+            self.masks = new_masks
         f.close()
 
     def saveto(self, path, smaller=True):
@@ -151,6 +156,11 @@ class MPLCResult:
                 bf = d.pop('backward_fields')
                 d['forward_fields'] = [ff[0], ff[-1]]
                 d['backward_fields'] = [bf[0], bf[-1]]
+
+                m_shape = self.masks.shape
+                new = self.masks[:, m_shape[1] // 3: 2 * m_shape[1] // 3, m_shape[2] // 3: 2 * m_shape[2] // 3]
+                d['masks'] = new
+
                 np.savez(f, **d)
                 del d
             else:

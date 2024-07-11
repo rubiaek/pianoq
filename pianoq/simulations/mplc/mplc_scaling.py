@@ -18,7 +18,7 @@ class MPLCScalingSimulation:
                        4=Diffuser+SLM1,
                        5=Diffuser, ...
                        10=Diffuser+SLM2]
-                       - flipUD -
+                       - flipUD + phase matching mirror -
                    MPLC2[0=diffuser,
                          1=diffuser, ...
                          6=diffuser,
