@@ -118,6 +118,7 @@ class MPLCScalingSimulation:
         return np.exp(1j*new_mask)
 
 
+"""
 path1 = "C:\\temp\\speckle_speckle3.mplc"
 path2 = "C:\\temp\\speckle_speckle4.mplc"
 s = MPLCScalingSimulation(path1, path2)
@@ -136,6 +137,7 @@ plt.show()
 # show_field(spot, active_slice=res.active_slice)
 # spot_power = ((np.abs(spot)**2)[res.active_slice]).sum()
 # print(f'{spot_power=}')
+"""
 
 # TODO: why do the speckles look weird.
 # TODO: given I will have some sort of CR mask - maybe next to the np.flipud also truncate the field?
