@@ -21,7 +21,7 @@ class PianoOptimization(object):
     def __init__(self, initial_exposure_time=450, saveto_path=None, roi=None, cost_function=None, cam_type='vimba', dac=None, cam=None,
                  good_piezo_indexes=np.arange(40), is_double_spot=False):
         ##########   CAREFULL CHANGING THIS VOLTAGE!!! #########
-        self.dac = dac or Edac40(max_piezo_voltage=120, ip=Edac40.DEFAULT_IP)
+        self.dac = dac or Edac40(max_piezo_voltage=70, ip=Edac40.DEFAULT_IP)
 
         self.cam_type = cam_type
         self.is_double_spot = is_double_spot

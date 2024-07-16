@@ -4,7 +4,8 @@ from pianoq.misc.borders import Borders
 from pianoq_results.image_result import VimbaImage
 
 try:
-    from vimba import Vimba
+    # from vimba import Vimba
+    import vmbpy
 except ImportError:
     print("can't use vimba camera")
 
@@ -22,7 +23,8 @@ class VimbaCamera(object):
         self.camera_num = camera_num
         self.borders = None
 
-        self._vimb = Vimba.get_instance()
+        # self._vimb = Vimba.get_instance()
+        self._vimb = vmbpy.VmbSystem.get_instance()
         self._vimb.__enter__()
         self._cam = self._vimb.get_all_cameras()[camera_num]
         self._cam.__enter__()
