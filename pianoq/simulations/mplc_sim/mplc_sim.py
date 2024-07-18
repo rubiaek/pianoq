@@ -1,9 +1,9 @@
 import numpy as np
 from tqdm import tqdm
-from pianoq.simulations.mplc.mplc_result import MPLCResult
+from pianoq.simulations.mplc_sim.mplc_result import MPLCResult
 
 
-class MPLC:
+class MPLCSim:
     """
         This class is mainly for performing the wavefront matching protocol, but I will also use it in general
         for propagating fields through many phase masks
@@ -224,12 +224,12 @@ class MPLC:
         if not backprop:
             start_plane = start_plane or 0
             end_plane = end_plane or self.N_planes - 1
-            assert start_plane <= end_plane, "If you want to plainly propagate backwards just create an mplc with " \
+            assert start_plane <= end_plane, "If you want to plainly propagate backwards just create an mplc_sim with " \
                                              "masks[::-1]"
         else:
             start_plane = start_plane or self.N_planes - 1
             end_plane = end_plane or 0
-            assert start_plane >= end_plane, "If you want to propagate backwards just create an mplc with masks[::-1]"
+            assert start_plane >= end_plane, "If you want to propagate backwards just create an mplc_sim with masks[::-1]"
 
         field = initial_field.copy()
 

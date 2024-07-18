@@ -1,9 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from pianoq.simulations.mplc.mplc_result import MPLCResult
-from pianoq.simulations.mplc.mplc import MPLC
-from pianoq.simulations.mplc.mplc_modes import get_spot_conf
-from pianoq.simulations.mplc.mplc_utils import show_field, downsample_with_mean, corr
+from pianoq.simulations.mplc_sim.mplc_result import MPLCResult
+from pianoq.simulations.mplc_sim.mplc_sim import MPLCSim
+from pianoq.simulations.mplc_sim.mplc_modes import get_spot_conf
+from pianoq.simulations.mplc_sim.mplc_utils import show_field, downsample_with_mean, corr
 
 
 class MPLCScalingSimulation:
@@ -49,10 +49,10 @@ class MPLCScalingSimulation:
         self.slm2_phase = 0
 
         # first is from fiber to crystal, second from crystal to collection
-        self.mplc = MPLC(conf=self.res.conf)
+        self.mplc = MPLCSim(conf=self.res.conf)
         self.mplc.res.masks = self.res.masks[::-1]
         self.mplc.dist_after_plane = self.mplc.dist_after_plane[::-1]
-        self.mplc2 = MPLC(conf=self.res2.conf)
+        self.mplc2 = MPLCSim(conf=self.res2.conf)
         self.mplc2.res.masks = self.res2.masks
 
     def set_intial_spot(self, sig=0.1, Dx0=0.0, Dy0=0.0):
@@ -119,8 +119,8 @@ class MPLCScalingSimulation:
 
 
 """
-path1 = "C:\\temp\\speckle_speckle3.mplc"
-path2 = "C:\\temp\\speckle_speckle4.mplc"
+path1 = "C:\\temp\\speckle_speckle3.mplc_sim"
+path2 = "C:\\temp\\speckle_speckle4.mplc_sim"
 s = MPLCScalingSimulation(path1, path2)
 s.set_intial_spot(sig=0.1, Dx0=-0.3, Dy0=-0.4)
 s.set_out_desired_spot(sig=0.6, Dx0=0.3, Dy0=0.5)
@@ -129,10 +129,10 @@ s.slm1_phase = s.get_fixing_phase_SLM(s.SLM1_plane)
 s.slm2_phase = s.get_fixing_phase_SLM(s.SLM2_plane)
 fixed_SLM1 = s.propagate_klyshko(use_slm1=True)
 fixed_SLM2 = s.propagate_klyshko(use_slm2=True)
-show_field(s.initial_field, active_slice=s.mplc.res.active_slice, title='initial_field')
-show_field(speckles, active_slice=s.mplc.res.active_slice, title='speckles')
-show_field(fixed_SLM1, active_slice=s.mplc.res.active_slice, title='fixed_SLM1')
-show_field(fixed_SLM2, active_slice=s.mplc.res.active_slice, title='fixed_SLM2')
+show_field(s.initial_field, active_slice=s.mplc_sim.res.active_slice, title='initial_field')
+show_field(speckles, active_slice=s.mplc_sim.res.active_slice, title='speckles')
+show_field(fixed_SLM1, active_slice=s.mplc_sim.res.active_slice, title='fixed_SLM1')
+show_field(fixed_SLM2, active_slice=s.mplc_sim.res.active_slice, title='fixed_SLM2')
 plt.show()
 # show_field(spot, active_slice=res.active_slice)
 # spot_power = ((np.abs(spot)**2)[res.active_slice]).sum()

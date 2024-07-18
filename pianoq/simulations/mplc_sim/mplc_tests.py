@@ -1,8 +1,8 @@
-from pianoq.simulations.mplc.mplc_utils import get_lens_mask
+from pianoq.simulations.mplc_sim.mplc_utils import get_lens_mask
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
-from pianoq.simulations.mplc.mplc import MPLC
+from pianoq.simulations.mplc_sim.mplc_sim import MPLCSim
 
 
 dist_after_plane = 87 * np.ones(6)
@@ -30,7 +30,7 @@ conf = {'wavelength': 810e-6,  # mm
 
 
 def test_freespace_prop():
-    mplc = MPLC(conf=conf)
+    mplc = MPLCSim(conf=conf)
     sig = 0.1
     sig2 = 0.2
     E_gaus = np.exp(-(mplc.XX ** 2 + mplc.YY ** 2) / (2 * sig ** 2)).astype(complex)
@@ -50,7 +50,7 @@ def test_freespace_prop():
 
 
 def test_k_filter():
-    mplc = MPLC(conf=conf)
+    mplc = MPLCSim(conf=conf)
     # create some random phase mask
     diffuser_pix_size = 0.05
     N_pixs_x = int(mplc.Nx * mplc.dx / diffuser_pix_size)
@@ -99,7 +99,7 @@ def test_k_filter():
 
 
 def test_lens(lens=True):
-    mplc = MPLC(conf=conf)
+    mplc = MPLCSim(conf=conf)
     sig = 0.5
     E_gaus = np.exp(-(mplc.XX ** 2 + mplc.YY ** 2) / (2 * sig ** 2)).astype(complex)
 
