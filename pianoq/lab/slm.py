@@ -14,6 +14,15 @@ configs = {
         # 'active_mask_slice': np.index_exp[430:630, 380:580]
         'active_mask_slice': np.index_exp[380:680, 350:650]
     },
+    49: {  # SLM no. 02 from Ori lab with 808
+        # TODO: corrected global phase corrections etc.
+        'correction_path': r"G:\My Drive\Projects\Klyshko Optimization\Equipment\02 Ori Katz\deformation_correction_pattern\CAL_LSH0801927_810nm.bmp",
+        'alpha': 213,
+        'geometry': '1272x1024+1913+-30',
+        'monitor': 0,  # If using slmpy
+        # 'active_mask_slice': np.index_exp[430:630, 380:580]
+        'active_mask_slice': np.index_exp[380:680, 350:650]
+    },
     1: {  # SLM no. 1 with 404nm
         'correction_path': r'F:\SLM-x13138-05\deformation_correction_pattern\CAL_LSH0801946_400nm.bmp',
         'alpha': 215,  # for 404nm, taken from the data sheet
