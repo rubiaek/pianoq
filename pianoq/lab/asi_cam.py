@@ -6,7 +6,7 @@ from astropy.io import fits
 import astropy.time
 
 # asi.init('C:\\code\\ASI_Windows_SDK_V1.22\\ASI SDK\\lib\\x64\\ASICamera2.dll')
-
+# asi.init(r"C:\Program Files\ASIStudio\ASICamera2.dll")
 
 class ASICam(object):
     def __init__(self, exposure=None, binning=None, image_bits=16, roi=None, gain=None, camno=0):
