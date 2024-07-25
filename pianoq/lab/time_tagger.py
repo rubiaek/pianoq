@@ -8,7 +8,8 @@ import numpy as np
 
 class QPTimeTagger(object):
     def __init__(self, integration_time=1, coin_window=1e-9,
-                 single_channels=(1, 2), single_channel_delays=None, coin_channels=((1, 2),)):
+                 single_channels=(1, 2), single_channel_delays=None, coin_channels=((1, 2),),
+                 remote=False, address='132.64.81.93:41101'):
         """
         :param coin_window: in seconds
         :param integration_time: in seconds
@@ -27,7 +28,10 @@ class QPTimeTagger(object):
             assert len(single_channels) == len(single_channel_delays)
 
         self.single_channel_delays = single_channel_delays
-        self.tagger = TimeTagger.createTimeTagger()
+        if remote:
+            self.tagger = TimeTagger.createTimeTaggerNetwork(address)
+        else:
+            self.tagger = TimeTagger.createTimeTagger()
 
         for i, chan in enumerate(single_channels):
             self.tagger.setInputDelay(chan, single_channel_delays[i])
