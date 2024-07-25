@@ -63,9 +63,11 @@ class ThorlabsRotatingServoMotor(KCubeDCServo):
 class ThorlabsKcubeDC(KCubeDCServo):
     SERIAL_1 = 27253522
 
-    def __init__(self, serial_number=None):
+    def __init__(self, serial_number=None, backlash=0., wait_after_move=0.1):
         serial_number = serial_number or self.SERIAL_1
         super().__init__(serial_number=serial_number)
+        self.backlash = backlash
+        self.wait_after_move = wait_after_move
 
         success = False
         for i in range(7):
@@ -90,6 +92,7 @@ class ThorlabsKcubeDC(KCubeDCServo):
 
         device.SetMoveRelativeDistance(Decimal(float(mm)))
         device.MoveRelative(timeout)
+        time.sleep(self.wait_after_move)
 
     def move_absolute(self, mm, timeout=30000):
         """ timeout in ms. send 0 for non-blocking. It is important to send float, and not some other np type..."""
@@ -98,7 +101,12 @@ class ThorlabsKcubeDC(KCubeDCServo):
             self.create()
             self.enable()
 
+        if self.backlash != 0:
+            device.MoveTo(Decimal(mm - self.backlash), timeout)
+            time.sleep(self.wait_after_move)
+
         device.MoveTo(Decimal(mm), timeout)
+        time.sleep(self.wait_after_move)
 
     def close(self):
         self.disable()
@@ -108,9 +116,11 @@ class ThorlabsKcubeDC(KCubeDCServo):
 class ThorlabsKcubeStepper(KCubeStepper):
     SERIAL_1 = 26001271
 
-    def __init__(self, serial_number=None):
+    def __init__(self, serial_number=None, backlash=0., wait_after_move=0.1):
         serial_number = serial_number or self.SERIAL_1
         super().__init__(serial_number=serial_number)
+        self.backlash = backlash
+        self.wait_after_move = wait_after_move
 
         success = False
         for i in range(7):
@@ -135,6 +145,7 @@ class ThorlabsKcubeStepper(KCubeStepper):
 
         device.SetMoveRelativeDistance(Decimal(float(mm)))
         device.MoveRelative(timeout)
+        time.sleep(self.wait_after_move)
 
     def move_absolute(self, mm, timeout=30000):
         """ timeout in ms. send 0 for non-blocking. It is important to send float, and not some other np type..."""
@@ -143,7 +154,13 @@ class ThorlabsKcubeStepper(KCubeStepper):
             self.create()
             self.enable()
 
+        if self.backlash != 0:
+            device.MoveTo(Decimal(mm - self.backlash), timeout)
+            time.sleep(self.wait_after_move)
+
         device.MoveTo(Decimal(mm), timeout)
+        time.sleep(self.wait_after_move)
+
 
     def close(self):
         self.disable()

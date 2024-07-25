@@ -61,6 +61,7 @@ class QPTimeTagger(object):
             data = [i[0] for i in data]
             single1, single2, coin = data
             if np.isnan(data).any():
+                print('nan issue in timetagger')
                 continue
             break
 
@@ -69,11 +70,12 @@ class QPTimeTagger(object):
     def read_interesting(self):
         while True:
             self.counter.clear()
-            time.sleep(0.05)  # Need to sleep a bit more than him so the data will get here
+            time.sleep(0.1)  # Need to sleep a bit more than him so the data will get here
             time.sleep(self.integration_time)
             data = self.counter.getDataNormalized()
             data = [i[0] for i in data]
             if np.isnan(data).any():
+                print('nan issue in timetagger')
                 continue
             break
         return data
