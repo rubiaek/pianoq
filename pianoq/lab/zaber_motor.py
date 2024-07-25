@@ -1,8 +1,38 @@
 import time
 import numpy as np
-from opticalsimulator.simulations.ronen.misc_utils import spiral_motor
+
+try:
+    from zaber_motion import Library, Units
+    from zaber_motion.ascii import Connection
+
+    Library.enable_device_db_store()
+except ImportError:
+    print('can\t use zaber motor')
+    raise
 
 SERIAL_PORT = "COM4"
+
+
+class _ZaberMotor:
+    def __init__(self, ax, connection):
+        self.connection = connection
+        self.ax = ax
+
+    def move_relative(self, mms, blocking=True):
+        self.ax.move_relative(mms, Units.LENGTH_MILLIMETRES, wait_until_idle=blocking)
+
+    def move_absolute(self, mms, blocking=True):
+        self.ax.move_absolute(mms, Units.LENGTH_MILLIMETRES, wait_until_idle=blocking)
+
+    def get_position(self):
+        return self.ax.get_position(Units.LENGTH_MILLIMETRES)
+
+    def home(self):
+        self.ax.home()
+
+    def close(self):
+        """ This will close the connection also with the other motors, which is almost always fine, just beware... """
+        self.connection.close()
 
 
 class ZaberMotors(object):
@@ -10,44 +40,10 @@ class ZaberMotors(object):
     MM_TO_ABS = 20997  # Moving 20997 in absolute moves 1 mm
 
     def __init__(self, serial_port=SERIAL_PORT, xy=True):
-
-        try:
-            from zaber_motion import Library, Units
-            from zaber_motion.ascii import Connection
-            Library.enable_device_db_store()
-        except ImportError:
-            print('can\t use zaber motor')
-            raise
-
         self.con = Connection.open_serial_port(serial_port)
         self.device_list = self.con.detect_devices()
         self.ax_list = [dev.get_axis(1) for dev in self.device_list]
-        self.xy = xy
-        if xy:
-            self.x_device, self.y_device = self.device_list
-            self.x_ax, self.y_ax = self.ax_list
-
-    def move_relative(self, ax, mms):
-        # move in mm units
-        ax.move_relative(mms, Units.LENGTH_MILLIMETRES)
-
-    def move_x(self, mms):
-        if not self.xy:
-            raise Exception('this will work only if self.xy ! ')
-        self.move_relative(self.x_ax, mms)
-
-    def move_y(self, mms):
-        if not self.xy:
-            raise Exception('this will work only if self.xy ! ')
-        self.move_relative(self.y_ax, mms)
-
-    def home(self):
-        for ax in self.ax_list:
-            ax.home()
-
-    def get_position(self):
-        return [ax.get_position() for ax in self.ax_list]
-
+        self.motors = [_ZaberMotor(ax, self.con) for ax in self.ax_list]
 
     def close(self):
         self.con.close()
