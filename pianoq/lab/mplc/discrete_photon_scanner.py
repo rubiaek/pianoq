@@ -166,10 +166,23 @@ def run_QKD():
     locs_y_idler = np.array([2.8, 2.42, 2.07, 1.68, 1.3]) + 0.8
     # locs_y_idler = [2.86, 2.5, 2.15, 1.76, 1.38]
     locs_idler = np.array(list(zip(locs_x_idler, locs_y_idler)))
+    locs_idler = np.array(
+        [(9.081526122279545, 3.4787419201802767),
+         (9.119479036944789, 3.8440387238332447),
+         (9.133711379944256, 4.223567870485679),
+         (9.1716642946095, 4.584120559805491),
+         (9.209617209274743, 4.954161477791615)]
+    )
 
     locs_x_signal = [11.559, 11.59, 11.6256, 11.652, 11.68]
     locs_y_signal = [8.784, 9.1338, 9.524, 9.884, 10.24]
     locs_signal = np.array(list(zip(locs_x_signal, locs_y_signal)))
+    locs_signal = np.array(
+        [(11.469852635948524, 8.413445116527308),
+         (11.455620292949058, 8.03866008420803),
+         (11.408179149617503, 7.673363280555061),
+         (11.393946806618038, 7.293834133902627),
+         (11.346505663286482, 6.923793215916503)])
 
     backlash = 0.0
     wait_after_move = 0.0
@@ -178,6 +191,7 @@ def run_QKD():
                                 backlash=backlash, wait_after_move=wait_after_move)
     dps.scan()
     dps.close()
+
 
 if __name__ == '__main__':
     run_QKD()
