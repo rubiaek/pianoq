@@ -6,6 +6,7 @@ from pianoq.lab.zaber_motor import ZaberMotors
 from pianoq.lab.thorlabs_motor import ThorlabsKcubeDC, ThorlabsKcubeStepper
 from pianoq.lab.mplc.consts import thorlabs_x_serial, thorlabs_y_serial
 
+DIR_PATH = r'G:\My Drive\People (1)\Ronen\PHD\MPLC\results'
 
 def idler_scan(name='', integration_time=1.0, coin_window=2e-9):
 
@@ -21,14 +22,13 @@ def idler_scan(name='', integration_time=1.0, coin_window=2e-9):
 
 
     timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-    dir_path = r'C:\temp'
-    path = f'{dir_path}\\{timestamp}_{name}.scan'
+    path = f'{DIR_PATH}\\{timestamp}_{name}.scan'
     scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
                             run_name=name, is_timetagger=True, coin_window=2e-9, saveto_path=path)
 
-    x_motor = ThorlabsKcubeDC(thorlabs_x_serial)
+    x_motor = ThorlabsKcubeDC(thorlabs_x_serial, backlash=0.2, wait_after_move=0.3)
     print('got x_motor!')
-    y_motor = ThorlabsKcubeStepper(thorlabs_y_serial)
+    y_motor = ThorlabsKcubeStepper(thorlabs_y_serial, backlash=0.2, wait_after_move=0.3)
     print('got y_motor!')
 
     time_tagger = QPTimeTagger(integration_time=integration_time, remote=True, coin_window=coin_window)
@@ -53,12 +53,11 @@ def signal_scan(name='', integration_time=1.0, coin_window=2e-9):
     pixel_size_y = 0.05
 
     timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-    dir_path = r'C:\temp'
-    path = f'{dir_path}\\{timestamp}_{name}.scan'
+    path = f'{DIR_PATH}\\{timestamp}_{name}.scan'
     scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
                             run_name=name, is_timetagger=True, coin_window=2e-9, saveto_path=path)
 
-    zaber_ms = ZaberMotors(backlash=0., wait_after_move=0.1)
+    zaber_ms = ZaberMotors(backlash=0.2, wait_after_move=0.3)
     x_motor = zaber_ms.motors[1]
     y_motor = zaber_ms.motors[0]
     print('Got motors!')
