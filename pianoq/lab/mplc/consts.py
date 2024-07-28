@@ -4,8 +4,8 @@ MASK_DIMS = (140, 360)
 
 MASK_CENTERS = [(), (), ()]
 
-thorlabs_x_serial = 26003414 # stepper
-thorlabs_y_serial = 27501989 # DC
+thorlabs_x_serial = 27501989 # DC
+thorlabs_y_serial = 26003414 # stepper
 
 # TODO: check XY
 # x = ThorlabsKcubeDC(27501989)

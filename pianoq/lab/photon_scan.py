@@ -1,7 +1,7 @@
 import time
 import datetime
 
-from pianoq.lab.power_meter100 import PowerMeterPM100
+# from pianoq.lab.power_meter100 import PowerMeterPM100
 from pianoq.lab.thorlabs_motor import ThorlabsKcubeDC, ThorlabsKcubeStepper
 from pianoq.lab.photon_counter import PhotonCounter
 

@@ -7,6 +7,7 @@ from matplotlib import pyplot as plt
 from pianoq.lab.thorlabs_motor import ThorlabsKcubeDC, ThorlabsKcubeStepper
 from pianoq.lab.zaber_motor import ZaberMotors
 from pianoq.lab.time_tagger import QPTimeTagger
+from pianoq.lab.mplc.consts import thorlabs_x_serial, thorlabs_y_serial
 
 LOGS_DIR  = "C:\\temp"
 
@@ -120,9 +121,9 @@ class DiscretePhotonScanner:
         self.m_sig_y = self.zaber_ms.motors[0]
         print("Got Zaber motors!")
 
-        self.m_idl_x = ThorlabsKcubeDC(27501989,
+        self.m_idl_x = ThorlabsKcubeDC(thorlabs_x_serial,
                                        backlash=self.res.backlash, wait_after_move=self.res.wait_after_move)
-        self.m_idl_y = ThorlabsKcubeStepper(26003414,
+        self.m_idl_y = ThorlabsKcubeStepper(thorlabs_y_serial,
                                             backlash=self.res.backlash, wait_after_move=self.res.wait_after_move)
         print("Got Thorlabs motors!")
 
