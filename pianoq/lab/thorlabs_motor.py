@@ -101,7 +101,7 @@ class ThorlabsKcubeDC(KCubeDCServo):
             self.create()
             self.enable()
 
-        if self.backlash != 0:
+        if self.backlash != 0.  :
             device.MoveTo(Decimal(mm - self.backlash), timeout)
             time.sleep(self.wait_after_move)
 
