@@ -1,20 +1,19 @@
-# TODO: fill and verifu
 SLM_DIMS = (1024, 1280)
 MASK_DIMS = (140, 360)
 
-MASK_CENTERS = [(), (), ()]
+CENTERS_X = [132, 386, 639, 891, 1143, 1143, 890, 639, 386, 132]  #
+CENTERS_Y = [279, 278, 276, 272, 268, 765, 768, 771, 774, 775]  # 17.7.24 with ronen fix retro X & Y
+
+MASK_CENTERS = zip(CENTERS_X, CENTERS_Y)
 
 thorlabs_x_serial = 27501989  # DC
 thorlabs_y_serial = 26003414  # stepper
 
-# TODO: check XY
-# x = ThorlabsKcubeDC(27501989)
-# y = ThorlabsKcubeStepper(26003414)
 
 """
-Idler - d1 - Thorlabs, lower numbers in y 
-Signal - d2 - Zaber, higher numbers in y (lower in picture) 
-
-pos1 = y
-pos2 = x  
+In Matlab:
+* Idler - d1 - Thorlabs, lower numbers in y 
+* Signal - d2 - Zaber, higher numbers in y (lower in picture) 
+* pos1 = y
+* pos2 = x  
 """

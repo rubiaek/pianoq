@@ -78,7 +78,7 @@ class DiscretePhotonScanner:
 def run_QKD():
     # assuming someone else put the good phase mask on the SLM
     locs_x_idler = np.array([9.1, 9.082, 9.042, 9.0173, 8.98])
-    locs_y_idler = np.array([2.8, 2.42, 2.07, 1.68, 1.3]) + 0.8
+    locs_y_idler = np.array([2.8, 2.42, 2.07, 1.68, 1.3])  # y prolemmatic (off by 1?)
     # locs_y_idler = [2.86, 2.5, 2.15, 1.76, 1.38]
     locs_idler = np.array(list(zip(locs_x_idler, locs_y_idler)))
     locs_idler = np.array(

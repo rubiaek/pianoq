@@ -8,6 +8,7 @@ from pianoq.lab.mplc.consts import thorlabs_x_serial, thorlabs_y_serial
 
 DIR_PATH = r'G:\My Drive\People (1)\Ronen\PHD\MPLC\results'
 
+
 def idler_scan(name='', integration_time=1.0, coin_window=2e-9):
 
     start_x = 8.75
@@ -69,6 +70,7 @@ def signal_scan(name='', integration_time=1.0, coin_window=2e-9):
     single1s, single2s, coincidences = scanner.scan(x_motor=x_motor, y_motor=y_motor, ph=time_tagger, use_power_meter=False)
     x_motor.close()
     time_tagger.close()
+
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
