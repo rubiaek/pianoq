@@ -1,94 +1,12 @@
-import time
 import datetime
-import traceback
-
 import numpy as np
-from matplotlib import pyplot as plt
 from pianoq.lab.thorlabs_motor import ThorlabsKcubeDC, ThorlabsKcubeStepper
 from pianoq.lab.zaber_motor import ZaberMotors
 from pianoq.lab.time_tagger import QPTimeTagger
 from pianoq.lab.mplc.consts import thorlabs_x_serial, thorlabs_y_serial
+from pianoq.lab.mplc.discrete_scan_result import DiscreetScanResult
 
-LOGS_DIR  = "C:\\temp"
-
-
-class DiscreetScanResult:
-    def __init__(self):
-        self.path = None
-        self.timestamp = None
-        self.locs_signal = None
-        self.locs_idler = None
-        self.integration_time = None
-        self.coin_window = None
-        self.single1s = None
-        self.single2s = None
-        self.coincidences = None
-        self.wait_after_move = None
-        self.backlash = None
-
-    @property
-    def real_coins(self):
-        return self.coincidences - self.accidentals
-
-    @property
-    def accidentals(self):
-        return 2*self.single1s*self.single2s*self.coin_window
-
-    def show(self, remove_accidentals=False):
-        fig, ax = plt.subplots()
-        if remove_accidentals:
-            imm = ax.imshow(self.real_coins)
-        else:
-            imm = ax.imshow(self.coincidences)
-        fig.colorbar(imm, ax=ax)
-        fig.show()
-
-    def saveto(self, path):
-        try:
-            f = open(path, 'wb')
-            np.savez(f,
-                     coincidences=self.coincidences,
-                     single1s=self.single1s,
-                     single2s=self.single2s,
-                     integration_time=self.integration_time,
-                     coin_window=self.coin_window,
-                     locs_signal=self.locs_signal,
-                     locs_idler=self.locs_idler,
-                     timestamp=self.timestamp,
-                     wait_after_move=self.wait_after_move,
-                     backlash=self.backlash)
-            f.close()
-        except Exception as e:
-            print("ERROR!!")
-            print(e)
-            traceback.print_exc()
-
-    def loadfrom(self, path=None):
-        if path is None:
-            path = self.path
-        if path is None:
-            raise Exception("No path")
-        path = path.strip('"')
-        path = path.strip("'")
-        self.path = path
-
-        f = open(path, 'rb')
-        data = np.load(f, allow_pickle=True)
-        self.coincidences = data['coincidences']
-        self.single1s = data['single1s']
-        self.single2s = data['single2s']
-        self.integration_time = data.get('integration_time', None)
-        self.coin_window = data.get('coin_window', 4e-9)
-        self.locs_signal = data['locs_signal']
-        self.locs_idler = data['locs_idler']
-        self.timestamp = data['timestamp']
-        self.wait_after_move = data['wait_after_move']
-        self.backlash = data['backlash']
-        f.close()
-
-    def reload(self):
-        self.loadfrom(self.path)
-
+LOGS_DIR = "C:\\temp"
 
 
 class DiscretePhotonScanner:
@@ -114,7 +32,6 @@ class DiscretePhotonScanner:
         self.time_tagger = None
         self._get_hardware()
 
-
     def _get_hardware(self):
         self.zaber_ms = ZaberMotors(backlash=self.res.backlash, wait_after_move=self.res.wait_after_move)
         self.m_sig_x = self.zaber_ms.motors[1]
@@ -136,7 +53,6 @@ class DiscretePhotonScanner:
         self.res.single2s = np.zeros_like(self.res.single1s)
         self.res.coincidences = np.zeros_like(self.res.single1s)
 
-
         for i, loc_sig in enumerate(self.res.locs_signal):
             self.m_sig_x.move_absolute(loc_sig[0])
             self.m_sig_y.move_absolute(loc_sig[1])
@@ -151,7 +67,6 @@ class DiscretePhotonScanner:
                 print(rf'{i}, {j}: {s1:.2f}, {s2:.2f}, {c12:.2f}')
 
             self.res.saveto(self.res.path)
-
 
     def close(self):
         self.zaber_ms.close()
