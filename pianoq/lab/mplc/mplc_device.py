@@ -23,7 +23,7 @@ class MPLCDevice:
         self.ax = None
         self.image = None
         self.init_fig()
-        self.background = self.fig.canvas.copy_from_bbox(self.axes.bbox)
+        self.background = self.fig.canvas.copy_from_bbox(self.ax.bbox)
 
     def init_fig(self):
         # copied from SLMDevice
@@ -63,7 +63,9 @@ class MPLCDevice:
         assert masks.shape == (10, MASK_DIMS[0], MASK_DIMS[1])
         for i in range(self.N_PLANES):
             self.slm_mask[self.mask_slices[i]] = masks[i]
+        self._update()
 
+    def _update(self):
         # phase -> 255, correction, and alpha
         phase = self.slm_mask * 255 / (2 * np.pi) + self.correction
         phase = phase * self.ALPHA / 255

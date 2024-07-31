@@ -16,10 +16,10 @@ def idler_scan(name='', integration_time=1.0, coin_window=2e-9):
     start_y = 1.2
     end_y = 5.2
 
-    x_pixels = 14
-    y_pixels = 80
-    pixel_size_x = 0.05
-    pixel_size_y = 0.05
+    x_pixels = 28
+    y_pixels = 160
+    pixel_size_x = 0.025
+    pixel_size_y = 0.025
 
 
     timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
@@ -48,10 +48,10 @@ def signal_scan(name='', integration_time=1.0, coin_window=2e-9):
     start_y = 6.5
     end_y = 10.5
 
-    x_pixels = 14
-    y_pixels = 80
-    pixel_size_x = 0.05
-    pixel_size_y = 0.05
+    x_pixels = 28
+    y_pixels = 160
+    pixel_size_x = 0.025
+    pixel_size_y = 0.025
 
     timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
     path = f'{DIR_PATH}\\{timestamp}_{name}.scan'

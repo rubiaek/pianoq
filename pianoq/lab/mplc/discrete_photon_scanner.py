@@ -1,12 +1,13 @@
 import datetime
 import numpy as np
+import matplotlib.pyplot as plt
 from pianoq.lab.thorlabs_motor import ThorlabsKcubeDC, ThorlabsKcubeStepper
 from pianoq.lab.zaber_motor import ZaberMotors
 from pianoq.lab.time_tagger import QPTimeTagger
 from pianoq.lab.mplc.consts import thorlabs_x_serial, thorlabs_y_serial
 from pianoq.lab.mplc.discrete_scan_result import DiscreetScanResult
 
-LOGS_DIR = "C:\\temp"
+LOGS_DIR = r"G:\My Drive\People\Ronen\PHD\MPLC\results"
 
 
 class DiscretePhotonScanner:
@@ -53,13 +54,14 @@ class DiscretePhotonScanner:
         self.res.single2s = np.zeros_like(self.res.single1s)
         self.res.coincidences = np.zeros_like(self.res.single1s)
 
-        for i, loc_sig in enumerate(self.res.locs_signal):
-            self.m_sig_x.move_absolute(loc_sig[0])
-            self.m_sig_y.move_absolute(loc_sig[1])
+        for i, loc_idl in enumerate(self.res.locs_idler):
+            self.m_idl_x.move_absolute(loc_idl[0])
+            self.m_idl_y.move_absolute(loc_idl[1])
 
-            for j, loc_idl in enumerate(self.res.locs_idler):
-                self.m_idl_x.move_absolute(loc_idl[0])
-                self.m_idl_y.move_absolute(loc_idl[1])
+            for j, loc_sig in enumerate(self.res.locs_signal):
+                self.m_sig_x.move_absolute(loc_sig[0])
+                self.m_sig_y.move_absolute(loc_sig[1])
+
                 s1, s2, c12 = self.time_tagger.read_interesting()
                 self.res.single1s[i, j] = s1
                 self.res.single2s[i, j] = s2
@@ -82,32 +84,37 @@ def run_QKD():
     # locs_y_idler = [2.86, 2.5, 2.15, 1.76, 1.38]
     locs_idler = np.array(list(zip(locs_x_idler, locs_y_idler)))
     locs_idler = np.array(
-        [(9.091014350945857, 3.492974263179743),
-         (9.105246693945322, 3.8487828381664),
-         (9.13845549427741, 4.218823756152524),
-         (9.152687837276877, 4.593608788471803),
-         (9.200128980608431, 4.954161477791615)]
+        [(9.078127869934999, 3.1259338321488515),
+         (9.052534495520005, 2.7471518908069443),
+         (9.011585096456015, 2.383725974114033),
+         (8.978313709716524, 2.0049440327721255),
+         (8.95272033530153, 1.6287214288717176)]
     )
 
     locs_x_signal = [11.559, 11.59, 11.6256, 11.652, 11.68]
     locs_y_signal = [8.784, 9.1338, 9.524, 9.884, 10.24]
     locs_signal = np.array(list(zip(locs_x_signal, locs_y_signal)))
     locs_signal = np.array(
-        [(11.47459675028168, 8.408701002194153),
-         (11.450876178615903, 8.03866008420803),
-         (11.40343503528435, 7.668619166221905),
-         (11.389202692284883, 7.298578248235783),
-         (11.351249777619639, 6.923793215916503)]
+        [(11.528657427216665, 8.774409886706874),
+         (11.56436061831159, 9.141642709397514),
+         (11.587312669729753, 9.508875532088153),
+         (11.62811631669538, 9.878658582714145),
+         (11.656168823984249, 10.245891405404784)]
     )
 
-    backlash = 0.
-    wait_after_move = 0.5
+    backlash = 0.2
+    wait_after_move = 0.3
 
-    dps = DiscretePhotonScanner(locs_signal, locs_idler, integration_time=4, remote_tagger=True, run_name='QKD_row3',
+    dps = DiscretePhotonScanner(locs_signal, locs_idler, integration_time=1, remote_tagger=True, run_name='QKD_row3',
                                 backlash=backlash, wait_after_move=wait_after_move)
     dps.scan()
     dps.close()
 
 
+    dps.res.show()
+    dps.res.show_singles()
+
+
 if __name__ == '__main__':
     run_QKD()
+    plt.show()
