@@ -3,14 +3,23 @@ import matplotlib.pyplot as plt
 import scipy.io
 from pianoq.lab.mplc.consts import MASK_CENTERS, MASK_DIMS, SLM_DIMS
 from pianoq.lab.mplc.utils import mask_centers_to_mask_slices
+import pygetwindow as gw
+
 
 CORRECTION_PATH = r"G:\My Drive\People\Ronen\PHD\MPLC\correction_pattern_14_12_22.mat"
 
 
 class MPLCDevice:
     N_PLANES = 10
-    GEOMETRY = '1272x1024+1913+-30'
+    GEOMETRY = '1920x1080+1913+-30'
     ALPHA = 213
+
+    # TODO: fine tune these, though they are already OK
+    FIG_OFFSET_X = 1910
+    FIG_OFFSET_Y = -40
+    FIG_WIDTH = 1300
+    FIG_HEIGHT  = 1080
+
 
     def __init__(self, mask_centers=MASK_CENTERS):
         self.mask_centers = mask_centers
@@ -22,6 +31,7 @@ class MPLCDevice:
         self.fig = None
         self.ax = None
         self.image = None
+        self.window = None
         self.init_fig()
         self.background = self.fig.canvas.copy_from_bbox(self.ax.bbox)
 
@@ -32,11 +42,17 @@ class MPLCDevice:
         self.fig.canvas.toolbar.pack_forget()
         # This pause is necessary to make sure the location of the windows is actually changed when using TeamViewer
         plt.pause(0.1)
-        self.fig.canvas.manager.window.geometry(self.GEOMETRY)
+        # self.fig.canvas.manager.window.geometry(self.GEOMETRY)
         self.ax.set_axis_off()
         self.image = self.ax.imshow(self.slm_mask, cmap='gray', vmin=0, vmax=255)
         self.fig.canvas.draw()
         self.fig.show()
+        self.window = gw.getWindowsWithTitle(self.fig.canvas.manager.window.wm_title())[0]
+        self._place_fig_in_place()
+
+    def _place_fig_in_place(self):
+        self.window.moveTo(self.FIG_OFFSET_X, self.FIG_OFFSET_Y)
+        self.window.resizeTo(self.FIG_WIDTH, self.FIG_HEIGHT)
 
     def update(self, masks_path, linear_tilts=True):
         """
