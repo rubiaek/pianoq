@@ -65,16 +65,24 @@ class MPLCDevice:
             self.slm_mask[self.mask_slices[i]] = masks[i]
         self._update()
 
-    def _update(self):
+    def load_ready_slm_mask(self, path):
+        A = scipy.io.loadmat(path)
+        Q = A['mask_total']
+        self.slm_mask = Q
+        self._update(_no_correction=True)
+
+    def _update(self, _no_correction=False):
         # phase -> 255, correction, and alpha
-        phase = self.slm_mask * 255 / (2 * np.pi) + self.correction
+        correction = 0 if _no_correction else self.correction
+
+        phase = self.slm_mask * 255 / (2 * np.pi) + correction
         phase = phase * self.ALPHA / 255
         # TODO: understand this line
         condition = phase > 255
         phase[condition] = np.mod(phase[condition]-(256-self.ALPHA), self.ALPHA) + (256-self.ALPHA)
 
         # original less sofisticated code:
-        # phase = np.mod(phase * 255 / (2 * np.pi) + self.correction, 256)
+        # phase = np.mod(phase * 255 / (2 * np.pi) + correction, 256)
         # phase = phase * self.alpha / 255
         # The current code makes supposedly better use of the dynamic range
 
