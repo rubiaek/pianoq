@@ -9,6 +9,7 @@ orig_masks_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.
 MASKS = scipy.io.loadmat(orig_masks_path)['MASKS']
 orig_phases_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\phase_align_QKD5d_10_11_23_3.mat"
 
+# This is the size_factor which is basically always 3 (3*MASK_DIMS)
 height, width = (1080, 420)
 assert MASKS[0].shape == (height, width)
 
