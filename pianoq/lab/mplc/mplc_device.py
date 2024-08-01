@@ -60,6 +60,7 @@ class MPLCDevice:
         f = open(masks_path, 'rb')
         data = np.load(f, allow_pickle=True)
         masks = data['masks']
+        f.close()
 
         self.slm_mask = np.zeros(SLM_DIMS)
 
@@ -75,8 +76,20 @@ class MPLCDevice:
         # add actual masks
         assert masks.shape == (10, MASK_DIMS[0], MASK_DIMS[1])
         for i in range(self.N_PLANES):
-            self.slm_mask[self.mask_slices[i]] = masks[i]
-        self._update()
+            mask = masks[i].copy()
+            mask -= mask.min()
+            # Moving the phase to start from zero, negative numbers produce jumps
+            mask += 0.01
+
+            if i > 4:  # Masks 6:10 are after retro-reflecting the light, but the retro only flips the up-down direction
+                mask = np.flipud(mask)
+
+            self.slm_mask[self.mask_slices[i]] = mask + self.correction[self.mask_slices[i]]
+            self.slm_mask[self.mask_slices[i]] -= self.slm_mask[self.mask_slices[i]].min()
+            # Moving the phase to start from zero, negative numbers produce jumps
+            self.slm_mask[self.mask_slices[i]] += 0.01
+        # We implemented the correction piecewise already in this function
+        self._update(_no_correction=True)
 
     def load_ready_slm_mask(self, path):
         A = scipy.io.loadmat(path)
@@ -85,7 +98,7 @@ class MPLCDevice:
         self._update(_no_correction=True)
 
     def _update(self, _no_correction=False):
-        final_mask = self._phase_to_final_mask(self.slm_mask)
+        final_mask = self._phase_to_final_mask(self.slm_mask, _no_correction=_no_correction)
 
         # restore background
         self.fig.canvas.restore_region(self.background)
