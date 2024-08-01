@@ -6,6 +6,7 @@ from pianoq.lab.zaber_motor import ZaberMotors
 from pianoq.lab.time_tagger import QPTimeTagger
 from pianoq.lab.mplc.consts import thorlabs_x_serial, thorlabs_y_serial
 from pianoq.lab.mplc.discrete_scan_result import DiscreetScanResult
+from pianoq.lab.mplc.mplc_device import MPLCDevice
 
 LOGS_DIR = r"G:\My Drive\People\Ronen\PHD\MPLC\results"
 
@@ -78,11 +79,10 @@ class DiscretePhotonScanner:
 
 
 def run_QKD():
-    # assuming someone else put the good phase mask on the SLM
-    locs_x_idler = np.array([9.1, 9.082, 9.042, 9.0173, 8.98])
-    locs_y_idler = np.array([2.8, 2.42, 2.07, 1.68, 1.3])  # y prolemmatic (off by 1?)
-    # locs_y_idler = [2.86, 2.5, 2.15, 1.76, 1.38]
-    locs_idler = np.array(list(zip(locs_x_idler, locs_y_idler)))
+
+    m = MPLCDevice()
+    m.load_ready_slm_mask(r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\total_phase_mask.mat")
+
     locs_idler = np.array(
         [(9.078127869934999, 3.1259338321488515),
          (9.052534495520005, 2.7471518908069443),
@@ -91,9 +91,6 @@ def run_QKD():
          (8.95272033530153, 1.6287214288717176)]
     )
 
-    locs_x_signal = [11.559, 11.59, 11.6256, 11.652, 11.68]
-    locs_y_signal = [8.784, 9.1338, 9.524, 9.884, 10.24]
-    locs_signal = np.array(list(zip(locs_x_signal, locs_y_signal)))
     locs_signal = np.array(
         [(11.528657427216665, 8.774409886706874),
          (11.56436061831159, 9.141642709397514),
@@ -109,12 +106,12 @@ def run_QKD():
                                 backlash=backlash, wait_after_move=wait_after_move)
     dps.scan()
     dps.close()
+    m.close()
 
 
     dps.res.show()
-    dps.res.show_singles()
+    # dps.res.show_singles()
 
 
 if __name__ == '__main__':
     run_QKD()
-    plt.show()

@@ -6,26 +6,21 @@ from pianoq.lab.mplc.utils import mask_centers_to_mask_slices
 import pygetwindow as gw
 
 
-CORRECTION_PATH = r"G:\My Drive\People\Ronen\PHD\MPLC\correction_pattern_14_12_22.mat"
+CORRECTION_PATH = r"G:\My Drive\People\Ronen\PHD\MPLC\technical\correction_pattern_14_12_22.mat"
+TITLE_BAR_HEIGHT = 32 # pixels
 
 
 class MPLCDevice:
     N_PLANES = 10
-    GEOMETRY = '1920x1080+1913+-30'
+    GEOMETRY = '1280x1024+1919+1'  # [width, height, x_offset, y_offset] pixel exact to Ohad MPLC class
     ALPHA = 213
 
-    # TODO: fine tune these, though they are already OK
-    FIG_OFFSET_X = 1910
-    FIG_OFFSET_Y = -40
-    FIG_WIDTH = 1300
-    FIG_HEIGHT  = 1080
-
-
-    def __init__(self, mask_centers=MASK_CENTERS):
+    def __init__(self, mask_centers=MASK_CENTERS, geometry=None):
         self.mask_centers = mask_centers
         self.mask_slices = mask_centers_to_mask_slices(self.mask_centers)
         self.slm_mask = np.zeros(SLM_DIMS)
         self.correction = scipy.io.loadmat(CORRECTION_PATH)['correction_final']
+        self.geometry = geometry or self.GEOMETRY
         assert self.correction.shape == SLM_DIMS
 
         self.fig = None
@@ -38,21 +33,25 @@ class MPLCDevice:
     def init_fig(self):
         # copied from SLMDevice
         self.fig = plt.figure(f'MPLC-Figure', frameon=False)
+
+        # Axes that fully fils the figure
         self.ax = self.fig.add_axes([0., 0., 1., 1., ])
+        # place figure in good place
+        self.fig.canvas.manager.window.geometry(self.geometry)
+        # remove toolbar
         self.fig.canvas.toolbar.pack_forget()
         # This pause is necessary to make sure the location of the windows is actually changed when using TeamViewer
         plt.pause(0.1)
-        # self.fig.canvas.manager.window.geometry(self.GEOMETRY)
         self.ax.set_axis_off()
+        self.ax.set_xticks([])
+        self.ax.set_yticks([])
+        self.ax.set_aspect('equal', adjustable='box')
+        # Removes menu bar
+        self.fig.canvas.manager.window.overrideredirect(True)
+
         self.image = self.ax.imshow(self.slm_mask, cmap='gray', vmin=0, vmax=255)
         self.fig.canvas.draw()
         self.fig.show()
-        self.window = gw.getWindowsWithTitle(self.fig.canvas.manager.window.wm_title())[0]
-        self._place_fig_in_place()
-
-    def _place_fig_in_place(self):
-        self.window.moveTo(self.FIG_OFFSET_X, self.FIG_OFFSET_Y)
-        self.window.resizeTo(self.FIG_WIDTH, self.FIG_HEIGHT)
 
     def update(self, masks_path, linear_tilts=True):
         """
@@ -115,3 +114,6 @@ class MPLCDevice:
         self.fig.canvas.blit(self.ax.bbox)
 
         plt.pause(0.001)
+
+    def close(self):
+        plt.close(self.fig)
