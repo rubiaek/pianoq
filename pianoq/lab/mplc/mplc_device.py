@@ -3,11 +3,9 @@ import matplotlib.pyplot as plt
 import scipy.io
 from pianoq.lab.mplc.consts import MASK_CENTERS, MASK_DIMS, SLM_DIMS
 from pianoq.lab.mplc.utils import mask_centers_to_mask_slices
-import pygetwindow as gw
 
 
 CORRECTION_PATH = r"G:\My Drive\People\Ronen\PHD\MPLC\technical\correction_pattern_14_12_22.mat"
-TITLE_BAR_HEIGHT = 32 # pixels
 
 
 class MPLCDevice:
@@ -18,7 +16,7 @@ class MPLCDevice:
     def __init__(self, mask_centers=MASK_CENTERS, geometry=None):
         self.mask_centers = mask_centers
         self.mask_slices = mask_centers_to_mask_slices(self.mask_centers)
-        self.slm_mask = np.zeros(SLM_DIMS)
+        self.slm_mask = np.zeros(SLM_DIMS)  # phase [rads]
         self.correction = scipy.io.loadmat(CORRECTION_PATH)['correction_final']
         self.geometry = geometry or self.GEOMETRY
         assert self.correction.shape == SLM_DIMS
@@ -87,10 +85,25 @@ class MPLCDevice:
         self._update(_no_correction=True)
 
     def _update(self, _no_correction=False):
+        final_mask = self._phase_to_final_mask(self.slm_mask)
+
+        # restore background
+        self.fig.canvas.restore_region(self.background)
+        self.image.set_data(final_mask)
+
+        # redraw just the points
+        self.ax.draw_artist(self.image)
+
+        # fill in the axes rectangle
+        self.fig.canvas.blit(self.ax.bbox)
+
+        plt.pause(0.001)
+
+    def _phase_to_final_mask(self, phase, _no_correction=False):
         # phase -> 255, correction, and alpha
         correction = 0 if _no_correction else self.correction
 
-        phase = self.slm_mask * 255 / (2 * np.pi) + correction
+        phase = phase * 255 / (2 * np.pi) + correction
         phase = phase * self.ALPHA / 255
         # TODO: understand this line
         condition = phase > 255
@@ -101,19 +114,8 @@ class MPLCDevice:
         # phase = phase * self.alpha / 255
         # The current code makes supposedly better use of the dynamic range
 
-        phase = np.uint8(phase)
-
-        # restore background
-        self.fig.canvas.restore_region(self.background)
-        self.image.set_data(phase)
-
-        # redraw just the points
-        self.ax.draw_artist(self.image)
-
-        # fill in the axes rectangle
-        self.fig.canvas.blit(self.ax.bbox)
-
-        plt.pause(0.001)
+        final_mask = np.uint8(phase)
+        return final_mask
 
     def close(self):
         plt.close(self.fig)

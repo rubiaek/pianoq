@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 
 
-def mimshow(im, title=None, aspect='auto', **args):
+def mimshow(im, title=None, aspect=None, **args):
     fig, ax = plt.subplots()
     imm = ax.imshow(im, aspect=aspect, **args)
     fig.colorbar(imm, ax=ax)
