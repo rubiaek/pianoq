@@ -14,10 +14,11 @@ class MPLCDevice:
     ALPHA = 213
 
     def __init__(self, mask_centers=MASK_CENTERS, geometry=None):
+        self.masks = []
         self.mask_centers = mask_centers
         self.mask_slices = mask_centers_to_mask_slices(self.mask_centers)
-        self.slm_mask = np.zeros(SLM_DIMS)  # phase [rads]
-        self.correction = scipy.io.loadmat(CORRECTION_PATH)['correction_final']
+        self.slm_mask = np.zeros(SLM_DIMS, dtype=float)  # phase [rads]
+        self.correction = scipy.io.loadmat(CORRECTION_PATH)['correction_final'].astype(float) * 2 * np.pi / 255
         self.geometry = geometry or self.GEOMETRY
         assert self.correction.shape == SLM_DIMS
 
@@ -51,55 +52,61 @@ class MPLCDevice:
         self.fig.canvas.draw()
         self.fig.show()
 
-    def update(self, masks_path, linear_tilts=True):
+    def load_masks(self, masks_path, linear_tilts=True):
         """
            The sending away of light from unwanted modes is the job of whoever supplies the masks.
            The masks will be of both upper and lower halves (signal and idler).
-           The masks will be 0-2*pi.
+           The masks will be in radians.
         """
+
+        self.slm_mask = self.create_slm_mask(masks_path=masks_path, linear_tilts=linear_tilts)
+        final_mask = self.convert_to_uint8(self.slm_mask)
+        # We implemented the correction piecewise already in `create_slm_mask`
+        self._update_screen(final_mask)
+
+    def load_slm_mask(self, path):
+        """ Load masks from Ohad WFM code """
+        data = scipy.io.loadmat(path)
+        self.slm_mask = data['mask_total']
+
+        final_mask = self.convert_to_uint8(self.slm_mask)
+        self._update_screen(final_mask)
+
+    def create_slm_mask(self, masks_path, linear_tilts=True):
         f = open(masks_path, 'rb')
         data = np.load(f, allow_pickle=True)
         masks = data['masks']
         f.close()
 
-        self.slm_mask = np.zeros(SLM_DIMS)
+        self.masks = masks
+        slm_mask = np.zeros(SLM_DIMS, dtype=float)
 
         # add opposite linear tilts on all SLM
         if linear_tilts:
-            _, y = np.meshgrid(np.arange(SLM_DIMS[1]), np.arange(SLM_DIMS[0]))
-            lin_tilt = -2 * np.pi * np.vstack((y[:SLM_DIMS[0]//2, :], -y[SLM_DIMS[0]//2:, :])) / 8
+            # +1 for compatibility with Ohad code
+            XX, YY = np.meshgrid(np.arange(SLM_DIMS[1]) + 1, np.arange(SLM_DIMS[0]) + 1)
+            lin_tilt = -2 * np.pi * np.vstack((YY[:SLM_DIMS[0]//2, :], -YY[SLM_DIMS[0]//2:, :])) / 8
             lin_tilt = lin_tilt - np.min(lin_tilt) + 0.01
-            lin_tilt = np.mod(lin_tilt, 2*np.pi)
 
-            self.slm_mask += lin_tilt
+            slm_mask += lin_tilt
 
         # add actual masks
         assert masks.shape == (10, MASK_DIMS[0], MASK_DIMS[1])
         for i in range(self.N_PLANES):
             mask = masks[i].copy()
-            mask -= mask.min()
             # Moving the phase to start from zero, negative numbers produce jumps
-            mask += 0.01
+            mask = mask - mask.min() + 0.01
 
             if i > 4:  # Masks 6:10 are after retro-reflecting the light, but the retro only flips the up-down direction
                 mask = np.flipud(mask)
 
-            self.slm_mask[self.mask_slices[i]] = mask + self.correction[self.mask_slices[i]]
-            self.slm_mask[self.mask_slices[i]] -= self.slm_mask[self.mask_slices[i]].min()
+            slm_mask[self.mask_slices[i]] = mask + self.correction[self.mask_slices[i]]
             # Moving the phase to start from zero, negative numbers produce jumps
-            self.slm_mask[self.mask_slices[i]] += 0.01
-        # We implemented the correction piecewise already in this function
-        self._update(_no_correction=True)
+            slm_mask[self.mask_slices[i]] = slm_mask[self.mask_slices[i]] - slm_mask[self.mask_slices[i]].min() + 0.01
 
-    def load_ready_slm_mask(self, path):
-        A = scipy.io.loadmat(path)
-        Q = A['mask_total']
-        self.slm_mask = Q
-        self._update(_no_correction=True)
+        return slm_mask
 
-    def _update(self, _no_correction=False):
-        final_mask = self._phase_to_final_mask(self.slm_mask, _no_correction=_no_correction)
-
+    def _update_screen(self, final_mask):
         # restore background
         self.fig.canvas.restore_region(self.background)
         self.image.set_data(final_mask)
@@ -112,23 +119,21 @@ class MPLCDevice:
 
         plt.pause(0.001)
 
-    def _phase_to_final_mask(self, phase, _no_correction=False):
-        # phase -> 255, correction, and alpha
-        correction = 0 if _no_correction else self.correction
-
-        phase = phase * 255 / (2 * np.pi) + correction
-        phase = phase * self.ALPHA / 255
+    def convert_to_uint8(self, phase_mask):
+        # phase -> 255 and alpha
+        phase_mask = phase_mask * 255 / (2 * np.pi)
+        phase_mask = phase_mask * self.ALPHA / 255
         # TODO: understand this line
-        condition = phase > 255
-        phase[condition] = np.mod(phase[condition]-(256-self.ALPHA), self.ALPHA) + (256-self.ALPHA)
+        condition = phase_mask > 255
+        phase_mask[condition] = np.mod(phase_mask[condition] - (256 - self.ALPHA), self.ALPHA) + (256 - self.ALPHA)
 
-        # original less sofisticated code:
+        # original less sophisticated code:
         # phase = np.mod(phase * 255 / (2 * np.pi) + correction, 256)
         # phase = phase * self.alpha / 255
         # The current code makes supposedly better use of the dynamic range
 
-        final_mask = np.uint8(phase)
-        return final_mask
+        uint_mask = np.uint8(phase_mask)
+        return uint_mask
 
     def close(self):
         plt.close(self.fig)

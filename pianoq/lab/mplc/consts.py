@@ -9,7 +9,7 @@ SPOT_WAIST_IN = 80e-6
 CENTERS_X = [132, 386, 639, 891, 1143, 1143, 890, 639, 386, 132]  #
 CENTERS_Y = [279, 278, 276, 272, 268, 765, 768, 771, 774, 775]  # 17.7.24 with ronen fix retro X & Y
 
-MASK_CENTERS = zip(CENTERS_X, CENTERS_Y)
+MASK_CENTERS = list(zip(CENTERS_X, CENTERS_Y))
 
 thorlabs_x_serial = 27501989  # DC
 thorlabs_y_serial = 26003414  # stepper
