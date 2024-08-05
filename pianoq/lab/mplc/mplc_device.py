@@ -14,10 +14,11 @@ class MPLCDevice:
     ALPHA = 213
 
     def __init__(self, mask_centers=MASK_CENTERS, geometry=None):
-        self.masks = []
+        self.masks = []  # exp(1j*phase)
+        self.slm_mask = np.zeros(SLM_DIMS, dtype=float)  # phase [rads]
+        self.uint_final_mask = np.zeros(SLM_DIMS, dtype=float)  # phase [1-255]
         self.mask_centers = mask_centers
         self.mask_slices = mask_centers_to_mask_slices(self.mask_centers)
-        self.slm_mask = np.zeros(SLM_DIMS, dtype=float)  # phase [rads]
         self.correction = scipy.io.loadmat(CORRECTION_PATH)['correction_final'].astype(float) * 2 * np.pi / 255
         self.geometry = geometry or self.GEOMETRY
         assert self.correction.shape == SLM_DIMS
@@ -66,22 +67,21 @@ class MPLCDevice:
         self.load_masks(masks, linear_tilts=linear_tilts)
 
     def load_masks(self, masks, linear_tilts=True):
+        self.masks = masks
         masks = np.angle(masks).astype(float)
         self.slm_mask = self.create_slm_mask(masks=masks, linear_tilts=linear_tilts)
-        final_mask = self.convert_to_uint8(self.slm_mask)
-        self._update_screen(final_mask)
+        self.uint_final_mask = self.convert_to_uint8(self.slm_mask)
+        self._update_screen(self.uint_final_mask)
 
     def load_slm_mask(self, path):
         """ Load full SLM mask from Ohad WFM code """
         data = scipy.io.loadmat(path)
         self.slm_mask = data['mask_total']
 
-        final_mask = self.convert_to_uint8(self.slm_mask)
-        self._update_screen(final_mask)
+        self.uint_final_mask = self.convert_to_uint8(self.slm_mask)
+        self._update_screen(self.uint_final_mask)
 
     def create_slm_mask(self, masks, linear_tilts=True):
-
-        self.masks = masks
         slm_mask = np.zeros(SLM_DIMS, dtype=float)
 
         # add opposite linear tilts on all SLM

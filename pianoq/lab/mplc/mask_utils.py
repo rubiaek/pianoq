@@ -65,8 +65,8 @@ def calc_pos_modes_in():
     return x_modes_in, y_modes_in
 
 
-def add_phase_input_spots(MASKS, phases):
-    masks = MASKS.copy()
+def add_phase_input_spots(masks, phases):
+    masks = masks.copy()
     XX, YY = make_grid_phasmask()
     x_modes_in, y_modes_in = calc_pos_modes_in()
 
@@ -77,8 +77,8 @@ def add_phase_input_spots(MASKS, phases):
     return masks
 
 
-def remove_input_modes(MASKS, modes_to_keep):
-    masks = MASKS.copy()
+def remove_input_modes(masks, modes_to_keep):
+    masks = masks.copy()
     XX, YY = make_grid_phasmask()
     x_modes_in, y_modes_in = calc_pos_modes_in()
 
@@ -92,7 +92,7 @@ def remove_input_modes(MASKS, modes_to_keep):
     return masks
 
 
-def load_masks_matlab(wfm_masks_path):
+def get_masks_matlab(wfm_masks_path):
     masks = scipy.io.loadmat(wfm_masks_path)['MASKS'].astype(complex)
     # This is the size_factor which is basically always 3 (3*MASK_DIMS)
     height, width = (1080, 420)
@@ -107,7 +107,7 @@ def load_masks_matlab(wfm_masks_path):
 
 """ 
 TEST:
-    from pianoq.lab.mplc.mask_utils import load_masks_matlab, remove_input_modes, add_phase_input_spots
+    from pianoq.lab.mplc.mask_utils import get_masks_matlab, remove_input_modes, add_phase_input_spots
     from pianoq.lab.mplc.mplc_device import MPLCDevice
     import matplotlib.pyplot as plt
     from pianoq.misc.mplt import *
@@ -115,7 +115,7 @@ TEST:
     wfm_masks_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\Masks_31_10_23_QKD5d_MUB2_mm_33_3_conjbases.mat"
     phases_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\phase_align_QKD5d_10_11_23_3.mat"
     modes_to_keep = np.array([3, 8, 13, 18, 23, 28, 33, 38, 43, 48])
-    masks = load_masks_matlab(wfm_masks_path=wfm_masks_path)
+    masks = get_masks_matlab(wfm_masks_path=wfm_masks_path)
     masks = remove_input_modes(masks, modes_to_keep=modes_to_keep)
     phases = np.squeeze(scipy.io.loadmat(phases_path)['phases'])
     masks = add_phase_input_spots(masks, phases)

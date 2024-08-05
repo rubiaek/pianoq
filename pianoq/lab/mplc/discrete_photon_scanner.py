@@ -8,7 +8,7 @@ from pianoq.lab.time_tagger import QPTimeTagger
 from pianoq.lab.mplc.consts import thorlabs_x_serial, thorlabs_y_serial
 from pianoq.lab.mplc.discrete_scan_result import DiscreetScanResult
 from pianoq.lab.mplc.mplc_device import MPLCDevice
-from pianoq.lab.mplc.mask_utils import remove_input_modes, add_phase_input_spots, load_masks_matlab
+from pianoq.lab.mplc.mask_utils import remove_input_modes, add_phase_input_spots, get_masks_matlab
 
 LOGS_DIR = r"G:\My Drive\People\Ronen\PHD\MPLC\results"
 
@@ -89,7 +89,7 @@ def run_QKD_row_3_3():
         wfm_masks_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\Masks_31_10_23_QKD5d_MUB2_mm_33_3_conjbases.mat"
         phases_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\phase_align_QKD5d_10_11_23_3.mat"
         modes_to_keep = np.array([3, 8, 13, 18, 22, 28, 33, 38, 43, 48])
-        masks = load_masks_matlab(wfm_masks_path=wfm_masks_path)
+        masks = get_masks_matlab(wfm_masks_path=wfm_masks_path)
         masks = remove_input_modes(masks, modes_to_keep=modes_to_keep)
         phases = np.squeeze(scipy.io.loadmat(phases_path)['phases'])
         masks = add_phase_input_spots(masks, phases)
