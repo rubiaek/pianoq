@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io
 from pianoq.lab.mplc.consts import MASK_CENTERS, MASK_DIMS, SLM_DIMS
-from pianoq.lab.mplc.utils import mask_centers_to_mask_slices
+from pianoq.lab.mplc.mask_utils import mask_centers_to_mask_slices
 
 
 CORRECTION_PATH = r"G:\My Drive\People\Ronen\PHD\MPLC\technical\correction_pattern_14_12_22.mat"
@@ -66,12 +66,13 @@ class MPLCDevice:
         self.load_masks(masks, linear_tilts=linear_tilts)
 
     def load_masks(self, masks, linear_tilts=True):
+        masks = np.angle(masks).astype(float)
         self.slm_mask = self.create_slm_mask(masks=masks, linear_tilts=linear_tilts)
         final_mask = self.convert_to_uint8(self.slm_mask)
         self._update_screen(final_mask)
 
     def load_slm_mask(self, path):
-        """ Load masks from Ohad WFM code """
+        """ Load full SLM mask from Ohad WFM code """
         data = scipy.io.loadmat(path)
         self.slm_mask = data['mask_total']
 

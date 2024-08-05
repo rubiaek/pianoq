@@ -1,13 +1,14 @@
 import datetime
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy.io
 from pianoq.lab.thorlabs_motor import ThorlabsKcubeDC, ThorlabsKcubeStepper
 from pianoq.lab.zaber_motor import ZaberMotors
 from pianoq.lab.time_tagger import QPTimeTagger
 from pianoq.lab.mplc.consts import thorlabs_x_serial, thorlabs_y_serial
 from pianoq.lab.mplc.discrete_scan_result import DiscreetScanResult
 from pianoq.lab.mplc.mplc_device import MPLCDevice
-from pianoq.lab.mplc.wfm_res_to_masks import matlab_WFM_masks_to_masks
+from pianoq.lab.mplc.mask_utils import remove_input_modes, add_phase_input_spots, load_masks_matlab
 
 LOGS_DIR = r"G:\My Drive\People\Ronen\PHD\MPLC\results"
 
@@ -79,15 +80,20 @@ class DiscretePhotonScanner:
         self.m_sig_y.close()
 
 
-def run_QKD():
+def run_QKD_row_3_3():
 
     m = MPLCDevice()
 
     flag = True
     if flag:
-        masks_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\Masks_31_10_23_QKD5d_MUB2_mm_33_3_conjbases.mat"
+        wfm_masks_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\Masks_31_10_23_QKD5d_MUB2_mm_33_3_conjbases.mat"
         phases_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\phase_align_QKD5d_10_11_23_3.mat"
-        masks = matlab_WFM_masks_to_masks(out_path=None, wfm_masks_path=masks_path, phases_path=phases_path)
+        modes_to_keep = np.array([3, 8, 13, 18, 22, 28, 33, 38, 43, 48])
+        masks = load_masks_matlab(wfm_masks_path=wfm_masks_path)
+        masks = remove_input_modes(masks, modes_to_keep=modes_to_keep)
+        phases = np.squeeze(scipy.io.loadmat(phases_path)['phases'])
+        masks = add_phase_input_spots(masks, phases)
+
         m.load_masks(masks, linear_tilts=True)
     else:
         total_mask_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\total_phase_mask.mat"
@@ -124,6 +130,6 @@ def run_QKD():
 
 
 if __name__ == '__main__':
-    run_QKD()
+    run_QKD_row_3_3()
     plt.show()
 

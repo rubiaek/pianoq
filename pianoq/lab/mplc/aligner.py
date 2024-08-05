@@ -1,6 +1,6 @@
 from pianoq.lab.slm import SLMDevice
 from pianoq.lab.mplc.consts import MASK_CENTERS, SLM_DIMS, MASK_DIMS
-from pianoq.lab.mplc.utils import mask_centers_to_mask_slices
+from pianoq.lab.mplc.mask_utils import mask_centers_to_mask_slices
 
 
 class MPLCAligner:
