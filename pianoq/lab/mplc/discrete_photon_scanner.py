@@ -9,6 +9,7 @@ from pianoq.lab.mplc.consts import thorlabs_x_serial, thorlabs_y_serial
 from pianoq.lab.mplc.discrete_scan_result import DiscreetScanResult
 from pianoq.lab.mplc.mplc_device import MPLCDevice
 from pianoq.lab.mplc.mask_utils import remove_input_modes, add_phase_input_spots, get_masks_matlab
+from pianoq.lab.mplc.phase_finder_result import PhaseFinderResult
 
 LOGS_DIR = r"G:\My Drive\People\Ronen\PHD\MPLC\results"
 
@@ -81,23 +82,27 @@ class DiscretePhotonScanner:
 
 
 def run_QKD_row_3_3():
-
-    m = MPLCDevice()
+    mplc = MPLCDevice()
 
     flag = True
     if flag:
-        wfm_masks_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\Masks_31_10_23_QKD5d_MUB2_mm_33_3_conjbases.mat"
-        phases_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\phase_align_QKD5d_10_11_23_3.mat"
-        modes_to_keep = np.array([3, 8, 13, 18, 23, 28, 33, 38, 43, 48])
-        masks = get_masks_matlab(wfm_masks_path=wfm_masks_path)
-        masks = remove_input_modes(masks, modes_to_keep=modes_to_keep)
-        phases = np.squeeze(scipy.io.loadmat(phases_path)['phases'])
-        masks = add_phase_input_spots(masks, phases)
+        # phases
+        # phases_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\phase_align_QKD5d_10_11_23_3.mat"
+        # phases = np.squeeze(scipy.io.loadmat(phases_path)['phases'])
+        phases_result = PhaseFinderResult()
+        phases_result.loadfrom(r"G:\My Drive\People\Ronen\PHD\MPLC\results\2024_08_05_14_00_00_good_QKD_row3_phases.phases")
 
-        m.load_masks(masks, linear_tilts=True)
+        wfm_masks_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\Masks_31_10_23_QKD5d_MUB2_mm_33_3_conjbases.mat"
+        masks = get_masks_matlab(wfm_masks_path=wfm_masks_path)
+
+        modes_to_keep = np.array([3, 8, 13, 18, 23, 28, 33, 38, 43, 48])
+        masks = remove_input_modes(masks, modes_to_keep=modes_to_keep)
+        masks = add_phase_input_spots(masks, phases_result.phases)
+
+        mplc.load_masks(masks, linear_tilts=True)
     else:
         total_mask_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\total_phase_mask.mat"
-        m.load_slm_mask(total_mask_path)
+        mplc.load_slm_mask(total_mask_path)
 
     locs_idler = np.array(
         [(9.078127869934999, 3.1259338321488515),

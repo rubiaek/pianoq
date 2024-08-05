@@ -29,6 +29,7 @@ def mask_centers_to_mask_slices(mask_centers):
 
 
 def make_grid_phasmask():
+    # Like Ohad did in the MPLC class, centered around 0
     Nx = MASK_DIMS[1]
     Ny = MASK_DIMS[0]
     dx = PIXEL_SIZE

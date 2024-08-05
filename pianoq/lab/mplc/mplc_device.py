@@ -73,10 +73,16 @@ class MPLCDevice:
         self.uint_final_mask = self.convert_to_uint8(self.slm_mask)
         self._update_screen(self.uint_final_mask)
 
-    def load_slm_mask(self, path):
+    def load_slm_mask_from_path(self, path, add_correction=False):
         """ Load full SLM mask from Ohad WFM code """
-        data = scipy.io.loadmat(path)
-        self.slm_mask = data['mask_total']
+        slm_mask = scipy.io.loadmat(path)['mask_total']
+        self.load_slm_mask(slm_mask, add_correction=add_correction)
+
+    def load_slm_mask(self, slm_mask, add_correction=False):
+        self.slm_mask = slm_mask.copy()
+        if add_correction:
+            self.slm_mask = self.slm_mask + self.correction
+            self.slm_mask = self.slm_mask - self.slm_mask.min() + 0.01
 
         self.uint_final_mask = self.convert_to_uint8(self.slm_mask)
         self._update_screen(self.uint_final_mask)
