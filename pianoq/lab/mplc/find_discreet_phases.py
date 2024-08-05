@@ -17,24 +17,25 @@ LOGS_DIR = r"G:\My Drive\People\Ronen\PHD\MPLC\results"
 
 
 class PhaseFinder(object):
-    def __init__(self, mplc, modes_to_keep, integration_time=1, remote_tagger=True, run_name='', N_phases=10, intial_phases=None, coin_window=2e-9):
+    def __init__(self, mplc, modes_to_keep, integration_time=1, remote_tagger=True, run_name='', N_phases=10, intial_phases=None, coin_window=2e-9, saveto_path=None):
+        self.mplc = mplc
+        self.orig_masks = mplc.masks.copy()
         self.res = PhaseFinderResult()
+        self.res.path = saveto_path or f"{LOGS_DIR}\\{self.res.timestamp}_{run_name}.phases"
         self.res.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
         self.res.integration_time = integration_time
-        self._get_hardware(remote_tagger=remote_tagger)
         self.res.run_name = run_name
         self.res.modes_to_keep = modes_to_keep
         self.res.N_phases = N_phases
-        self.mplc = mplc
-        self.orig_masks = mplc.masks.copy()
         self.res.phase_vec_step = 2*np.pi / self.res.N_phases
         self.res.phase_vec = np.linspace(0, 2*np.pi - self.res.phase_vec_step, self.res.N_phases)
-        self.res.corrs = np.zeros((self.res.modes_to_keep, self.res.N_phases))
-        self.res.single1s = np.zeros((self.res.modes_to_keep, self.res.N_phases))
-        self.res.single2s = np.zeros((self.res.modes_to_keep, self.res.N_phases))
+        self.res.coincidences = np.zeros((len(self.res.modes_to_keep), self.res.N_phases))
+        self.res.single1s = np.zeros((len(self.res.modes_to_keep), self.res.N_phases))
+        self.res.single2s = np.zeros((len(self.res.modes_to_keep), self.res.N_phases))
         self.res.coin_window = coin_window
-        self.initial_phases = intial_phases or np.zeros(N_SPOTS*2)
+        self.initial_phases = intial_phases if intial_phases is not None else np.zeros(N_SPOTS*2)
         self.res.phases = self.initial_phases
+        self._get_hardware(remote_tagger=remote_tagger)
 
     def _get_hardware(self, remote_tagger=True):
         self.zaber_ms = ZaberMotors()
@@ -51,8 +52,8 @@ class PhaseFinder(object):
         print("Got TimeTagger!")
 
     def find_phases(self):
-        for i, mode_no in self.res.modes_to_keep:
-            for j, phase in self.res.phase_vec:
+        for i, mode_no in enumerate(self.res.modes_to_keep):
+            for j, phase in enumerate(self.res.phase_vec):
                 # Python 0-based, and modes begin at 1
                 self.res.phases[mode_no-1] = phase
                 masks = add_phase_input_spots(self.orig_masks, self.res.phases)
@@ -63,9 +64,12 @@ class PhaseFinder(object):
                 self.res.single1s[i, j] = s1
                 self.res.single2s[i, j] = s2
                 self.res.coincidences[i, j] = c
+                print(f'{i},{j}')
 
-            phi_best = np.mod(np.angle(self.res.corrs[i, :] * np.exp(1j * self.res.phase_vec).T)+2*np.pi, 2*np.pi)
+            CC = (self.res.coincidences[i, :] * np.exp(1j * self.res.phase_vec)).sum()
+            phi_best = np.mod(np.angle(CC)+2*np.pi, 2*np.pi)
             self.res.phases[mode_no-1] = phi_best
+            self.res.saveto(self.res.path)
 
     def close(self):
         self.zaber_ms.close()
@@ -79,11 +83,11 @@ def QKD_row_3_3():
 
     wfm_masks_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\Masks_31_10_23_QKD5d_MUB2_mm_33_3_conjbases.mat"
     phases_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\phase_align_QKD5d_10_11_23_3.mat"
-    modes_to_keep = np.array([3, 8, 13, 18, 22, 28, 33, 38, 43, 48])
+    modes_to_keep = np.array([3, 8, 13, 18, 23, 28, 33, 38, 43, 48])
     masks = get_masks_matlab(wfm_masks_path=wfm_masks_path)
     masks = remove_input_modes(masks, modes_to_keep=modes_to_keep)
-    # phases = np.squeeze(scipy.io.loadmat(phases_path)['phases'])
-    phases = np.zeros(N_SPOTS*2)
+    phases = np.squeeze(scipy.io.loadmat(phases_path)['phases'])
+    # phases = np.zeros(N_SPOTS*2)
     m.load_masks(masks, linear_tilts=True)
 
     locs_idler = np.array(
@@ -104,13 +108,13 @@ def QKD_row_3_3():
 
     i = 0
     j = 0
-    pf = PhaseFinder(mplc=m, integration_time=4, remote_tagger=True, run_name='QKD_row3_phases',
-                     modes_to_keep=modes_to_keep, intial_phases=phases)
+    pf = PhaseFinder(mplc=m, integration_time=25, remote_tagger=True, run_name='QKD_row3_phases',
+                     modes_to_keep=modes_to_keep, intial_phases=phases, coin_window=2e-9)
     pf.m_idl_x.move_absolute(locs_idler[i, 0])
     pf.m_idl_y.move_absolute(locs_idler[j, 1])
     pf.m_sig_x.move_absolute(locs_signal[i, 0])
     pf.m_sig_y.move_absolute(locs_signal[j, 1])
-    time.sleep(0.5)
+    time.sleep(2)
 
     pf.find_phases()
 
