@@ -21,8 +21,8 @@ class PhaseFinder(object):
         self.mplc = mplc
         self.orig_masks = mplc.masks.copy()
         self.res = PhaseFinderResult()
-        self.res.path = saveto_path or f"{LOGS_DIR}\\{self.res.timestamp}_{run_name}.phases"
         self.res.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+        self.res.path = saveto_path or f"{LOGS_DIR}\\{self.res.timestamp}_{run_name}.phases"
         self.res.integration_time = integration_time
         self.res.run_name = run_name
         self.res.modes_to_keep = modes_to_keep
@@ -33,8 +33,8 @@ class PhaseFinder(object):
         self.res.single1s = np.zeros((len(self.res.modes_to_keep), self.res.N_phases))
         self.res.single2s = np.zeros((len(self.res.modes_to_keep), self.res.N_phases))
         self.res.coin_window = coin_window
-        self.initial_phases = intial_phases if intial_phases is not None else np.zeros(N_SPOTS*2)
-        self.res.phases = self.initial_phases
+        self.res.initial_phases = intial_phases if intial_phases is not None else np.zeros(N_SPOTS*2)
+        self.res.phases = self.res.initial_phases
         self._get_hardware(remote_tagger=remote_tagger)
 
     def _get_hardware(self, remote_tagger=True):
