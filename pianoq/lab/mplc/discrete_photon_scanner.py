@@ -109,10 +109,10 @@ def run_QKD():
          (11.656168823984249, 10.245891405404784)]
     )
 
-    backlash = 0.2
+    backlash = 0.0
     wait_after_move = 0.3
 
-    dps = DiscretePhotonScanner(locs_signal, locs_idler, integration_time=1, remote_tagger=True, run_name='QKD_row3',
+    dps = DiscretePhotonScanner(locs_signal, locs_idler, integration_time=4, remote_tagger=True, run_name='QKD_row3',
                                 backlash=backlash, wait_after_move=wait_after_move)
     dps.scan()
     dps.close()
@@ -125,3 +125,5 @@ def run_QKD():
 
 if __name__ == '__main__':
     run_QKD()
+    plt.show()
+
