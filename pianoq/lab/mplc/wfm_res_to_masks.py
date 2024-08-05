@@ -81,10 +81,10 @@ def matlab_WFM_masks_to_masks(out_path, orig_masks_path=ORIG_MASKS_PATH, orig_ph
 
 """
 TEST: 
-    from pianoq.lab.mplc.ohad_masks_to_my_masks import matlab_WFM_masks_to_ronen_masks
+    from pianoq.lab.mplc.wfm_res_to_masks import matlab_WFM_masks_to_masks
     from pianoq.lab.mplc.mplc_device import MPLCDevice
     plt.close('all')
-    matlab_WFM_masks_to_ronen_masks('C:\\temp\\r1.masks')
+    matlab_WFM_masks_to_masks('C:\\temp\\r1.masks')
     m = MPLCDevice()
     m.load_slm_mask(r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\total_phase_mask.mat")
     Q_m = m.convert_to_uint8(m.slm_mask)
