@@ -108,7 +108,7 @@ def QKD_row_3_3():
 
     i = 0
     j = 0
-    pf = PhaseFinder(mplc=m, integration_time=25, remote_tagger=True, run_name='QKD_row3_phases',
+    pf = PhaseFinder(mplc=m, integration_time=30, remote_tagger=True, run_name='QKD_row3_phases',
                      modes_to_keep=modes_to_keep, intial_phases=phases, coin_window=2e-9)
     pf.m_idl_x.move_absolute(locs_idler[i, 0])
     pf.m_idl_y.move_absolute(locs_idler[j, 1])

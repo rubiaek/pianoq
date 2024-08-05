@@ -90,7 +90,7 @@ def run_QKD_row_3_3():
         # phases_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\phase_align_QKD5d_10_11_23_3.mat"
         # phases = np.squeeze(scipy.io.loadmat(phases_path)['phases'])
         phases_result = PhaseFinderResult()
-        phases_result.loadfrom(r"G:\My Drive\People\Ronen\PHD\MPLC\results\2024_08_05_14_00_00_good_QKD_row3_phases.phases")
+        phases_result.loadfrom(r"G:\My Drive\People\Ronen\PHD\MPLC\results\2024_08_05_14_42_39_QKD_row3_phases.phases")
 
         wfm_masks_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\Masks_31_10_23_QKD5d_MUB2_mm_33_3_conjbases.mat"
         masks = get_masks_matlab(wfm_masks_path=wfm_masks_path)
@@ -123,11 +123,11 @@ def run_QKD_row_3_3():
     backlash = 0.0
     wait_after_move = 0.3
 
-    dps = DiscretePhotonScanner(locs_signal, locs_idler, integration_time=2, remote_tagger=True, run_name='QKD_row3',
+    dps = DiscretePhotonScanner(locs_signal, locs_idler, integration_time=4, remote_tagger=True, run_name='QKD_row3',
                                 backlash=backlash, wait_after_move=wait_after_move)
     dps.scan()
     dps.close()
-    m.close()
+    mplc.close()
 
 
     dps.res.show()
