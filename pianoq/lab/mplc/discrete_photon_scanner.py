@@ -7,6 +7,7 @@ from pianoq.lab.time_tagger import QPTimeTagger
 from pianoq.lab.mplc.consts import thorlabs_x_serial, thorlabs_y_serial
 from pianoq.lab.mplc.discrete_scan_result import DiscreetScanResult
 from pianoq.lab.mplc.mplc_device import MPLCDevice
+from pianoq.lab.mplc.wfm_res_to_masks import matlab_WFM_masks_to_masks
 
 LOGS_DIR = r"G:\My Drive\People\Ronen\PHD\MPLC\results"
 
@@ -32,9 +33,9 @@ class DiscretePhotonScanner:
         self.m_idl_x = None
         self.m_idl_y = None
         self.time_tagger = None
-        self._get_hardware()
+        self._get_hardware(remote_tagger=remote_tagger)
 
-    def _get_hardware(self):
+    def _get_hardware(self, remote_tagger=True):
         self.zaber_ms = ZaberMotors(backlash=self.res.backlash, wait_after_move=self.res.wait_after_move)
         self.m_sig_x = self.zaber_ms.motors[1]
         self.m_sig_y = self.zaber_ms.motors[0]
@@ -46,7 +47,7 @@ class DiscretePhotonScanner:
                                             backlash=self.res.backlash, wait_after_move=self.res.wait_after_move)
         print("Got Thorlabs motors!")
 
-        self.time_tagger = QPTimeTagger(integration_time=self.res.integration_time, remote=True)
+        self.time_tagger = QPTimeTagger(integration_time=self.res.integration_time, remote=remote_tagger)
         print("Got TimeTagger!")
 
     def scan(self):
@@ -81,7 +82,16 @@ class DiscretePhotonScanner:
 def run_QKD():
 
     m = MPLCDevice()
-    m.load_ready_slm_mask(r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\total_phase_mask.mat")
+
+    flag = True
+    if flag:
+        masks_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\Masks_31_10_23_QKD5d_MUB2_mm_33_3_conjbases.mat"
+        phases_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\phase_align_QKD5d_10_11_23_3.mat"
+        masks = matlab_WFM_masks_to_masks(out_path=None, wfm_masks_path=masks_path, phases_path=phases_path)
+        m.load_masks(masks, linear_tilts=True)
+    else:
+        total_mask_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\total_phase_mask.mat"
+        m.load_slm_mask(total_mask_path)
 
     locs_idler = np.array(
         [(9.078127869934999, 3.1259338321488515),

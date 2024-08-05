@@ -52,16 +52,22 @@ class MPLCDevice:
         self.fig.canvas.draw()
         self.fig.show()
 
-    def load_masks(self, masks_path, linear_tilts=True):
+    def load_masks_from_path(self, masks_path, linear_tilts=True):
         """
            The sending away of light from unwanted modes is the job of whoever supplies the masks.
            The masks will be of both upper and lower halves (signal and idler).
            The masks will be in radians.
         """
 
-        self.slm_mask = self.create_slm_mask(masks_path=masks_path, linear_tilts=linear_tilts)
+        f = open(masks_path, 'rb')
+        data = np.load(f, allow_pickle=True)
+        masks = data['masks']
+        f.close()
+        self.load_masks(masks, linear_tilts=linear_tilts)
+
+    def load_masks(self, masks, linear_tilts=True):
+        self.slm_mask = self.create_slm_mask(masks=masks, linear_tilts=linear_tilts)
         final_mask = self.convert_to_uint8(self.slm_mask)
-        # We implemented the correction piecewise already in `create_slm_mask`
         self._update_screen(final_mask)
 
     def load_slm_mask(self, path):
@@ -72,11 +78,7 @@ class MPLCDevice:
         final_mask = self.convert_to_uint8(self.slm_mask)
         self._update_screen(final_mask)
 
-    def create_slm_mask(self, masks_path, linear_tilts=True):
-        f = open(masks_path, 'rb')
-        data = np.load(f, allow_pickle=True)
-        masks = data['masks']
-        f.close()
+    def create_slm_mask(self, masks, linear_tilts=True):
 
         self.masks = masks
         slm_mask = np.zeros(SLM_DIMS, dtype=float)

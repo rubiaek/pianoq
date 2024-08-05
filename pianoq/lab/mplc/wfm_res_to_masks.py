@@ -51,8 +51,8 @@ def add_phase_input_spots(MASKS, phases_path):
     return masks
 
 
-def matlab_WFM_masks_to_masks(out_path, orig_masks_path=ORIG_MASKS_PATH, orig_phases_path=ORIG_PHASES_PATH):
-    MASKS = scipy.io.loadmat(orig_masks_path)['MASKS'].astype(complex)
+def matlab_WFM_masks_to_masks(out_path=None, wfm_masks_path=ORIG_MASKS_PATH, phases_path=ORIG_PHASES_PATH):
+    MASKS = scipy.io.loadmat(wfm_masks_path)['MASKS'].astype(complex)
     # This is the size_factor which is basically always 3 (3*MASK_DIMS)
     height, width = (1080, 420)
     assert MASKS[0].shape == (height, width)
@@ -71,12 +71,15 @@ def matlab_WFM_masks_to_masks(out_path, orig_masks_path=ORIG_MASKS_PATH, orig_ph
     modes_to_keep[5:] += (row_num_idler - 1)
 
     MASKS = remove_input_modes(MASKS, modes_to_keep=modes_to_keep)
-    MASKS = add_phase_input_spots(MASKS, orig_phases_path)
+    MASKS = add_phase_input_spots(MASKS, phases_path)
 
     MASKS = np.angle(MASKS).astype(float)
-    f = open(out_path, 'wb')
-    np.savez(f, masks=MASKS)
-    f.close()
+    if out_path is not None:
+        f = open(out_path, 'wb')
+        np.savez(f, masks=MASKS)
+        f.close()
+
+    return MASKS
 
 
 """

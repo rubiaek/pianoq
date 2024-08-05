@@ -74,7 +74,7 @@ def signal_scan(name='', integration_time=1.0, coin_window=2e-9):
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print('Usage: singless_scan.py <sig|idl>')
+        print('Usage: singles_scan.py <sig|idl>')
     if sys.argv[1] in ['sig', 'signal', 's']:
         signal_scan(integration_time=1, name=f'signal_scan', coin_window=2e-9)
     elif sys.argv[1] in ['idl', 'idler', 'i']:
