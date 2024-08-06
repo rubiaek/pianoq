@@ -29,7 +29,7 @@ imaging_configs = {
     '1to3w2': ([2], [1 / 2]),  # good
     '1to4w2': ([2], [2 / 3]),
     '1to4w3': ([3], [2 / 3]),  # good
-    '2to4w3': ([3], [1 / 2]),
+    '2to4w3': ([3], [1 / 2]),  #  This is for putting pi step in middle of 2 and of 4 and make sure that they are at the same place (after finding 1-5)
     '1to5w2': ([2], [3 / 4]),
     '1to5w3': ([3], [1]),
     '1to5w4': ([4], [3 / 4]),

@@ -83,11 +83,17 @@ class MPLCAligner:
 
         self.mplc.load_slm_mask(self.final_img, add_correction=True)
 
+    def update_interactive(self, imaging1='none', imaging2='none', pi_steps_x=(), pi_steps_y=(), pi_steps_plane=1):
+        # TODO: try -2,-1,0,1,2 pi steps, show them all, use ginput to get relevant line, and then show relevant slices so in 1d it is even easier to decide
+        # TODO: then get from user with input the final choice, and update centers_x, centers_y
+        pass
+
     def find_x(self, plane_no, begin_guess=None):
         # best ways to do the imaging for each plane
         begin_guess = begin_guess or self.centers_x[plane_no-1]
         if plane_no == 1:
-            # TODO: try -2,-1,0,1,2 pi steps, show them all, use ginput to get relevant line, and then show relevant slices so in 1d it is even easier to decide
-            # TODO: then get from user with input the fibal choice, and update centers_x, centers_y
-            self.update(imaging1='1to10w4', imaging2='none', pi_steps_x=begin_guess)
+            self.update(imaging1='1to5w4f', imaging2='5to11w8', pi_steps_x=begin_guess)
 
+
+
+# TODO: might be a off-by-pixel with the lens centers and WFM grid etc.

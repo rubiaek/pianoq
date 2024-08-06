@@ -249,3 +249,7 @@ class MPLCSim:
     def log(self, txt, level=3):
         if level >= self.min_log_level:
             print(txt)
+
+
+# PLanes of 140X360, with 10 modes.
+# can choose to do davka symmetry by taking the average of upper and lowwer after correct rotations

@@ -71,14 +71,14 @@ class MPLCScalingSimulation:
         if use_slm1:
             E_SLM1_plane *= np.exp(+1j*self.slm1_phase)
 
-        E_crystal_plane = self.mplc.propagate_mplc(initial_field=E_SLM1_plane, start_plane=self.SLM1_plane,
-                                                   prop_last_mask=True)
+        first_plane_plane = self.mplc.propagate_mplc(initial_field=E_SLM1_plane, start_plane=self.SLM1_plane,
+                                                     prop_last_mask=True)
 
         if use_slm2:
-            E_crystal_plane *= np.exp(+1j*self.slm2_phase)
+            first_plane_plane *= np.exp(+1j*self.slm2_phase)
 
         # flipping from 2f (anti-correlations)
-        E_crystal_plane = np.flipud(E_crystal_plane)
+        E_crystal_plane = np.fliplr(np.flipud(first_plane_plane))
 
         E_out = self.mplc2.propagate_mplc(initial_field=E_crystal_plane)
         self.out_field = E_out
