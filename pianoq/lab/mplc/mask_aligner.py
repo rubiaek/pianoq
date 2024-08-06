@@ -3,6 +3,7 @@ from pianoq.lab.mplc.mplc_device import MPLCDevice
 from pianoq.lab.mplc.mask_utils import mask_centers_to_mask_slices
 from pianoq.lab.mplc.consts import SLM_DIMS, MASK_CENTERS, \
     D_BETWEEN_PLANES, D_BETWEEN_PLANES2, WAVELENGTH, PIXEL_SIZE, K, imaging_configs, CENTERS_X, CENTERS_Y
+from pianoq.lab.pco_camera import PCOCamera
 
 # dimensions of each plane. Larger than what we use in WFM
 Dx = 200
@@ -49,6 +50,12 @@ class MPLCAligner:
         self.centers_y = CENTERS_Y
         self.XX, self.YY = np.meshgrid(np.arange(1280), np.arange(1024))
         self.final_img = np.zeros(SLM_DIMS)
+        self.cam = None
+
+        try:
+            self.cam = PCOCamera()
+        except Exception:
+            print('Could not connect to camera, interactive mode will not work')
 
     def update(self, imaging1='none', imaging2='none', pi_steps_x=(), pi_steps_y=(), pi_steps_plane=1, add_correction=True):
         # TODO: enable having pi_steps on multiple planes
@@ -85,10 +92,61 @@ class MPLCAligner:
 
         self.mplc.load_slm_mask(self.final_img, add_correction=add_correction)
 
-    def update_interactive(self, imaging1='none', imaging2='none', pi_steps_x=(), pi_steps_y=(), pi_steps_plane=1):
-        # TODO: try -2,-1,0,1,2 pi steps, show them all, use ginput to get relevant line, and then show relevant slices so in 1d it is even easier to decide
-        # TODO: then get from user with input the final choice, and update centers_x, centers_y
-        pass
+    def update_interactive(self, imaging1='none', imaging2='none', pi_step_x=None, pi_step_y=None, pi_steps_plane=1, D_res=100):
+        # 24*12.5=300 um so in y if the center is 272 and the magnification to this plane is 1,
+        # we will look at 272+-12. With other magnifications it will be not 12, so hard to automate
+        if not self.cam:
+            raise Exception('Must have camera connected for interactive mode')
+        if pi_steps_x and pi_steps_y:
+            raise Exception("Either pi_step_x or pi_steps_y in interactive mode")
+
+        self.update(imaging1=imaging1,
+                    imaging2=imaging2,
+                    pi_step_x=[pi_step_x] if pi_step_x else [],
+                    pi_step_y=[pi_step_y] if pi_step_y else [],
+                    pi_steps_plane=pi_steps_plane)
+
+        # inital find spots
+        fig, ax = plt.subplots()
+        A = self.cam.get_image()
+        ax.imshow(A)
+        ax.set_title('left-click around interesting')
+        fig.show()
+        loc = fig.ginput(n=1, timeout=0)
+        x0, y0 = loc[0]
+        x0, y0 = int(x0), int(y0)
+        plt.close(fig)
+
+        # Find exact location
+        fig, ax = plt.subplots()
+        roi = x0 - D_res, x0 + D_res, y0 - D_res, y0 + D_res
+        A = get_image(roi)
+        ax.imshow(A)
+        ax.set_title('left-click at pi step row/col interesting')
+        fig.show()
+        loc = fig.ginput(n=1, timeout=0)
+        x_cut, y_cut = loc[0]
+        x_cut, y_cut = int(x_cut), int(y_cut)
+        plt.close(fig)
+
+        initial_guess = pi_step_x if pi_step_x else pi_step_y
+        fig, axes = plt.subplots(2, 5)
+        for i, pix in enumerate(np.array([-2, -1, 0, 1, 2]) + initial_guess):
+            self.update(imaging1=imaging1,
+                        imaging2=imaging2,
+                        pi_step_x=[pix] if pi_step_x else [],
+                        pi_step_y=[pix] if pi_step_y else [],
+                        pi_steps_plane=pi_steps_plane)
+
+            im = self.cam.get_image(roi)
+            axes[0, i].imshow(self.cam.get_image(roi))
+            axes[0, i].set_title(f'pix = {pix}')
+            if pi_step_x:
+                axes[1, i].plot(im[x_cut, :])
+            else:
+                axes[1, i].plot(im[:, y_cut])
+
+        fig.show()
 
     def find_x(self, plane_no, begin_guess=None):
         # best ways to do the imaging for each plane
