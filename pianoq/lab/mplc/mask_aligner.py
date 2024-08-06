@@ -7,6 +7,8 @@ from pianoq.lab.mplc.consts import SLM_DIMS, MASK_CENTERS, \
 # dimensions of each plane. Larger than what we use in WFM
 Dx = 200
 Dy = 460
+Dx_pi_x = 250
+Dy_pi_y = 50
 
 
 def lenses_mplc(planes, f, center_x, center_y):
@@ -30,10 +32,10 @@ def lenses_mplc(planes, f, center_x, center_y):
         phase_lens = -K * (XX ** 2 + YY ** 2) / (2 * f[j] * D_BETWEEN_PLANES)
         phase_lens = phase_lens - np.min(phase_lens) + 0.01
 
-        y_start = center_y[plane-1] - Dy//2
-        y_end = center_y[plane-1] + Dy//2
-        x_start = center_x[plane-1] - Dx//2
-        x_end = center_x[plane-1] + Dx//2
+        y_start = center_y[plane-1] - Dy//2 - 1
+        y_end = center_y[plane-1] + Dy//2 - 1
+        x_start = center_x[plane-1] - Dx//2 - 1
+        x_end = center_x[plane-1] + Dx//2 - 1
 
         img[y_start:y_end, x_start:x_end] = phase_lens
 
@@ -48,7 +50,7 @@ class MPLCAligner:
         self.XX, self.YY = np.meshgrid(np.arange(1280), np.arange(1024))
         self.final_img = np.zeros(SLM_DIMS)
 
-    def update(self, imaging1='none', imaging2='none', pi_steps_x=(), pi_steps_y=(), pi_steps_plane=1):
+    def update(self, imaging1='none', imaging2='none', pi_steps_x=(), pi_steps_y=(), pi_steps_plane=1, add_correction=True):
         # TODO: enable having pi_steps on multiple planes
         planes, f = imaging_configs.get(imaging1, ([], []))
         planes2, f2 = imaging_configs.get(imaging2, ([], []))
@@ -62,9 +64,9 @@ class MPLCAligner:
         for pix_no in pi_steps_x:
             # XX - pix_no will be positive/negative for pixels above/below pix_now,
             # and I will have +-pi/2 which is a pi step
-            img1 = (np.sign(self.XX - pix_no)) * np.pi / 2
+            img1 = (np.sign(self.XX - pix_no + 1)) * np.pi / 2
             # stop the pi step at the edge of the plane
-            img1 = img1 * ((np.abs(self.YY - self.centers_y[pi_steps_plane - 1])) < Dy//2)
+            img1 = img1 * ((np.abs(self.YY - self.centers_y[pi_steps_plane - 1] + 1)) < Dx_pi_x)
 
             # It is actually better not to cut off the pi step on the other side, because it effectively
             # creates another unwanted pi-step
@@ -72,8 +74,8 @@ class MPLCAligner:
             img2 += img1
 
         for pix_no in pi_steps_y:
-            img1 = (np.sign(self.YY - pix_no)) * np.pi / 2
-            img1 = img1 * ((np.abs(self.XX - self.centers_x[pi_steps_plane - 1])) < Dx//2)
+            img1 = (np.sign(self.YY - pix_no + 1)) * np.pi / 2
+            img1 = img1 * ((np.abs(self.XX - self.centers_x[pi_steps_plane - 1] + 1)) < Dy_pi_y)
             # It is actually better not to cut off the pi step on the other side, because it effectively
             # creates another unwanted pi-step
             # img1 = img1 * ((np.abs(self.YY - self.centers_y[pi_steps_plane - 1])) < Dy//2)
@@ -81,7 +83,7 @@ class MPLCAligner:
 
         self.final_img = img_lenses1 + img_lenses2 + img2
 
-        self.mplc.load_slm_mask(self.final_img, add_correction=True)
+        self.mplc.load_slm_mask(self.final_img, add_correction=add_correction)
 
     def update_interactive(self, imaging1='none', imaging2='none', pi_steps_x=(), pi_steps_y=(), pi_steps_plane=1):
         # TODO: try -2,-1,0,1,2 pi steps, show them all, use ginput to get relevant line, and then show relevant slices so in 1d it is even easier to decide
