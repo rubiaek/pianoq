@@ -99,3 +99,32 @@ class MPLCAligner:
 
 
 # TODO: might be a off-by-pixel with the lens centers and WFM grid etc.
+
+"""
+TEST:
+    import scipy.io 
+    from pianoq.misc.mplt import *
+    from pianoq.lab.mplc.mask_aligner import MPLCAligner
+    ml = MPLCAligner()
+    
+    # Matlab 
+    mat = scipy.io.loadmat(r'G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\1to11.mat')['img2']
+    ml.mplc.load_slm_mask(mat, add_correction=True)
+    matlab_mat = ml.mplc.uint_final_mask
+    
+    # Python 
+    ml.update('1to6w4', '6to10w4f', pi_steps_y=[755, 775], pi_steps_plane=6, add_correction=True)
+    py_mat = ml.mplc.uint_final_mask
+    
+    # Show 
+    mimshow(matlab_mat, cmap='gray', title='matlab')
+    mimshow(py_mat, cmap='gray', title='python')
+    mimshow(matlab_mat - py_mat, cmap='gray', title='diff')
+    
+    # show 
+    # mimshow(mat, cmap='gray', title='matlab')
+    # mimshow(ml.mplc.slm_mask, cmap='gray', title='python')
+    # mimshow(mat - ml.mplc.slm_mask, cmap='gray', title='diff')
+    
+    # Python starts at +1 and ends at +1 (1000, 738) 
+"""
