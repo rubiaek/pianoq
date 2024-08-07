@@ -5,7 +5,7 @@ import scipy.io
 from pianoq.lab.thorlabs_motor import ThorlabsKcubeDC, ThorlabsKcubeStepper
 from pianoq.lab.zaber_motor import ZaberMotors
 from pianoq.lab.time_tagger import QPTimeTagger
-from pianoq.lab.mplc.consts import thorlabs_x_serial, thorlabs_y_serial, TIMETAGGER_DELAYS
+from pianoq.lab.mplc.consts import thorlabs_x_serial, thorlabs_y_serial, TIMETAGGER_DELAYS, TIMETAGGER_COIN_WINDOW
 from pianoq.lab.mplc.discrete_scan_result import DiscreetScanResult
 from pianoq.lab.mplc.mplc_device import MPLCDevice
 from pianoq.lab.mplc.mask_utils import remove_input_modes, add_phase_input_spots, get_masks_matlab
@@ -124,7 +124,7 @@ def run_QKD_row_3_3():
     backlash = 0.0
     wait_after_move = 0.3
 
-    dps = DiscretePhotonScanner(locs_signal, locs_idler, integration_time=4, remote_tagger=True, run_name='QKD_row3',
+    dps = DiscretePhotonScanner(locs_signal, locs_idler, integration_time=2, remote_tagger=True, run_name='QKD_row3',
                                 backlash=backlash, wait_after_move=wait_after_move)
     dps.scan()
     dps.close()
