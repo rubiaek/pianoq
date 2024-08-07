@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from pianoq.lab.mplc.mplc_device import MPLCDevice
 from pianoq.lab.mplc.mask_utils import mask_centers_to_mask_slices
 from pianoq.lab.mplc.consts import SLM_DIMS, MASK_CENTERS, \
@@ -12,7 +13,7 @@ Dx_pi_x = 250
 Dy_pi_y = 50
 
 
-def lenses_mplc(planes, f, center_x, center_y):
+def lenses_mplc(planes, f, centers_x, centers_y):
     """
     Adds quadratic phases to the desired places in the mplc.
 
@@ -33,10 +34,10 @@ def lenses_mplc(planes, f, center_x, center_y):
         phase_lens = -K * (XX ** 2 + YY ** 2) / (2 * f[j] * D_BETWEEN_PLANES)
         phase_lens = phase_lens - np.min(phase_lens) + 0.01
 
-        y_start = center_y[plane-1] - Dy//2 - 1
-        y_end = center_y[plane-1] + Dy//2 - 1
-        x_start = center_x[plane-1] - Dx//2 - 1
-        x_end = center_x[plane-1] + Dx//2 - 1
+        y_start = centers_y[plane-1] - Dy//2 - 1
+        y_end = centers_y[plane-1] + Dy//2 - 1
+        x_start = centers_x[plane-1] - Dx//2 - 1
+        x_end = centers_x[plane-1] + Dx//2 - 1
 
         img[y_start:y_end, x_start:x_end] = phase_lens
 
@@ -97,13 +98,13 @@ class MPLCAligner:
         # we will look at 272+-12. With other magnifications it will be not 12, so hard to automate
         if not self.cam:
             raise Exception('Must have camera connected for interactive mode')
-        if pi_steps_x and pi_steps_y:
+        if pi_step_x and pi_step_y:
             raise Exception("Either pi_step_x or pi_steps_y in interactive mode")
 
         self.update(imaging1=imaging1,
                     imaging2=imaging2,
-                    pi_step_x=[pi_step_x] if pi_step_x else [],
-                    pi_step_y=[pi_step_y] if pi_step_y else [],
+                    pi_steps_x=[pi_step_x] if pi_step_x else [],
+                    pi_steps_y=[pi_step_y] if pi_step_y else [],
                     pi_steps_plane=pi_steps_plane)
 
         # inital find spots
@@ -120,7 +121,7 @@ class MPLCAligner:
         # Find exact location
         fig, ax = plt.subplots()
         roi = x0 - D_res, x0 + D_res, y0 - D_res, y0 + D_res
-        A = get_image(roi)
+        A = self.cam.get_image(roi)
         ax.imshow(A)
         ax.set_title('left-click at pi step row/col interesting')
         fig.show()
@@ -134,8 +135,8 @@ class MPLCAligner:
         for i, pix in enumerate(np.array([-2, -1, 0, 1, 2]) + initial_guess):
             self.update(imaging1=imaging1,
                         imaging2=imaging2,
-                        pi_step_x=[pix] if pi_step_x else [],
-                        pi_step_y=[pix] if pi_step_y else [],
+                        pi_steps_x=[pix] if pi_step_x else [],
+                        pi_steps_y=[pix] if pi_step_y else [],
                         pi_steps_plane=pi_steps_plane)
 
             im = self.cam.get_image(roi)
