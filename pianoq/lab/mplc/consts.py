@@ -22,6 +22,9 @@ MASK_CENTERS = list(zip(CENTERS_X, CENTERS_Y))
 thorlabs_x_serial = 27501989  # DC
 thorlabs_y_serial = 26003414  # stepper
 
+TIMETAGGER_DELAYS = (0, 300)
+TIMETAGGER_COIN_WINDOW = 2e-9
+
 
 # contains plane numbers and focal lengths
 imaging_configs = {

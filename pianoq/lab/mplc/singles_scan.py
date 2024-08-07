@@ -4,7 +4,7 @@ from pianoq.lab.photon_scan import PhotonScanner
 from pianoq.lab.time_tagger import QPTimeTagger
 from pianoq.lab.zaber_motor import ZaberMotors
 from pianoq.lab.thorlabs_motor import ThorlabsKcubeDC, ThorlabsKcubeStepper
-from pianoq.lab.mplc.consts import thorlabs_x_serial, thorlabs_y_serial
+from pianoq.lab.mplc.consts import thorlabs_x_serial, thorlabs_y_serial, TIMETAGGER_DELAYS, TIMETAGGER_COIN_WINDOW
 
 DIR_PATH = r'G:\My Drive\People (1)\Ronen\PHD\MPLC\results'
 
@@ -32,7 +32,9 @@ def idler_scan(name='', integration_time=1.0, coin_window=2e-9):
     y_motor = ThorlabsKcubeStepper(thorlabs_y_serial, backlash=0.2, wait_after_move=0.3)
     print('got y_motor!')
 
-    time_tagger = QPTimeTagger(integration_time=integration_time, remote=True, coin_window=coin_window)
+    time_tagger = QPTimeTagger(integration_time=integration_time, remote=True,
+                               coin_window=coin_window or TIMETAGGER_COIN_WINDOW,
+                               single_channel_delays=TIMETAGGER_DELAYS)
     # TODO: timetagger delay of -300 ps?
     print('got timetagger!')
 
@@ -63,7 +65,9 @@ def signal_scan(name='', integration_time=1.0, coin_window=2e-9):
     y_motor = zaber_ms.motors[0]
     print('Got motors!')
 
-    time_tagger = QPTimeTagger(integration_time=integration_time, remote=True, coin_window=coin_window)
+    time_tagger = QPTimeTagger(integration_time=integration_time, remote=True,
+                               coin_window=coin_window or TIMETAGGER_COIN_WINDOW,
+                               single_channel_delays=TIMETAGGER_DELAYS)
     # TODO: timetagger delay of -300 ps?
     print('got timetagger!')
 

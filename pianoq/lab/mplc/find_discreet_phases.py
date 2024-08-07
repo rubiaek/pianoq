@@ -10,7 +10,7 @@ from pianoq.lab.time_tagger import QPTimeTagger
 from pianoq.lab.mplc.consts import thorlabs_x_serial, thorlabs_y_serial
 from pianoq.lab.mplc.mplc_device import MPLCDevice
 from pianoq.lab.mplc.mask_utils import get_masks_matlab, add_phase_input_spots, remove_input_modes
-from pianoq.lab.mplc.consts import N_SPOTS
+from pianoq.lab.mplc.consts import N_SPOTS, TIMETAGGER_DELAYS, TIMETAGGER_COIN_WINDOW
 from pianoq.lab.mplc.phase_finder_result import PhaseFinderResult
 
 LOGS_DIR = r"G:\My Drive\People\Ronen\PHD\MPLC\results"
@@ -48,7 +48,8 @@ class PhaseFinder(object):
         print("Got Thorlabs motors!")
 
         self.time_tagger = QPTimeTagger(integration_time=self.res.integration_time, remote=remote_tagger,
-                                        coin_window=self.res.coin_window)
+                                        coin_window=self.res.coin_window or TIMETAGGER_COIN_WINDOW,
+                                        single_channel_delays=TIMETAGGER_DELAYS)
         print("Got TimeTagger!")
 
     def find_phases(self):

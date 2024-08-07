@@ -31,8 +31,9 @@ mys.close()
 
 # Timetagger
 from pianoq.lab.time_tagger import QPTimeTagger
-integration_time = 1
-tt = QPTimeTagger(integration_time=integration_time, remote=True)
+from pianoq.lab.mplc.consts import TIMETAGGER_DELAYS, TIMETAGGER_COIN_WINDOW
+tt = QPTimeTagger(integration_time=1, remote=True,
+                  single_channel_delays=TIMETAGGER_DELAYS, coin_window=TIMETAGGER_COIN_WINDOW)
 
 # MPLC
 from pianoq.lab.mplc.mplc_device import MPLCDevice

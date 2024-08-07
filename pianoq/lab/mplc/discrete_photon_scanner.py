@@ -5,7 +5,7 @@ import scipy.io
 from pianoq.lab.thorlabs_motor import ThorlabsKcubeDC, ThorlabsKcubeStepper
 from pianoq.lab.zaber_motor import ZaberMotors
 from pianoq.lab.time_tagger import QPTimeTagger
-from pianoq.lab.mplc.consts import thorlabs_x_serial, thorlabs_y_serial
+from pianoq.lab.mplc.consts import thorlabs_x_serial, thorlabs_y_serial, TIMETAGGER_DELAYS
 from pianoq.lab.mplc.discrete_scan_result import DiscreetScanResult
 from pianoq.lab.mplc.mplc_device import MPLCDevice
 from pianoq.lab.mplc.mask_utils import remove_input_modes, add_phase_input_spots, get_masks_matlab
@@ -49,7 +49,8 @@ class DiscretePhotonScanner:
                                             backlash=self.res.backlash, wait_after_move=self.res.wait_after_move)
         print("Got Thorlabs motors!")
 
-        self.time_tagger = QPTimeTagger(integration_time=self.res.integration_time, remote=remote_tagger)
+        self.time_tagger = QPTimeTagger(integration_time=self.res.integration_time, remote=remote_tagger,
+                                        single_channel_delays=TIMETAGGER_DELAYS, coin_window=TIMETAGGER_COIN_WINDOW)
         print("Got TimeTagger!")
 
     def scan(self):
