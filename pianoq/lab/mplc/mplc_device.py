@@ -37,7 +37,7 @@ class MPLCDevice:
         # Axes that fully fils the figure
         self.ax = self.fig.add_axes([0., 0., 1., 1., ])
         # place figure in good place
-        self.fig.canvas.manager.window.geometry(self.geometry)
+        self.restore_location()
         # remove toolbar
         self.fig.canvas.toolbar.pack_forget()
         # This pause is necessary to make sure the location of the windows is actually changed when using TeamViewer
@@ -52,6 +52,11 @@ class MPLCDevice:
         self.image = self.ax.imshow(self.slm_mask, cmap='gray', vmin=0, vmax=255)
         self.fig.canvas.draw()
         self.fig.show()
+        self.restore_location()
+
+    def restore_location(self, geometry=None):
+        geom = geometry or self.geometry
+        self.fig.canvas.manager.window.geometry(self.geometry)
 
     def load_masks_from_path(self, masks_path, linear_tilts=True):
         """

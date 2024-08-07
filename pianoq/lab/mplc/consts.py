@@ -12,8 +12,10 @@ D2 = D_BETWEEN_PLANES2 = 138e-3  # in m, distance between planes 5 and 6 +-7mm..
 WAVELENGTH = 810e-9
 K = 2*np.pi/WAVELENGTH
 
+# CENTERS_X = [132, 386, 639, 891, 1143, 1143, 890, 639, 386, 132]  #
+# CENTERS_Y = [279, 278, 276, 272, 268, 765, 768, 771, 774, 775]  # 17.7.24 with ronen fix retro X & Y
 CENTERS_X = [132, 386, 639, 891, 1143, 1143, 890, 639, 386, 132]  #
-CENTERS_Y = [279, 278, 276, 272, 268, 765, 768, 771, 774, 775]  # 17.7.24 with ronen fix retro X & Y
+CENTERS_Y = [279, 278, 276, 272, 268, 765, 768, 771, 774, 775]  # 07.08.24 ronen with python
 
 MASK_CENTERS = list(zip(CENTERS_X, CENTERS_Y))
 
