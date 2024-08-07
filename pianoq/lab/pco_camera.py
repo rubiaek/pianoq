@@ -50,10 +50,10 @@ class PCOCamera:
 
     def set_exposure_time(self, exposure_time):
         """ Set exposure_time in seconds"""
-        return self._cam.set_exposure_time(exposure_time)
+        self._cam.exposure_time = exposure_time
 
     def get_exposure_time(self):
-        """ Get exposure_time in seconds"""
+        """ Get exposure_time in seconds
         d = self._cam.sdk.get_delay_exposure_time()
         exposure = d['exposure']
         timebase = d['exposure timebase']
@@ -62,7 +62,8 @@ class PCOCamera:
         elif timebase == 'us':
             exposure *= 1e-6
         elif timebase == 'ns':
-            exposure *= 1e-9
+            exposure *= 1e-9"""
+        return self._cam.exposure_time
         return exposure
 
     def close(self):

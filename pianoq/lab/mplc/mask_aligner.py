@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 import matplotlib.pyplot as plt
 from pianoq.lab.mplc.mplc_device import MPLCDevice
@@ -45,7 +47,7 @@ def lenses_mplc(planes, f, centers_x, centers_y):
 
 
 class MPLCAligner:
-    def __init__(self):
+    def __init__(self, use_cam=False):
         self.mplc = MPLCDevice()
         self.centers_x = CENTERS_X
         self.centers_y = CENTERS_Y
@@ -53,10 +55,12 @@ class MPLCAligner:
         self.final_img = np.zeros(SLM_DIMS)
         self.cam = None
 
-        try:
-            self.cam = PCOCamera()
-        except Exception:
-            print('Could not connect to camera, interactive mode will not work')
+        if use_cam:
+            try:
+                self.cam = PCOCamera()
+                self.cam.set_exposure_time(0.5)
+            except Exception:
+                print('Could not connect to camera, interactive mode will not work')
 
     def update(self, imaging1='none', imaging2='none', pi_steps_x=(), pi_steps_y=(), pi_steps_plane=1, add_correction=True):
         # TODO: enable having pi_steps on multiple planes
@@ -104,6 +108,7 @@ class MPLCAligner:
         self.mplc.load_slm_mask(self.final_img, add_correction=add_correction)
 
     def update_interactive(self, imaging1='none', imaging2='none', pi_step_x=None, pi_step_y=None, pi_steps_plane=1, D_res=100):
+        # Not really using this
         # 24*12.5=300 um so in y if the center is 272 and the magnification to this plane is 1,
         # we will look at 272+-12. With other magnifications it will be not 12, so hard to automate
         if not self.cam:
@@ -128,10 +133,11 @@ class MPLCAligner:
         x0, y0 = int(x0), int(y0)
         plt.close(fig)
 
+        # time.sleep(self.cam.get_exposure_time())
         # Find exact location
+        roi = [x0 - D_res, y0 - D_res, x0 + D_res, y0 + D_res]
+        A = self.cam.get_image(roi=roi)
         fig, ax = plt.subplots()
-        roi = x0 - D_res, x0 + D_res, y0 - D_res, y0 + D_res
-        A = self.cam.get_image(roi)
         ax.imshow(A)
         ax.set_title('left-click at pi step row/col interesting')
         fig.show()
@@ -143,6 +149,7 @@ class MPLCAligner:
         initial_guess = pi_step_x if pi_step_x else pi_step_y
         fig, axes = plt.subplots(2, 5)
         for i, pix in enumerate(np.array([-2, -1, 0, 1, 2]) + initial_guess):
+            print(f'{i},', end='\t')
             self.update(imaging1=imaging1,
                         imaging2=imaging2,
                         pi_steps_x=[pix] if pi_step_x else [],
@@ -156,14 +163,19 @@ class MPLCAligner:
                 axes[1, i].plot(im[x_cut, :])
             else:
                 axes[1, i].plot(im[:, y_cut])
-
+        print('done')
         fig.show()
 
     def find_x(self, plane_no, begin_guess=None):
         # best ways to do the imaging for each plane
         begin_guess = begin_guess or self.centers_x[plane_no-1]
         if plane_no == 1:
-            self.update(imaging1='1to5w4f', imaging2='5to11w8', pi_steps_x=begin_guess)
+            self.update(imaging1='1to5w4f', imaging2='5to11w8', pi_steps_x=begin_guess, pi_steps_plane=plane_no)
+        elif plane_no == 2:
+            self.update(imaging1='none', imaging2='2to10w6', pi_steps_x=begin_guess, pi_steps_plane=plane_no)
+        elif plane_no == 3:
+            ml.update('1to3w2', '3to11w5and9', pi_steps_x=begin_guess, pi_steps_plane=plane_no)
+
 
 
 
