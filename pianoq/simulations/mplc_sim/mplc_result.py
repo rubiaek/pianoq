@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import copy
 
 
-class MPLCResult:
+class MPLCSimResult:
     def __init__(self, conf=None):
         self.conf = conf or {}
         self.masks = np.array([])

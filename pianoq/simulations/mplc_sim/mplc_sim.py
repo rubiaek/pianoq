@@ -1,6 +1,6 @@
 import numpy as np
 from tqdm import tqdm
-from pianoq.simulations.mplc_sim.mplc_result import MPLCResult
+from pianoq.simulations.mplc_sim.mplc_result import MPLCSimResult
 
 
 class MPLCSim:
@@ -9,7 +9,7 @@ class MPLCSim:
         for propagating fields through many phase masks
     """
     def __init__(self, conf):
-        self.res = MPLCResult(conf)
+        self.res = MPLCSimResult(conf)
 
         self.wl = self.wavelength = conf['wavelength']
         self.k = 2 * np.pi / self.wl
@@ -41,8 +41,8 @@ class MPLCSim:
         # TODO: this does not make sense, N_modes has opposite effect than Nx, Ny
         self.mask_offset = np.sqrt(1e-3/(self.Nx * self.Ny * self.N_modes))
 
-        self.X = np.arange(-self.Nx / 2, self.Nx / 2) * self.dx
-        self.Y = np.arange(-self.Ny / 2, self.Ny / 2) * self.dy
+        self.X = (np.arange(1, self.Nx + 1) - (self.Nx / 2 + 0.5)) * self.dx
+        self.Y = (np.arange(1, self.Ny + 1) - (self.Ny / 2 + 0.5)) * self.dy
         self.XX, self.YY = np.meshgrid(self.X, self.Y)
         self.freq_x = np.fft.fftshift(np.fft.fftfreq(self.Nx, d=self.dx))
         self.freq_y = np.fft.fftshift(np.fft.fftfreq(self.Ny, d=self.dy))
@@ -50,7 +50,6 @@ class MPLCSim:
         self.light_k = 2 * np.pi / self.wl
         self.k_xx = self.freq_XXs * 2 * np.pi
         self.k_yy = self.freq_YYs * 2 * np.pi
-
 
         self.k_z_mat = self._generate_kz_mat()
         self.k_constraint = self._generate_k_constraint()
