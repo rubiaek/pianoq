@@ -68,6 +68,16 @@ class MPLCAligner:
 
         img1 = np.zeros(SLM_DIMS)
         img2 = np.zeros(SLM_DIMS)
+
+        if isinstance(pi_steps_x, int):
+            pi_steps_x = [pi_steps_x]
+        elif pi_steps_x is None:
+            pi_steps_x = []
+        if isinstance(pi_steps_y, int):
+            pi_steps_y = [pi_steps_y]
+        elif pi_steps_y is None:
+            pi_steps_y = []
+
         # pi_steps
         for pix_no in pi_steps_x:
             # XX - pix_no will be positive/negative for pixels above/below pix_now,
@@ -103,8 +113,8 @@ class MPLCAligner:
 
         self.update(imaging1=imaging1,
                     imaging2=imaging2,
-                    pi_steps_x=[pi_step_x] if pi_step_x else [],
-                    pi_steps_y=[pi_step_y] if pi_step_y else [],
+                    pi_steps_x=pi_step_x,
+                    pi_steps_y=pi_step_y,
                     pi_steps_plane=pi_steps_plane)
 
         # inital find spots
