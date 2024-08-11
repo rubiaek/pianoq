@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from pianoq.simulations.mplc_sim.mplc_result import MPLCSimResult
+from pianoq.simulations.mplc_sim.mplc_sim_result import MPLCSimResult
 from pianoq.simulations.mplc_sim.mplc_sim import MPLCSim
 from pianoq.simulations.mplc_sim.mplc_modes import get_spot_conf
 from pianoq.simulations.mplc_sim.mplc_utils import show_field, downsample_with_mean, corr

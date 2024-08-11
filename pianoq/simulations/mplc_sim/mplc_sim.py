@@ -1,6 +1,6 @@
 import numpy as np
 from tqdm import tqdm
-from pianoq.simulations.mplc_sim.mplc_result import MPLCSimResult
+from pianoq.simulations.mplc_sim.mplc_sim_result import MPLCSimResult
 
 
 class MPLCSim:
