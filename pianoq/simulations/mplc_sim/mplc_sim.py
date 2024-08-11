@@ -44,8 +44,13 @@ class MPLCSim:
         self.X = (np.arange(1, self.Nx + 1) - (self.Nx / 2 + 0.5)) * self.dx
         self.Y = (np.arange(1, self.Ny + 1) - (self.Ny / 2 + 0.5)) * self.dy
         self.XX, self.YY = np.meshgrid(self.X, self.Y)
-        self.freq_x = np.fft.fftshift(np.fft.fftfreq(self.Nx, d=self.dx))
-        self.freq_y = np.fft.fftshift(np.fft.fftfreq(self.Ny, d=self.dy))
+        # for consistency with Ohad
+        fs = 1 / (self.XX.max() - self.XX.min())
+        self.freq_x = fs * np.arange(-self.Nx//2, self.Nx//2)
+        fs = 1 / (self.YY.max() - self.YY.min())
+        self.freq_y = fs * np.arange(-self.Ny//2, self.Ny//2)
+        # self.freq_x = np.fft.fftshift(np.fft.fftfreq(self.Nx, d=self.dx))
+        # self.freq_y = np.fft.fftshift(np.fft.fftfreq(self.Ny, d=self.dy))
         self.freq_XXs, self.freq_YYs = np.meshgrid(self.freq_x, self.freq_y)
         self.light_k = 2 * np.pi / self.wl
         self.k_xx = self.freq_XXs * 2 * np.pi
@@ -105,7 +110,6 @@ class MPLCSim:
                                                                                     # after plane i-1
                                                                                     self.dist_after_plane[plane_no-1],
                                                                                     backprop=True)
-
             if show_mean_fidelities:
                 self.res._calc_fidelity()
                 ff = np.abs(np.diag(self.res.forward_fidelity)).mean()

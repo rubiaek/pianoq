@@ -173,8 +173,8 @@ class MPLCSimResult:
 
     def save_masks(self, path):
         f = open(path, 'wb')
-        N_masks, Ny3, Nx3 = self.masks.shape
+        # N_masks, Ny3, Nx3 = self.masks.shape
         np.savez(f,
-                 masks=self.masks[:10, Ny3//3: 2*Ny3//3, Nx3//3: 2*Nx3//3],
+                 masks=self.masks[:10, self.active_slice[0], self.active_slice[1]],
                  timestamp=datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S'))
         f.close()
