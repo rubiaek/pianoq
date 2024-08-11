@@ -116,6 +116,36 @@ class MPLCSim:
                 bf = np.abs(np.diag(self.res.backward_fidelity)).mean()
                 self.log(f'F-fidelity: {ff}. B-fidelity: {bf}.')
 
+    def fix_initial_phases(self):
+        pass
+        # TODO: using Neta's idea something like this in comment
+    """
+        M = Calc_Matrix(MODES, np.squeeze(FIELDS_pc[0, -1, :, :, :]))  # Using Neta's idea for calibrating the phases at the input
+        phases = np.angle(np.diag(M))
+        Mask_phase_cal = np.zeros_like(X)
+
+        for l in range(len(phases)):
+            Mask_phase_cal[np.sqrt((X - x_modes_in[l])**2 + (Y - y_modes_in[l])**2) < (2 * waist_in)] = -phases[l]
+        
+        MASKS[0] = np.exp(1j * (np.angle(np.squeeze(MASKS[0])) + Mask_phase_cal))  # calibrate global phase between the terms using the first mask
+        
+        # Function definition
+        def Calc_Matrix(MODES, Output_fields):
+            M = np.zeros((MODES.shape[0], Output_fields.shape[0]), dtype=complex)
+            
+            for j in range(MODES.shape[0]):
+                mode = np.squeeze(MODES[j])
+                mode = mode / np.sqrt(np.sum(np.abs(mode)**2))
+                
+                for k in range(Output_fields.shape[0]):
+                    output1 = np.squeeze(Output_fields[k])
+                    output1 = output1 / np.sqrt(np.sum(np.abs(output1)**2))
+                    M[j, k] = np.sum(output1 * np.conj(mode))
+            
+            return M
+
+    """
+
     def update_mask(self, plane_no):
         # some planes have constant phase mask (lens, next to lens, etc.)
         if not self.active_planes[plane_no]:
