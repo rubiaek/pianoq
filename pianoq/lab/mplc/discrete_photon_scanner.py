@@ -50,7 +50,7 @@ class DiscretePhotonScanner:
         print("Got Thorlabs motors!")
 
         self.time_tagger = QPTimeTagger(integration_time=self.res.integration_time, remote=remote_tagger,
-                                        single_channel_delays=TIMETAGGER_DELAYS, coin_window=TIMETAGGER_COIN_WINDOW)
+                                        single_channel_delays=TIMETAGGER_DELAYS, coin_window=self.res.coin_window)
         print("Got TimeTagger!")
 
     def scan(self):
@@ -83,35 +83,38 @@ class DiscretePhotonScanner:
 
 
 def run_QKD_row_3_3():
+    coin_window = 0.4e-9
+    integration_time = 50
 
     # Full python impl.
-    if True:
+    if False:
         mplc = MPLCDevice()
         path = r"G:\My Drive\People\Ronen\PHD\MPLC\results\rss_wfm1.masks"
         masks = np.load(path)['masks']
         modes_to_keep = np.array([3, 8, 13, 18, 23, 28, 33, 38, 43, 48])
         masks = remove_input_modes(masks, modes_to_keep=modes_to_keep)
         phases_result = PhaseFinderResult()
-        phases_result.loadfrom(r"G:\My Drive\People\Ronen\PHD\MPLC\results\2024_08_05_14_42_39_QKD_row3_phases.phases")
+        phases_result.loadfrom(r"G:\My Drive\People\Ronen\PHD\MPLC\results\2024_08_11_10_26_11_QKD_row3_phases.phases")
         masks = add_phase_input_spots(masks, phases_result.phases)
         mplc.load_masks(masks, linear_tilts=True)
 
     # Matlab WFM - python lab
-    if False:
+    if True:
         mplc = MPLCDevice()
         # phases
-        # phases_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\phase_align_QKD5d_10_11_23_3.mat"
-        # phases = np.squeeze(scipy.io.loadmat(phases_path)['phases'])
-        phases_result = PhaseFinderResult()
-        phases_result.loadfrom(r"G:\My Drive\People\Ronen\PHD\MPLC\results\2024_08_05_14_42_39_QKD_row3_phases.phases")
+        phases_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\phase_align_QKD5d_10_11_23_3.mat"
+        phases = np.squeeze(scipy.io.loadmat(phases_path)['phases'])
+        # phases_result = PhaseFinderResult()
+        # phases_result.loadfrom(r"G:\My Drive\People\Ronen\PHD\MPLC\results\2024_08_05_14_42_39_QKD_row3_phases.phases")
+        # phases = phases_result.phases
 
         wfm_masks_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\Masks_31_10_23_QKD5d_MUB2_mm_33_3_conjbases.mat"
         masks = get_masks_matlab(wfm_masks_path=wfm_masks_path)
 
         modes_to_keep = np.array([3, 8, 13, 18, 23, 28, 33, 38, 43, 48])
         masks = remove_input_modes(masks, modes_to_keep=modes_to_keep)
-        # masks = add_phase_input_spots(masks, phases_result.phases)
-
+        # masks = add_phase_input_spots(masks, phases)
+        run_name = f'QKD_row_3_3_matlab_masks_python_code_zero_phases_{integration_time}s_coin_400ps'
         mplc.load_masks(masks, linear_tilts=True)
 
     # Matlab slm_mask calc
@@ -153,8 +156,8 @@ def run_QKD_row_3_3():
     backlash = 0.0
     wait_after_move = 0.3
 
-    dps = DiscretePhotonScanner(locs_signal, locs_idler, integration_time=2, remote_tagger=True, run_name='QKD_row3',
-                                backlash=backlash, wait_after_move=wait_after_move)
+    dps = DiscretePhotonScanner(locs_signal, locs_idler, integration_time=integration_time, remote_tagger=True, run_name='QKD_row3',
+                                backlash=backlash, wait_after_move=wait_after_move, coin_window=coin_window)
     dps.scan()
     dps.close()
     mplc.close()

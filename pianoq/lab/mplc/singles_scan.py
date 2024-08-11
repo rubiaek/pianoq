@@ -81,15 +81,16 @@ def signal_scan(name='', integration_time=1.0, coin_window=2e-9, resolution=1):
 
 
 if __name__ == '__main__':
-    m = MPLCDevice()
+    mplc = MPLCDevice()
     path = r"G:\My Drive\People\Ronen\PHD\MPLC\results\rss_wfm1.masks"
     masks = np.load(path)['masks']
     modes_to_keep = np.array([3, 8, 13, 18, 23, 28, 33, 38, 43, 48])
     masks = remove_input_modes(masks, modes_to_keep=modes_to_keep)
-    # masks = add_phase_input_spots(masks, phases_result.phases)
-    m.load_masks(masks, linear_tilts=True)
-
-    resolution = 2
+    phases_result = PhaseFinderResult()
+    phases_result.loadfrom(r"G:\My Drive\People\Ronen\PHD\MPLC\results\2024_08_11_10_26_11_QKD_row3_phases.phases")
+    masks = add_phase_input_spots(masks, phases_result.phases)
+    mplc.load_masks(masks, linear_tilts=True)
+    resolution = 1
 
     if len(sys.argv) < 2:
         print('Usage: singles_scan.py <sig|idl>')
