@@ -39,7 +39,6 @@ def idler_scan(name='', integration_time=1.0, coin_window=2e-9, resolution=1):
     time_tagger = QPTimeTagger(integration_time=integration_time, remote=True,
                                coin_window=coin_window or TIMETAGGER_COIN_WINDOW,
                                single_channel_delays=TIMETAGGER_DELAYS)
-    # TODO: timetagger delay of -300 ps?
     print('got timetagger!')
 
     single1s, single2s, coincidences = scanner.scan(x_motor=x_motor, y_motor=y_motor, ph=time_tagger)
@@ -72,7 +71,6 @@ def signal_scan(name='', integration_time=1.0, coin_window=2e-9, resolution=1):
     time_tagger = QPTimeTagger(integration_time=integration_time, remote=True,
                                coin_window=coin_window or TIMETAGGER_COIN_WINDOW,
                                single_channel_delays=TIMETAGGER_DELAYS)
-    # TODO: timetagger delay of -300 ps?
     print('got timetagger!')
 
     single1s, single2s, coincidences = scanner.scan(x_motor=x_motor, y_motor=y_motor, ph=time_tagger, use_power_meter=False)
