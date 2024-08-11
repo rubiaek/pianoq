@@ -55,11 +55,11 @@ class MPLCSim:
         self.k_constraint = self._generate_k_constraint()
 
         # masks are always exp(i*\phi(x, y))
-        self.res.masks = np.exp(1j*np.zeros((self.N_planes, self.Ny, self.Nx), dtype=np.complex128))
+        self.res.masks = np.exp(1j*np.zeros((self.N_planes, self.Ny, self.Nx), dtype=np.complex64))
         # forward_fields[0] will be the input spots
-        self.res.forward_fields = np.zeros((self.N_planes, self.N_modes, self.Ny, self.Nx), dtype=np.complex128)
+        self.res.forward_fields = np.zeros((self.N_planes, self.N_modes, self.Ny, self.Nx), dtype=np.complex64)
         # backward_fields[N_modes-1] will be the output speckles
-        self.res.backward_fields = np.zeros((self.N_planes, self.N_modes, self.Ny, self.Nx), dtype=np.complex128)
+        self.res.backward_fields = np.zeros((self.N_planes, self.N_modes, self.Ny, self.Nx), dtype=np.complex64)
 
         self.prop = self.propagate_freespace
 

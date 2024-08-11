@@ -1,3 +1,4 @@
+import datetime
 import traceback
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,21 +9,21 @@ class MPLCSimResult:
     def __init__(self, conf=None):
         self.conf = conf or {}
         self.masks = np.array([])
-        self.forward_fields = np.array([], dtype=np.complex128)
-        self.backward_fields = np.array([], dtype=np.complex128)
+        self.forward_fields = np.array([], dtype=np.complex64)
+        self.backward_fields = np.array([], dtype=np.complex64)
         self.active_slice = None
         self.N_modes = 0
         self.__dict__.update(self.conf)
         self.N_planes = len(self.conf.get('active_planes', ()))
 
-        self.forward_fidelity = np.array([], dtype=np.complex128)
-        self.backward_fidelity = np.array([], dtype=np.complex128)
+        self.forward_fidelity = np.array([], dtype=np.complex64)
+        self.backward_fidelity = np.array([], dtype=np.complex64)
         self.forward_losses = np.zeros(self.N_modes)
         self.backward_losses = np.zeros(self.N_modes)
 
     def _calc_fidelity(self):
-        self.forward_fidelity = np.zeros((self.N_modes, self.N_modes), dtype=np.complex128)
-        self.backward_fidelity = np.zeros((self.N_modes, self.N_modes), dtype=np.complex128)
+        self.forward_fidelity = np.zeros((self.N_modes, self.N_modes), dtype=np.complex64)
+        self.backward_fidelity = np.zeros((self.N_modes, self.N_modes), dtype=np.complex64)
 
         # TODO: have a finer dx for reality grid, with each SLM pixel being 2X2 reality pixels etc.?
         for in_mode in range(self.N_modes):
@@ -169,3 +170,11 @@ class MPLCSimResult:
         except Exception as e:
             print(e)
             traceback.print_exc()
+
+    def save_masks(self, path):
+        f = open(path, 'wb')
+        N_masks, Ny3, Nx3 = self.masks.shape
+        np.savez(f,
+                 masks=self.masks[:10, Ny3//3: 2*Ny3//3, Nx3//3: 2*Nx3//3],
+                 timestamp=datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S'))
+        f.close()
