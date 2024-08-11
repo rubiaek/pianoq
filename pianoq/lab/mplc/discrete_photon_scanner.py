@@ -83,10 +83,22 @@ class DiscretePhotonScanner:
 
 
 def run_QKD_row_3_3():
-    mplc = MPLCDevice()
 
-    flag = True
-    if flag:
+    # Full python impl.
+    if True:
+        mplc = MPLCDevice()
+        path = r"G:\My Drive\People\Ronen\PHD\MPLC\results\rss_wfm1.masks"
+        masks = np.load(path)['masks']
+        modes_to_keep = np.array([3, 8, 13, 18, 23, 28, 33, 38, 43, 48])
+        masks = remove_input_modes(masks, modes_to_keep=modes_to_keep)
+        phases_result = PhaseFinderResult()
+        phases_result.loadfrom(r"G:\My Drive\People\Ronen\PHD\MPLC\results\2024_08_05_14_42_39_QKD_row3_phases.phases")
+        masks = add_phase_input_spots(masks, phases_result.phases)
+        mplc.load_masks(masks, linear_tilts=True)
+
+    # Matlab WFM - python lab
+    if False:
+        mplc = MPLCDevice()
         # phases
         # phases_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\phase_align_QKD5d_10_11_23_3.mat"
         # phases = np.squeeze(scipy.io.loadmat(phases_path)['phases'])
@@ -98,10 +110,13 @@ def run_QKD_row_3_3():
 
         modes_to_keep = np.array([3, 8, 13, 18, 23, 28, 33, 38, 43, 48])
         masks = remove_input_modes(masks, modes_to_keep=modes_to_keep)
-        masks = add_phase_input_spots(masks, phases_result.phases)
+        # masks = add_phase_input_spots(masks, phases_result.phases)
 
         mplc.load_masks(masks, linear_tilts=True)
-    else:
+
+    # Matlab slm_mask calc
+    if False:
+        mplc = MPLCDevice()
         total_mask_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\total_phase_mask.mat"
         mplc.load_slm_mask(total_mask_path)
 
@@ -112,6 +127,13 @@ def run_QKD_row_3_3():
          (8.978313709716524, 2.0049440327721255),
          (8.95272033530153, 1.6287214288717176)]
     )
+    # locs_idler = np.array(
+    #     [(9.039298460536191, 3.1122034726451306),
+    #      (9.01663845968644, 2.738313458624255),
+    #      (8.988313458624253, 2.3870834454531296),
+    #      (8.94865845713719, 1.990533430582504),
+    #      (8.942993456924754, 1.6336384171989407)]
+    # )
 
     locs_signal = np.array(
         [(11.528657427216665, 8.774409886706874),
@@ -120,6 +142,13 @@ def run_QKD_row_3_3():
          (11.62811631669538, 9.878658582714145),
          (11.656168823984249, 10.245891405404784)]
     )
+    # locs_signal = np.array(
+    #     [(11.499064980955438, 8.758022042739357),
+    #      (11.541896119192938, 9.137383552842916),
+    #      (11.548014853226867, 9.50450759487862),
+    #      (11.596964725498292, 9.889987839016108),
+    #      (11.645914597769721, 10.250993147017882)]
+    # )
 
     backlash = 0.0
     wait_after_move = 0.3
@@ -132,7 +161,7 @@ def run_QKD_row_3_3():
 
 
     dps.res.show()
-    # dps.res.show_singles()
+    dps.res.show_singles()
 
 
 if __name__ == '__main__':

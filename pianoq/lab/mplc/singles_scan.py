@@ -89,7 +89,7 @@ if __name__ == '__main__':
     # masks = add_phase_input_spots(masks, phases_result.phases)
     m.load_masks(masks, linear_tilts=True)
 
-    resolution = 4
+    resolution = 2
 
     if len(sys.argv) < 2:
         print('Usage: singles_scan.py <sig|idl>')

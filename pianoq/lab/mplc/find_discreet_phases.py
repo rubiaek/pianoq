@@ -80,46 +80,55 @@ class PhaseFinder(object):
 
 
 def QKD_row_3_3():
+    # m = MPLCDevice()
+    #
+    # wfm_masks_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\Masks_31_10_23_QKD5d_MUB2_mm_33_3_conjbases.mat"
+    # phases_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\phase_align_QKD5d_10_11_23_3.mat"
+    # modes_to_keep = np.array([3, 8, 13, 18, 23, 28, 33, 38, 43, 48])
+    # masks = get_masks_matlab(wfm_masks_path=wfm_masks_path)
+    # masks = remove_input_modes(masks, modes_to_keep=modes_to_keep)
+    # phases = np.squeeze(scipy.io.loadmat(phases_path)['phases'])
+    # # phases = np.zeros(N_SPOTS*2)
+    # m.load_masks(masks, linear_tilts=True)
+
     m = MPLCDevice()
-
-    wfm_masks_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\Masks_31_10_23_QKD5d_MUB2_mm_33_3_conjbases.mat"
-    phases_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\phase_align_QKD5d_10_11_23_3.mat"
+    path = r"G:\My Drive\People\Ronen\PHD\MPLC\results\rss_wfm1.masks"
+    masks = np.load(path)['masks']
     modes_to_keep = np.array([3, 8, 13, 18, 23, 28, 33, 38, 43, 48])
-    masks = get_masks_matlab(wfm_masks_path=wfm_masks_path)
     masks = remove_input_modes(masks, modes_to_keep=modes_to_keep)
-    phases = np.squeeze(scipy.io.loadmat(phases_path)['phases'])
-    # phases = np.zeros(N_SPOTS*2)
+    # masks = add_phase_input_spots(masks, phases_result.phases)
     m.load_masks(masks, linear_tilts=True)
+    phases = np.zeros(N_SPOTS * 2)
 
-    # locs_idler = np.array(
-    #     [(9.078127869934999, 3.1259338321488515),
-    #      (9.052534495520005, 2.7471518908069443),
-    #      (9.011585096456015, 2.383725974114033),
-    #      (8.978313709716524, 2.0049440327721255),
-    #      (8.95272033530153, 1.6287214288717176)]
-    # )
     locs_idler = np.array(
-        [(9.039298460536191, 3.1122034726451306),
-         (9.01663845968644, 2.738313458624255),
-         (8.988313458624253, 2.3870834454531296),
-         (8.94865845713719, 1.990533430582504),
-         (8.942993456924754, 1.6336384171989407)]
+        [(9.078127869934999, 3.1259338321488515),
+         (9.052534495520005, 2.7471518908069443),
+         (9.011585096456015, 2.383725974114033),
+         (8.978313709716524, 2.0049440327721255),
+         (8.95272033530153, 1.6287214288717176)]
     )
-
-    # locs_signal = np.array(
-    #     [(11.528657427216665, 8.774409886706874),
-    #      (11.56436061831159, 9.141642709397514),
-    #      (11.587312669729753, 9.508875532088153),
-    #      (11.62811631669538, 9.878658582714145),
-    #      (11.656168823984249, 10.245891405404784)]
+    # locs_idler = np.array(
+    #     [(9.039298460536191, 3.1122034726451306),
+    #      (9.01663845968644, 2.738313458624255),
+    #      (8.988313458624253, 2.3870834454531296),
+    #      (8.94865845713719, 1.990533430582504),
+    #      (8.942993456924754, 1.6336384171989407)]
     # )
+
     locs_signal = np.array(
-        [(11.499064980955438, 8.758022042739357),
-         (11.541896119192938, 9.137383552842916),
-         (11.548014853226867, 9.50450759487862),
-         (11.596964725498292, 9.889987839016108),
-         (11.645914597769721, 10.250993147017882)]
+        [(11.528657427216665, 8.774409886706874),
+         (11.56436061831159, 9.141642709397514),
+         (11.587312669729753, 9.508875532088153),
+         (11.62811631669538, 9.878658582714145),
+         (11.656168823984249, 10.245891405404784)]
     )
+    # locs_signal = np.array(
+    #     [(11.499064980955438, 8.758022042739357),
+    #      (11.541896119192938, 9.137383552842916),
+    #      (11.548014853226867, 9.50450759487862),
+    #      (11.596964725498292, 9.889987839016108),
+    #      (11.645914597769721, 10.250993147017882)]
+    # )
 
 
     i = 0
