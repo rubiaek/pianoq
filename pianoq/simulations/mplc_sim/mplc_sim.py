@@ -1,6 +1,10 @@
 import numpy as np
 from tqdm import tqdm
 from pianoq.simulations.mplc_sim.mplc_sim_result import MPLCSimResult
+from line_profiler_pycharm import profile
+from functools import cache
+import pyfftw
+pyfftw.interfaces.cache.enable()
 
 
 class MPLCSim:
@@ -66,12 +70,13 @@ class MPLCSim:
         # backward_fields[N_modes-1] will be the output speckles
         self.res.backward_fields = np.zeros((self.N_planes, self.N_modes, self.Ny, self.Nx), dtype=np.complex64)
 
-        self.prop = self.propagate_freespace
+        self.prop = self.propagate_freespace2
 
     def set_modes(self, input_modes, output_modes):
         self.res.forward_fields[0, :, :, :] = input_modes
         self.res.backward_fields[self.N_planes - 1, :, :, :] = output_modes
 
+    # @profile
     def find_phases(self, iterations=None, show_fidelities=True, fix_initial_phases=True):
         """
             Fix initial phases is relevant only when input modes are spatially separated spots
@@ -139,8 +144,8 @@ class MPLCSim:
 
         # calibrate global phase between the terms using the first mask
         self.res.masks[0] = np.exp(1j * (np.angle(np.squeeze(self.res.masks[0])) + mask_phase_cal))
-        
 
+    # @profile
     def update_mask(self, plane_no):
         # some planes have constant phase mask (lens, next to lens, etc.)
         if not self.active_planes[plane_no]:
@@ -202,13 +207,14 @@ class MPLCSim:
         # ensure phase mask really a phase mask with no varying amplitude
         self.res.masks[plane_no] = np.exp(+1j * np.angle(fixed_mask))
 
+    # @profile
     def fix_mask(self, mask):
         new_mask = np.copy(mask)
 
         if self.max_k_constraint:
-            mask_kspace = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(new_mask)))
+            mask_kspace = self.my_fft2(new_mask)
             mask_kspace = mask_kspace * self.k_constraint
-            new_mask = np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(mask_kspace)))
+            new_mask = self.my_ifft2(mask_kspace)
 
         # 3) remove padding from size factor
         if self._size_factor != 1:
@@ -234,18 +240,41 @@ class MPLCSim:
                        < self.max_k_constraint
         return k_constraint
 
+    # @profile
     def propagate_freespace(self, E, L, backprop=False):
         assert E.shape == self.XX.shape, 'Bad shape for E'
-        E2 = np.copy(E)
 
-        sign = 1 if not backprop else -1
-
-        E_K = np.fft.fftshift(np.fft.fft2(np.fft.fftshift(E2)))
+        E_K = np.fft.fftshift(np.fft.fft2(np.fft.fftshift(E)))
         # Apply the transfer function of free-space, see Fourier Optics page 74
         # normal forward motion is with + in the exponent
-        E_K *= np.exp(+1j * sign * self.k_z_mat * L)
+        E_K *= self._get_prop_mat(L=L, backprop=backprop)
         E_out = np.fft.fftshift(np.fft.ifft2(np.fft.fftshift(E_K)))
         return E_out
+
+    @profile
+    def propagate_freespace2(self, E, L, backprop=False):
+        # a = pyfftw.empty_aligned(E.shape, dtype='complex64')
+        # a[:] = E
+
+        E_K = self.my_fft2(E)
+        E_K *= self._get_prop_mat(L=L, backprop=backprop)
+        E_out = self.my_ifft2(E_K)
+        return E_out
+
+    @cache
+    def _get_prop_mat(self, L, backprop=False):
+        sign = 1 if not backprop else -1
+        return np.exp(+1j * sign * self.k_z_mat * L)
+
+    def my_fft2(self, E):
+        return np.fft.fftshift(pyfftw.interfaces.numpy_fft.fft2(
+            np.fft.fftshift(E), overwrite_input=False, auto_align_input=True)
+        )
+
+    def my_ifft2(self, E_K):
+        return np.fft.fftshift(pyfftw.interfaces.numpy_fft.ifft2(
+            np.fft.fftshift(E_K), overwrite_input=False, auto_align_input=True)
+        )
 
     def propagate_mplc(self, initial_field, start_plane=None, end_plane=None, backprop=False, prop_last_mask=False):
         """ backprop means also that you use the -i, for WFM or finding the SLM phase """
@@ -264,11 +293,11 @@ class MPLCSim:
         if not backprop:
             for plane_no in range(start_plane, end_plane):
                 field *= np.exp(+1j*np.angle(self.res.masks[plane_no]))
-                field = self.propagate_freespace(field, self.dist_after_plane[plane_no], backprop=backprop)
+                field = self.propagate_freespace2(field, self.dist_after_plane[plane_no], backprop=backprop)
         else:
             for plane_no in range(start_plane, end_plane, -1):
                 field *= np.exp(-1j*np.angle(self.res.masks[plane_no]))
-                field = self.propagate_freespace(field, self.dist_after_plane[plane_no - 1], backprop=backprop)
+                field = self.propagate_freespace2(field, self.dist_after_plane[plane_no - 1], backprop=backprop)
         if prop_last_mask:
             field *= np.exp(+1j * np.angle(self.res.masks[end_plane]))
 
