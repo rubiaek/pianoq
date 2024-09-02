@@ -72,7 +72,10 @@ class MPLCSim:
         self.res.forward_fields[0, :, :, :] = input_modes
         self.res.backward_fields[self.N_planes - 1, :, :, :] = output_modes
 
-    def find_phases(self, iterations=None, show_mean_fidelities=True):
+    def find_phases(self, iterations=None, show_fidelities=True, fix_initial_phases=True):
+        """
+            Fix initial phases is relevant only when input modes are spatially separated spots
+        """
         # Running with iterations = 1 will result with only field initialization
         iterations = iterations or self.N_iterations
         for iter_no in tqdm(range(iterations)):
@@ -110,41 +113,33 @@ class MPLCSim:
                                                                                     # after plane i-1
                                                                                     self.dist_after_plane[plane_no-1],
                                                                                     backprop=True)
-            if show_mean_fidelities:
+            if show_fidelities:
                 self.res._calc_fidelity()
-                ff = np.abs(np.diag(self.res.forward_fidelity)).mean()
-                bf = np.abs(np.diag(self.res.backward_fidelity)).mean()
-                self.log(f'F-fidelity: {ff}. B-fidelity: {bf}.')
+                self.log(f'{iter_no}. Fidelity: {self.res.fidelity}')
+
+        if fix_initial_phases:
+            self.fix_initial_phases()
+            # Forward pass again with fixed phases
+            for plane_no in range(self.N_planes - 1):
+                for mode_no in range(self.N_modes):
+                    E = np.copy(self.res.forward_fields[plane_no, mode_no, :, :])
+                    E *= np.exp(+1j * np.angle(self.res.masks[plane_no]))
+                    self.res.forward_fields[plane_no + 1, mode_no, :, :] = self.prop(E,
+                                                                                     self.dist_after_plane[plane_no],
+                                                                                     backprop=False)
 
     def fix_initial_phases(self):
-        pass
-        # TODO: using Neta's idea something like this in comment
-    """
-        M = Calc_Matrix(MODES, np.squeeze(FIELDS_pc[0, -1, :, :, :]))  # Using Neta's idea for calibrating the phases at the input
-        phases = np.angle(np.diag(M))
-        Mask_phase_cal = np.zeros_like(X)
+        self.res._calc_normalized_overlap()
+        phases = np.angle(np.diag(self.res.forward_overlap))
+        mask_phase_cal = np.zeros_like(self.XX)
 
         for l in range(len(phases)):
-            Mask_phase_cal[np.sqrt((X - x_modes_in[l])**2 + (Y - y_modes_in[l])**2) < (2 * waist_in)] = -phases[l]
-        
-        MASKS[0] = np.exp(1j * (np.angle(np.squeeze(MASKS[0])) + Mask_phase_cal))  # calibrate global phase between the terms using the first mask
-        
-        # Function definition
-        def Calc_Matrix(MODES, Output_fields):
-            M = np.zeros((MODES.shape[0], Output_fields.shape[0]), dtype=complex)
-            
-            for j in range(MODES.shape[0]):
-                mode = np.squeeze(MODES[j])
-                mode = mode / np.sqrt(np.sum(np.abs(mode)**2))
-                
-                for k in range(Output_fields.shape[0]):
-                    output1 = np.squeeze(Output_fields[k])
-                    output1 = output1 / np.sqrt(np.sum(np.abs(output1)**2))
-                    M[j, k] = np.sum(output1 * np.conj(mode))
-            
-            return M
+            spot = np.abs(self.res.forward_fields[0, l])
+            mask_phase_cal[spot > spot.max() / np.e ** 2] = -phases[l]
 
-    """
+        # calibrate global phase between the terms using the first mask
+        self.res.masks[0] = np.exp(1j * (np.angle(np.squeeze(self.res.masks[0])) + mask_phase_cal))
+        
 
     def update_mask(self, plane_no):
         # some planes have constant phase mask (lens, next to lens, etc.)

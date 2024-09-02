@@ -16,27 +16,47 @@ class MPLCSimResult:
         self.__dict__.update(self.conf)
         self.N_planes = len(self.conf.get('active_planes', ()))
 
-        self.forward_fidelity = np.array([], dtype=np.complex64)
-        self.backward_fidelity = np.array([], dtype=np.complex64)
+        self.forward_overlap = np.array([], dtype=np.complex64)
+        self.backward_overlap = np.array([], dtype=np.complex64)
         self.forward_losses = np.zeros(self.N_modes)
         self.backward_losses = np.zeros(self.N_modes)
+        self.fidelity = 0
 
     def _calc_fidelity(self):
-        self.forward_fidelity = np.zeros((self.N_modes, self.N_modes), dtype=np.complex64)
-        self.backward_fidelity = np.zeros((self.N_modes, self.N_modes), dtype=np.complex64)
+        self._calc_normalized_overlap()
+        M = self.forward_overlap
+        U = np.eye(self.N_modes)
+        numerator = abs(np.trace(np.dot(U, np.conj(M).T)))
+        denominator = np.sqrt(abs(np.trace(np.dot(U, np.conj(U).T)) * np.trace(np.dot(M, np.conj(M).T))))
+        self.fidelity = numerator / denominator
+
+    def _calc_normalized_overlap(self):
+        self.forward_overlap = np.zeros((self.N_modes, self.N_modes), dtype=np.complex64)
+        self.backward_overlap = np.zeros((self.N_modes, self.N_modes), dtype=np.complex64)
 
         # TODO: have a finer dx for reality grid, with each SLM pixel being 2X2 reality pixels etc.?
         for in_mode in range(self.N_modes):
             for out_mode in range(self.N_modes):
-                forward_fidelity = (self.forward_fields[-1, in_mode] *
-                                    self.backward_fields[-1, out_mode].conj()
-                                    ).sum()
-                self.forward_fidelity[in_mode, out_mode] = forward_fidelity
+                desired_field = self.backward_fields[-1, out_mode]
+                expected_field = self.forward_fields[-1, in_mode]
 
-                backward_fidelity = (self.backward_fields[0, in_mode] *
-                                     self.forward_fields[0, out_mode].conj()
-                                     ).sum()
-                self.backward_fidelity[in_mode, out_mode] = backward_fidelity
+                # Normalize
+                desired_field = desired_field / np.sqrt(np.sum(np.abs(desired_field) ** 2))
+                expected_field = expected_field / np.sqrt(np.sum(np.abs(expected_field) ** 2))
+
+                forward_overlap = (expected_field * desired_field.conj()).sum()
+                self.forward_overlap[in_mode, out_mode] = forward_overlap
+
+                desired_field = self.backward_fields[0, in_mode]
+                expected_field = self.forward_fields[0, out_mode]
+
+                # Normalize
+                desired_field = desired_field / np.sqrt(np.sum(np.abs(desired_field) ** 2))
+                expected_field = expected_field / np.sqrt(np.sum(np.abs(expected_field) ** 2))
+
+                backward_overlap = (expected_field * desired_field.conj()).sum()
+                self.backward_overlap[in_mode, out_mode] = backward_overlap
+
 
     def _calc_loss(self):
         # TODO: check this
@@ -48,27 +68,27 @@ class MPLCSimResult:
         for mode_no in range(self.N_modes):
             backward_losses[mode_no] = (np.abs(self.backward_fields[0, mode_no]) ** 2)[self.active_slice].sum()
 
-    def show_fidelity(self):
-        self._calc_fidelity()
+    def show_overlap(self):
+        self._calc_normalized_overlap()
         fig, axes = plt.subplots(1, 2, constrained_layout=True)
-        imm = axes[0].imshow(np.abs(self.forward_fidelity))
+        imm = axes[0].imshow(np.abs(self.forward_overlap))
         fig.colorbar(imm, ax=axes[0])
-        axes[0].set_title('Forward fidelity')
+        axes[0].set_title('Forward overlap')
         axes[0].set_ylabel('Input modes')
         axes[0].set_xlabel('Output modes')
 
-        for i in range(self.forward_fidelity.shape[0]):
-            for j in range(self.forward_fidelity.shape[1]):
-                axes[0].text(j, i, f'{np.abs(self.forward_fidelity[i, j]):.2f}', ha='center', va='center', color='white')
+        for i in range(self.forward_overlap.shape[0]):
+            for j in range(self.forward_overlap.shape[1]):
+                axes[0].text(j, i, f'{np.abs(self.forward_overlap[i, j]):.2f}', ha='center', va='center', color='white')
 
-        imm = axes[1].imshow(np.abs(self.backward_fidelity))
+        imm = axes[1].imshow(np.abs(self.backward_overlap))
         fig.colorbar(imm, ax=axes[1])
-        axes[1].set_title('Backward fidelity')
+        axes[1].set_title('Backward overlap')
         axes[1].set_xlabel('Input modes')
         axes[1].set_ylabel('Output modes')
-        for i in range(self.backward_fidelity.shape[0]):
-            for j in range(self.backward_fidelity.shape[1]):
-                axes[1].text(j, i, f'{np.abs(self.backward_fidelity[i, j]):.2f}', ha='center', va='center', color='white')
+        for i in range(self.backward_overlap.shape[0]):
+            for j in range(self.backward_overlap.shape[1]):
+                axes[1].text(j, i, f'{np.abs(self.backward_overlap[i, j]):.2f}', ha='center', va='center', color='white')
 
         fig.show()
 
