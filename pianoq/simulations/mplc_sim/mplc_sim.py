@@ -84,54 +84,56 @@ class MPLCSim:
         # Running with iterations = 1 will result with only field initialization
         iterations = iterations or self.N_iterations
         for iter_no in tqdm(range(iterations)):
-            # Given current fields, update mask 1. Then update forward field in mask 2, and update it, etc.
-            # the backward fields don't need to be updated till we get to the last plane, N-1, where
-            # we update field N, and the Mask N is updated in the first iteration of backwards loop
-            # In reality we do not have an SLM at the measurement plane ("plane 11"), but since we don't care
-            # about the phases there, we let the algorithm optimize the phases over there.
-            for plane_no in range(self.N_planes - 1):
-                # In first iteration we populate the initial fields for each mode in each plane
-                if iter_no != 0:
-                    self.update_mask(plane_no)
-                # this should be done for all modes
-                for mode_no in range(self.N_modes):
-                    E = np.copy(self.res.forward_fields[plane_no, mode_no, :, :])
-                    # regular prop is with + in the exponent
-                    E *= np.exp(+1j*np.angle(self.res.masks[plane_no]))
-                    self.res.forward_fields[plane_no+1, mode_no, :, :] = self.prop(E,
-                                                                                   self.dist_after_plane[plane_no],
-                                                                                   backprop=False)
+            should_update_masks = False if iter_no == 0 else True
+            self.forward_pass(should_update_masks=should_update_masks)
+            # TODO: Actually maybe in backward passes I should update masks also in first iteration?
+            self.backward_pass(should_update_masks=should_update_masks)
 
-            # Same logic, but backwards. Last plane is 1, where field 0 is updated,
-            # and mask 0 will be updated in next forward iteration.
-            # starts from N-1 because that is the N'th element of the vector...
-            for plane_no in range(self.N_planes - 1, 0, -1):
-                # In first iteration we populate the initial fields for each mode in each plane
-                if iter_no != 0:
-                    self.update_mask(plane_no)
-                for mode_no in range(self.N_modes):
-                    E = np.copy(self.res.backward_fields[plane_no, mode_no, :, :])
-                    # backward prop is with - in the exponent
-                    E *= np.exp(-1j*np.angle(self.res.masks[plane_no]))
-                    self.res.backward_fields[plane_no-1, mode_no, :, :] = self.prop(E,
-                                                                                    # when at plane i, want distance
-                                                                                    # after plane i-1
-                                                                                    self.dist_after_plane[plane_no-1],
-                                                                                    backprop=True)
             if show_fidelities:
                 self.res._calc_fidelity()
                 self.log(f'{iter_no}. Fidelity: {self.res.fidelity}')
 
+        # Finish with a forward pass, so final field will be with the updated masks, update masks on the way, why not
+        self.forward_pass(should_update_masks=True)
         if fix_initial_phases:
             self.fix_initial_phases()
-            # Forward pass again with fixed phases
-            for plane_no in range(self.N_planes - 1):
-                for mode_no in range(self.N_modes):
-                    E = np.copy(self.res.forward_fields[plane_no, mode_no, :, :])
-                    E *= np.exp(+1j * np.angle(self.res.masks[plane_no]))
-                    self.res.forward_fields[plane_no + 1, mode_no, :, :] = self.prop(E,
-                                                                                     self.dist_after_plane[plane_no],
-                                                                                     backprop=False)
+
+    def forward_pass(self, should_update_masks=True):
+        # Given current fields, update mask 1. Then update forward field in mask 2, and update it, etc.
+        # the backward fields don't need to be updated till we get to the last plane, N-1, where
+        # we update field N, and the Mask N is updated in the first iteration of backwards loop
+        # In reality we do not have an SLM at the measurement plane ("plane 11"), but since we don't care
+        # about the phases there, we let the algorithm optimize the phases over there.
+        for plane_no in range(self.N_planes - 1):
+            # In first iteration we populate the initial fields for each mode in each plane
+            if should_update_masks:
+                self.update_mask(plane_no)
+            # this should be done for all modes
+            for mode_no in range(self.N_modes):
+                E = np.copy(self.res.forward_fields[plane_no, mode_no, :, :])
+                # regular prop is with + in the exponent
+                E *= np.exp(+1j * np.angle(self.res.masks[plane_no]))
+                self.res.forward_fields[plane_no + 1, mode_no, :, :] = self.prop(E,
+                                                                                 self.dist_after_plane[plane_no],
+                                                                                 backprop=False)
+
+    def backward_pass(self, should_update_masks=True):
+        # Same logic, but backwards. Last plane is 1, where field 0 is updated,
+        # and mask 0 will be updated in next forward iteration.
+        # starts from N-1 because that is the N'th element of the vector...
+        for plane_no in range(self.N_planes - 1, 0, -1):
+            # In first iteration we populate the initial fields for each mode in each plane
+            if should_update_masks:
+                self.update_mask(plane_no)
+            for mode_no in range(self.N_modes):
+                E = np.copy(self.res.backward_fields[plane_no, mode_no, :, :])
+                # backward prop is with - in the exponent
+                E *= np.exp(-1j * np.angle(self.res.masks[plane_no]))
+                self.res.backward_fields[plane_no - 1, mode_no, :, :] = self.prop(E,
+                                                                                  # when at plane i, want distance
+                                                                                  # after plane i-1
+                                                                                  self.dist_after_plane[plane_no - 1],
+                                                                                  backprop=True)
 
     def fix_initial_phases(self):
         self.res._calc_normalized_overlap()
@@ -140,10 +142,14 @@ class MPLCSim:
 
         for l in range(len(phases)):
             spot = np.abs(self.res.forward_fields[0, l])
+            # two sigma of spot
             mask_phase_cal[spot > spot.max() / np.e ** 2] = -phases[l]
 
         # calibrate global phase between the terms using the first mask
         self.res.masks[0] = np.exp(1j * (np.angle(np.squeeze(self.res.masks[0])) + mask_phase_cal))
+
+        # Forward pass again with fixed phases
+        self.forward_pass(should_update_masks=False)
 
     # @profile
     def update_mask(self, plane_no):
