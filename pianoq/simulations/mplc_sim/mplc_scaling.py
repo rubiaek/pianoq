@@ -8,27 +8,16 @@ from pianoq.simulations.mplc_sim.mplc_utils import show_field, downsample_with_m
 
 class MPLCScalingSimulation:
     """
-        Either SLM1 - at the first MPLC (plane 7 or rather 11-7)
-        Or SLM2 - again at the first MPLC (first or rather last plane)
-        ["rather" because we go backwards in Klyshko]
-        I think of MPLC[0=phases not interesting,
-                       1=empty,
-                       2=Lense,
-                       3=empty,
-                       4=Diffuser+SLM1,
-                       5=Diffuser, ...
-                       10=Diffuser+SLM2]
-                       - flipUD + phase matching mirror -
-                   MPLC2[0=diffuser,
-                         1=diffuser, ...
-                         6=diffuser,
-                         7=empty,
-                         8=lense
-                         9=empty
-                         10=phases not interesting],
-        so backprop is always also from large to small number
-      # TODO: think again about these not interesting phases + whether I want a lens also on MPLC2?
-         probably. for symmetry, and to be the same when both diffusers are the same diffuser
+        A single MPLC, 0 plane is next to crystal
+                   MPLC[0=Diffuser+SLM2,
+                       1=diffuser,
+                       2=diffuser,
+                       ...
+                       6==Diffuser+SLM1,
+                       7=empty
+                       8=lense
+                       9=empty
+                       10=phases not interesting]
     """
     SLM1_plane = 4
     SLM2_plane = 10
@@ -38,7 +27,7 @@ class MPLCScalingSimulation:
         self.path2 = path2
 
         # Klyshko
-        self.res = MPLCResult()
+        self.res = MPLCSimResult()
         self.res.loadfrom(path1)
         self.res2 = MPLCResult()
         self.res2.loadfrom(path2)
@@ -50,7 +39,7 @@ class MPLCScalingSimulation:
 
         # first is from fiber to crystal, second from crystal to collection
         self.mplc = MPLCSim(conf=self.res.conf)
-        self.mplc.res.masks = self.res.masks[::-1]
+        self.mplc.res.masks = self.res.masks
         self.mplc.dist_after_plane = self.mplc.dist_after_plane[::-1]
         self.mplc2 = MPLCSim(conf=self.res2.conf)
         self.mplc2.res.masks = self.res2.masks
@@ -65,7 +54,7 @@ class MPLCScalingSimulation:
 
     def propagate_klyshko(self, use_slm1=False, use_slm2=False):
         # propagate Klyshko
-        # 4 is plane 7 backwards
+        # TODO: rethink this
         E_SLM1_plane = self.mplc.propagate_mplc(initial_field=self.initial_field, end_plane=self.SLM1_plane,
                                                 prop_last_mask=False)
         if use_slm1:

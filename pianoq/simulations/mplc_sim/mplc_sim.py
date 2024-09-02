@@ -315,4 +315,4 @@ class MPLCSim:
 
 
 # PLanes of 140X360, with 10 modes.
-# can choose to do davka symmetry by taking the average of upper and lowwer after correct rotations
+# can choose to force symmetry by taking the average of upper and lowwer after correct rotations
