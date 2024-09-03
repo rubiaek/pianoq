@@ -52,7 +52,7 @@ class MPLCScalingSimulation:
                                                 start_plane=self.mplc.N_planes-1, # last plane - where detector / laser is
                                                 end_plane=self.SLM1_plane,
                                                 prop_first_mask=False, # unphysical 11th plane
-                                                prop_last_mask=False)
+                                                prop_last_mask=False)  # will do in next line
         if use_slm1:
             E_SLM1_plane *= np.exp(+1j*self.slm1_phase)
 
@@ -81,24 +81,39 @@ class MPLCScalingSimulation:
 
     def get_fixing_phase_SLM(self, slm_plane):
         E_SLM_plane_forward = self.mplc.propagate_mplc(initial_field=self.initial_field,
+                                                       start_plane=self.mplc.N_planes - 1,
                                                        end_plane=slm_plane,
-                                                       prop_last_mask=True)
+                                                       prop_first_mask=False,  # unphysical 11th plane
+                                                       prop_last_mask=True)  # propagate phase of meeting plane in forward
+                                                                             # "meeting 1um `after` this mask"
 
         # backprop all second MPLC
-        E_back_crystal = self.mplc2.propagate_mplc(initial_field=self.out_desired_spot,
-                                                   backprop=True, prop_last_mask=True)
+        E_0_plane_backward = self.mplc.propagate_mplc(initial_field=self.out_desired_spot,
+                                                      start_plane=self.mplc.N_planes - 1,
+                                                      end_plane=0,
+                                                      prop_first_mask=False,  # unphysical 11th plane
+                                                      prop_last_mask=True,
+                                                      backprop=True)
 
-        E_back_crystal = np.fliplr(np.flipud(E_back_crystal))
+        # flipping from 2f (anti-correlations)
+        E_0_plane_backward = np.fliplr(np.flipud(E_0_plane_backward))
+        # simulate Cr mask -> kill light outside the active_slice
+        E_0_plane_backward[self.res.active_slice] = 0
 
-        # forward wave props this mask, so the backward wave shouldn't
-        E_SLM1_plane_backward = self.mplc.propagate_mplc(initial_field=E_back_crystal, end_plane=slm_plane,
-                                                         backprop=True, prop_last_mask=False)
+        if slm_plane == 0:
+            # No need for any more propagation: no free-space, and no phase, since the forward wave accumulated the phase
+            E_SLM_plane_backward = E_0_plane_backward
+        else:
+            E_SLM_plane_backward = self.mplc.propagate_mplc(initial_field=E_0_plane_backward,
+                                                            start_plane=0,
+                                                            end_plane=slm_plane,
+                                                            prop_first_mask=True,  # why not
+                                                            prop_last_mask=False,  # forward wave props this mask, so the backward wave shouldn't
+                                                            backprop=True)
 
-        SLM_phase = np.angle(np.conj(E_SLM_plane_forward) * E_SLM1_plane_backward)
-        display_phase = np.zeros_like(SLM_phase)
+        SLM_phase = np.angle(np.conj(E_SLM_plane_forward) * E_SLM_plane_backward)
+        display_phase = np.ones_like(SLM_phase, dtype=np.complex64)
         display_phase[self.res.active_slice] = SLM_phase[self.res.active_slice]
-
-        # TODO: why does this return a binary 0 or pi mask??? probably because of casting issues from complex to real
 
         return display_phase
 

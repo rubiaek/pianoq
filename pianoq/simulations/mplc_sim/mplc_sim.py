@@ -299,14 +299,19 @@ class MPLCSim:
             if (plane_no != start_plane) or prop_first_mask:
                 field *= np.exp(prop_sign * 1j * np.angle(self.res.masks[plane_no]))
 
-            if end_plane > start_plane:
-                dist = self.dist_after_plane[plane_no]
-            elif start_plane < end_plane:
-                dist = self.dist_after_plane[plane_no - 1]
+            if end_plane == start_plane:
+                if (prop_last_mask and prop_first_mask) or (not prop_last_mask and not prop_first_mask):
+                    raise Exception('Propagating from a plane to itself, and accumulating phase twice or none? weird. bug.')
+                pass  # No free-space propagation
             else:
-                raise NotImplementedError("why propagate from plane to itself?? probably bug.")
+                if end_plane > start_plane:
+                    dist = self.dist_after_plane[plane_no]
+                elif start_plane < end_plane:
+                    dist = self.dist_after_plane[plane_no - 1]
+                else:
+                    raise Exception()
 
-            field = self.propagate_freespace2(field, dist, backprop=backprop)
+                field = self.propagate_freespace2(field, dist, backprop=backprop)
 
         if prop_last_mask:
             field *= np.exp(prop_sign * 1j * np.angle(self.res.masks[end_plane]))
