@@ -53,7 +53,7 @@ def get_speckle_modes(Nx, Ny, dx, dy, N_modes, sig=0.05e-3, diffuser_pix_size=0.
     Y = np.arange(-Ny / 2, Ny / 2) * dy
     XX, YY = np.meshgrid(X, Y)
 
-    Y0 = YY[((active_slice[0].stop - active_slice[0].start) // 2), 0]
+    # Y0 = YY[((active_slice[0].stop - active_slice[0].start) // 2), 0]
 
     for mode_no in range(N_modes):
         E_gaus = np.exp(-(XX**2 + YY**2) / (sig**2)).astype(complex)

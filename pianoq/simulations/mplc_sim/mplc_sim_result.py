@@ -116,6 +116,7 @@ class MPLCSimResult:
         imm = ax.imshow(np.angle(mask), cmap='gray')
         fig.colorbar(imm, ax=ax)
         ax.tick_params(axis='both', which='both', left=False, bottom=False, labelleft=False, labelbottom=False)
+        fig.show()
 
     def show_masks(self):
         fig, axes = plt.subplots(1, self.N_planes, figsize=(13, 8), constrained_layout=True)
@@ -125,6 +126,7 @@ class MPLCSimResult:
             fig.colorbar(imm, ax=axes[plane_no])
             axes[plane_no].tick_params(axis='both', which='both', left=False, bottom=False, labelleft=False,
                                        labelbottom=False)
+        fig.show()
 
     def show_all(self, mode_no=0, only_active_slice=True):
         fig, axes = plt.subplots(3, len(self.forward_fields), figsize=(13, 5), constrained_layout=True)
