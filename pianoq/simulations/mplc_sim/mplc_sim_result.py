@@ -232,7 +232,7 @@ class MPLCMasks:
     @property
     def big_masks(self):
         m_shape = self.masks.shape
-        new_masks = np.zeros((m_shape[0], m_shape[1]*3, m_shape[2]*3), dtype=np.complex64)
+        new_masks = np.ones((m_shape[0], m_shape[1]*3, m_shape[2]*3), dtype=np.complex64)
         new_masks[:, m_shape[1]: 2 * m_shape[1],
                      m_shape[2]: 2 * m_shape[2]] = self.masks
 

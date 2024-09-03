@@ -8,7 +8,7 @@ from pianoq.simulations.mplc_sim.mplc_utils import show_field, downsample_with_m
 
 class MPLCScalingSimulation:
     """
-        A single MPLC, 0 plane is next to crystal
+        A single MPLC with upper and lower parts of each plane, 0 plane is at the farfield of the crystal
                    MPLC[0=Diffuser+SLM2,
                        1=diffuser,
                        2=diffuser,
@@ -17,20 +17,18 @@ class MPLCScalingSimulation:
                        7=empty
                        8=lense
                        9=empty
-                       10=phases not interesting]
+                       10=phases not interesting, detector / Klyshko source here]
     """
-    SLM1_plane = 4
-    SLM2_plane = 10
+    SLM1_plane = 6
+    SLM2_plane = 0
 
-    def __init__(self, path1, path2):
-        self.path1 = path1
-        self.path2 = path2
+    def __init__(self, masks_path):
+        self.masks_path = masks_path
 
         # Klyshko
-        self.res = MPLCSimResult()
-        self.res.loadfrom(path1)
-        self.res2 = MPLCResult()
-        self.res2.loadfrom(path2)
+        self.res = MPLCMasks()
+        self.res.loadfrom(self.masks_path)
+
         self.initial_field = None
         self.out_desired_spot = None
         self.out_field = None
@@ -39,58 +37,68 @@ class MPLCScalingSimulation:
 
         # first is from fiber to crystal, second from crystal to collection
         self.mplc = MPLCSim(conf=self.res.conf)
-        self.mplc.res.masks = self.res.masks
-        self.mplc.dist_after_plane = self.mplc.dist_after_plane[::-1]
-        self.mplc2 = MPLCSim(conf=self.res2.conf)
-        self.mplc2.res.masks = self.res2.masks
+        self.mplc.res.masks = self.res.big_masks # with the 3 size factor
 
-    def set_intial_spot(self, sig=0.1, Dx0=0.0, Dy0=0.0):
+    def set_intial_spot(self, sig=80e-6, Dx0=0.0, Dy0=0.0):
         spot = get_spot_conf(self.res.conf, sig=sig, Dx0=Dx0, Dy0=Dy0)
         self.initial_field = spot
 
-    def set_out_desired_spot(self, sig=0.1, Dx0=0.0, Dy0=0.0):
+    def set_out_desired_spot(self, sig=80e-6, Dx0=0.0, Dy0=0.0):
         spot = get_spot_conf(self.res.conf, sig=sig, Dx0=Dx0, Dy0=Dy0)
         self.out_desired_spot = spot
 
     def propagate_klyshko(self, use_slm1=False, use_slm2=False):
-        # propagate Klyshko
-        # TODO: rethink this
-        E_SLM1_plane = self.mplc.propagate_mplc(initial_field=self.initial_field, end_plane=self.SLM1_plane,
+        E_SLM1_plane = self.mplc.propagate_mplc(initial_field=self.initial_field,
+                                                start_plane=self.mplc.N_planes-1, # last plane - where detector / laser is
+                                                end_plane=self.SLM1_plane,
+                                                prop_first_mask=False, # unphysical 11th plane
                                                 prop_last_mask=False)
         if use_slm1:
             E_SLM1_plane *= np.exp(+1j*self.slm1_phase)
 
-        first_plane_plane = self.mplc.propagate_mplc(initial_field=E_SLM1_plane, start_plane=self.SLM1_plane,
-                                                     prop_last_mask=True)
+        E_SLM2_plane = self.mplc.propagate_mplc(initial_field=E_SLM1_plane,
+                                                start_plane=self.SLM1_plane,
+                                                end_plane=self.SLM2_plane,
+                                                prop_first_mask=True, # propagating this middle mask here and not above
+                                                prop_last_mask=True)
 
         if use_slm2:
-            first_plane_plane *= np.exp(+1j*self.slm2_phase)
+            # here we assume SLM2 works only on one photon for simplicity
+            E_SLM2_plane *= np.exp(+1j*self.slm2_phase)
 
         # flipping from 2f (anti-correlations)
-        E_crystal_plane = np.fliplr(np.flipud(first_plane_plane))
+        E_flipped = np.fliplr(np.flipud(E_SLM2_plane))
+        # simulate Cr mask -> kill light outside the active_slice
+        E_flipped[self.res.active_slice] = 0
 
-        E_out = self.mplc2.propagate_mplc(initial_field=E_crystal_plane)
+        E_out = self.mplc.propagate_mplc(initial_field=E_flipped,
+                                         start_plane=self.SLM2_plane,
+                                         end_plane=self.mplc.N_planes - 1,
+                                         prop_first_mask=True,  # again, after the flip
+                                         prop_last_mask=False)  # unphysical 11th plane
         self.out_field = E_out
         return E_out
 
-    def get_fixing_phase_SLM(self, slm_plane=SLM1_plane):
-        E_SLM1_plane_forward = self.mplc.propagate_mplc(initial_field=self.initial_field, end_plane=slm_plane,
-                                                        prop_last_mask=True)
+    def get_fixing_phase_SLM(self, slm_plane):
+        E_SLM_plane_forward = self.mplc.propagate_mplc(initial_field=self.initial_field,
+                                                       end_plane=slm_plane,
+                                                       prop_last_mask=True)
 
         # backprop all second MPLC
         E_back_crystal = self.mplc2.propagate_mplc(initial_field=self.out_desired_spot,
                                                    backprop=True, prop_last_mask=True)
 
-        E_back_crystal = np.flipud(E_back_crystal)
+        E_back_crystal = np.fliplr(np.flipud(E_back_crystal))
+
         # forward wave props this mask, so the backward wave shouldn't
         E_SLM1_plane_backward = self.mplc.propagate_mplc(initial_field=E_back_crystal, end_plane=slm_plane,
                                                          backprop=True, prop_last_mask=False)
 
-        SLM_phase = np.angle(np.conj(E_SLM1_plane_forward) * E_SLM1_plane_backward)
+        SLM_phase = np.angle(np.conj(E_SLM_plane_forward) * E_SLM1_plane_backward)
         display_phase = np.zeros_like(SLM_phase)
         display_phase[self.res.active_slice] = SLM_phase[self.res.active_slice]
 
-        # TODO: why does this return a binary 0 or pi mask???
+        # TODO: why does this return a binary 0 or pi mask??? probably because of casting issues from complex to real
 
         return display_phase
 

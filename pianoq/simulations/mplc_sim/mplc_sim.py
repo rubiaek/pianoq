@@ -282,30 +282,34 @@ class MPLCSim:
             np.fft.fftshift(E_K), overwrite_input=False, auto_align_input=True)
         )
 
-    def propagate_mplc(self, initial_field, start_plane=None, end_plane=None, backprop=False, prop_last_mask=False):
-        """ backprop means also that you use the -i, for WFM or finding the SLM phase """
-        if not backprop:
-            start_plane = start_plane or 0
-            end_plane = end_plane or self.N_planes - 1
-            assert start_plane <= end_plane, "If you want to plainly propagate backwards just create an mplc_sim with " \
-                                             "masks[::-1]"
-        else:
-            start_plane = start_plane or self.N_planes - 1
-            end_plane = end_plane or 0
-            assert start_plane >= end_plane, "If you want to propagate backwards just create an mplc_sim with masks[::-1]"
-
+    def propagate_mplc(self, initial_field, start_plane, end_plane, backprop=False,
+                       prop_first_mask=True, prop_last_mask=False):
+        """
+        * Backprop means using the -i, when back-propagating target fields (in WFM or finding the SLM phase).
+        * Always propagates mask in first plane.
+        """
         field = initial_field.copy()
 
-        if not backprop:
-            for plane_no in range(start_plane, end_plane):
-                field *= np.exp(+1j*np.angle(self.res.masks[plane_no]))
-                field = self.propagate_freespace2(field, self.dist_after_plane[plane_no], backprop=backprop)
-        else:
-            for plane_no in range(start_plane, end_plane, -1):
-                field *= np.exp(-1j*np.angle(self.res.masks[plane_no]))
-                field = self.propagate_freespace2(field, self.dist_after_plane[plane_no - 1], backprop=backprop)
+        num_points = abs(int(end_plane - start_plane)) + 1
+        plane_nos = np.linspace(start_plane, end_plane, num_points, dtype=int)
+        prop_sign = 1 if not backprop else -1
+
+        # 0, 1, 2, 3 for start_plane=0, end_plane=3, and reverse for reverse
+        for plane_no in plane_nos:
+            if (plane_no != start_plane) or prop_first_mask:
+                field *= np.exp(prop_sign * 1j * np.angle(self.res.masks[plane_no]))
+
+            if end_plane > start_plane:
+                dist = self.dist_after_plane[plane_no]
+            elif start_plane < end_plane:
+                dist = self.dist_after_plane[plane_no - 1]
+            else:
+                raise NotImplementedError("why propagate from plane to itself?? probably bug.")
+
+            field = self.propagate_freespace2(field, dist, backprop=backprop)
+
         if prop_last_mask:
-            field *= np.exp(+1j * np.angle(self.res.masks[end_plane]))
+            field *= np.exp(prop_sign * 1j * np.angle(self.res.masks[end_plane]))
 
         return field
 
@@ -314,5 +318,5 @@ class MPLCSim:
             print(txt)
 
 
-# PLanes of 140X360, with 10 modes.
-# can choose to force symmetry by taking the average of upper and lowwer after correct rotations
+# PLanes of 140X360, with 10 modes for QKD.
+# can choose to force symmetry by taking the average of upper and lower after correct rotations
