@@ -79,7 +79,7 @@ class MPLCScalingSimulation:
         self.out_field = E_out
         return E_out
 
-    def get_fixing_phase_SLM(self, slm_plane):
+    def get_overlap_at_plane(self, slm_plane):
         E_SLM_plane_forward = self.mplc.propagate_mplc(initial_field=self.initial_field,
                                                        start_plane=self.mplc.N_planes - 1,
                                                        end_plane=slm_plane,
@@ -111,7 +111,12 @@ class MPLCScalingSimulation:
                                                             prop_last_mask=False,  # forward wave props this mask, so the backward wave shouldn't
                                                             backprop=True)
 
-        SLM_phase = np.angle(np.conj(E_SLM_plane_forward) * E_SLM_plane_backward)
+        overlap = np.conj(E_SLM_plane_forward) * E_SLM_plane_backward
+        return overlap
+
+    def get_fixing_phase_SLM(self, slm_plane):
+        overlap = self.get_overlap_at_plane(slm_plane)
+        SLM_phase = np.angle(overlap)
         display_phase = np.ones_like(SLM_phase, dtype=np.complex64)
         display_phase[self.res.active_slice] = SLM_phase[self.res.active_slice]
 
@@ -150,9 +155,6 @@ plt.show()
 # spot_power = ((np.abs(spot)**2)[res.active_slice]).sum()
 # print(f'{spot_power=}')
 """
-
-# TODO: why do the speckles look weird.
-# TODO: given I will have some sort of CR mask - maybe next to the np.flipud also truncate the field?
 
 
 # TODO: Plan

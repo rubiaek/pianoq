@@ -289,29 +289,30 @@ class MPLCSim:
         * Always propagates mask in first plane.
         """
         field = initial_field.copy()
-
-        num_points = abs(int(end_plane - start_plane)) + 1
-        plane_nos = np.linspace(start_plane, end_plane, num_points, dtype=int)
         prop_sign = 1 if not backprop else -1
 
-        # 0, 1, 2, 3 for start_plane=0, end_plane=3, and reverse for reverse
-        for plane_no in plane_nos:
+        if end_plane == start_plane:
+            if (prop_last_mask and prop_first_mask) or (not prop_last_mask and not prop_first_mask):
+                raise Exception('Propagating from a plane to itself, and accumulating phase twice or none? weird. bug.')
+            else:  # just propagate this mask
+                field *= np.exp(prop_sign * 1j * np.angle(self.res.masks[end_plane]))
+                return field
+
+        step = 1 if end_plane > start_plane else -1
+        # 0, 1, 2 for start_plane=0, end_plane=3, and 3, 2, 1 for start_plane=3, end_plane=0.
+        # I don't want to propagate after the last plane
+        for plane_no in np.arange(start_plane, end_plane, step):
             if (plane_no != start_plane) or prop_first_mask:
                 field *= np.exp(prop_sign * 1j * np.angle(self.res.masks[plane_no]))
 
-            if end_plane == start_plane:
-                if (prop_last_mask and prop_first_mask) or (not prop_last_mask and not prop_first_mask):
-                    raise Exception('Propagating from a plane to itself, and accumulating phase twice or none? weird. bug.')
-                pass  # No free-space propagation
+            if end_plane > start_plane:
+                dist = self.dist_after_plane[plane_no]
+            elif end_plane < start_plane:
+                dist = self.dist_after_plane[plane_no - 1]
             else:
-                if end_plane > start_plane:
-                    dist = self.dist_after_plane[plane_no]
-                elif start_plane < end_plane:
-                    dist = self.dist_after_plane[plane_no - 1]
-                else:
-                    raise Exception()
+                raise Exception('not supposed to get here')
 
-                field = self.propagate_freespace2(field, dist, backprop=backprop)
+            field = self.propagate_freespace2(field, dist, backprop=backprop)
 
         if prop_last_mask:
             field *= np.exp(prop_sign * 1j * np.angle(self.res.masks[end_plane]))

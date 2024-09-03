@@ -197,7 +197,7 @@ class MPLCSimResult:
 
     def save_masks(self, path):
         m = MPLCMasks()
-        m.masks = self.masks[:10, self.active_slice[0], self.active_slice[1]]
+        m.masks = self.masks[:, self.active_slice[0], self.active_slice[1]]
         m.conf = self.conf
         m.active_slice = self.active_slice
         m.saveto(path)
@@ -225,8 +225,8 @@ class MPLCMasks:
         data = np.load(f, allow_pickle=True)
         self.masks = data['masks']
         self.timestamp = data['timestamp']
-        self.conf = data['conf']
-        self.active_slice = data['active_slice']
+        self.conf = data['conf'].item()
+        self.active_slice = tuple(data['active_slice'])
         f.close()
 
     @property
@@ -237,3 +237,8 @@ class MPLCMasks:
                      m_shape[2]: 2 * m_shape[2]] = self.masks
 
         return new_masks
+
+    @property
+    def real_masks(self):
+        # the 11th mask is not physical. But we keep it for simulations etc. so we know about the existence of the 11th plane
+        return self.masks[:10]
