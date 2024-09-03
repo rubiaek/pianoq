@@ -32,8 +32,8 @@ class MPLCScalingSimulation:
         self.initial_field = None
         self.out_desired_spot = None
         self.out_field = None
-        self.slm1_phase = 0
-        self.slm2_phase = 0
+        self.slm1_phase = np.array([], dtype=np.complex128)
+        self.slm2_phase = np.array([], dtype=np.complex128)
 
         # first is from fiber to crystal, second from crystal to collection
         self.mplc = MPLCSim(conf=self.res.conf)
@@ -54,7 +54,7 @@ class MPLCScalingSimulation:
                                                 prop_first_mask=False, # unphysical 11th plane
                                                 prop_last_mask=False)  # will do in next line
         if use_slm1:
-            E_SLM1_plane *= np.exp(+1j*self.slm1_phase)
+            E_SLM1_plane *= np.exp(+1j * np.angle(self.slm1_phase))
 
         E_SLM2_plane = self.mplc.propagate_mplc(initial_field=E_SLM1_plane,
                                                 start_plane=self.SLM1_plane,
@@ -64,7 +64,7 @@ class MPLCScalingSimulation:
 
         if use_slm2:
             # here we assume SLM2 works only on one photon for simplicity
-            E_SLM2_plane *= np.exp(+1j*self.slm2_phase)
+            E_SLM2_plane *= np.exp(+1j * np.angle(self.slm2_phase))
 
         # flipping from 2f (anti-correlations)
         E_flipped = np.fliplr(np.flipud(E_SLM2_plane))
@@ -116,7 +116,7 @@ class MPLCScalingSimulation:
 
     def get_fixing_phase_SLM(self, slm_plane):
         overlap = self.get_overlap_at_plane(slm_plane)
-        SLM_phase = np.angle(overlap)
+        SLM_phase = np.exp(1j*np.angle(overlap))
         display_phase = np.ones_like(SLM_phase, dtype=np.complex64)
         display_phase[self.res.active_slice] = SLM_phase[self.res.active_slice]
 
