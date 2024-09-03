@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import copy
 
+from torch.jit.frontend import build_ignore_context_manager
+
 
 class MPLCSimResult:
     def __init__(self, conf=None):
@@ -194,9 +196,44 @@ class MPLCSimResult:
             traceback.print_exc()
 
     def save_masks(self, path):
+        m = MPLCMasks()
+        m.masks = self.masks[:10, self.active_slice[0], self.active_slice[1]]
+        m.conf = self.conf
+        m.active_slice = self.active_slice
+        m.saveto(path)
+
+
+class MPLCMasks:
+    def __init__(self, masks=None, conf=None):
+        self.conf = conf or None
+        self.timestamp = None
+        self.masks = masks or np.array([], dtype=np.complex64)
+        self.active_slice = None
+
+    def saveto(self, path):
         f = open(path, 'wb')
         # N_masks, Ny3, Nx3 = self.masks.shape
         np.savez(f,
-                 masks=self.masks[:10, self.active_slice[0], self.active_slice[1]],
-                 timestamp=datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S'))
+                 masks=self.masks,
+                 timestamp=datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S'),
+                 conf=self.conf,
+                 active_slice=self.active_slice)
         f.close()
+
+    def loadfrom(self, path):
+        f = open(path, 'rb')
+        data = np.load(f, allow_pickle=True)
+        self.masks = data['masks']
+        self.timestamp = data['timestamp']
+        self.conf = data['conf']
+        self.active_slice = data['active_slice']
+        f.close()
+
+    @property
+    def big_masks(self):
+        m_shape = self.masks.shape
+        new_masks = np.zeros((m_shape[0], m_shape[1]*3, m_shape[2]*3), dtype=np.complex64)
+        new_masks[:, m_shape[1]: 2 * m_shape[1],
+                     m_shape[2]: 2 * m_shape[2]] = self.masks
+
+        return new_masks
