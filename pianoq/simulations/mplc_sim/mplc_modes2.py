@@ -6,7 +6,7 @@ just making sure it will be one to one
 import numpy as np
 
 
-def gen_input_spots_arrayd(waist_in, D_between_modes, XX, YY, dim, deltax_in=0, deltay_in=0):
+def gen_input_spots_array(waist, D_between_modes, XX, YY, dim, deltax_in=0, deltay_in=0):
     # generates the 50 spots
     n_steps_x = []
     n_steps_y = []
@@ -27,7 +27,7 @@ def gen_input_spots_arrayd(waist_in, D_between_modes, XX, YY, dim, deltax_in=0, 
     SPOTS = np.zeros((2 * dim ** 2, XX.shape[0], XX.shape[1]), dtype=complex)
 
     for i in range(2 * dim ** 2):
-        spot = np.exp(-((XX - x_modes_in[i]) ** 2 + (YY - y_modes_in[i]) ** 2) / waist_in ** 2)  # assuming a Gaussian
+        spot = np.exp(-((XX - x_modes_in[i]) ** 2 + (YY - y_modes_in[i]) ** 2) / waist ** 2)  # assuming a Gaussian
         spot = spot / np.sqrt(np.sum(np.abs(spot) ** 2))  # normalization
         SPOTS[i, :, :] = spot
 
@@ -35,7 +35,7 @@ def gen_input_spots_arrayd(waist_in, D_between_modes, XX, YY, dim, deltax_in=0, 
 
 
 def gen_output_modes_Unitary(waist_out, D_between_modes, XX, YY, Matrix_trans, dim, which_modes, deltax_out=0, deltay_out=0):
-    SPOTS_OUT, x_modes_in, y_modes_in, = gen_input_spots_arrayd(waist_out, D_between_modes, XX, YY, dim,
+    SPOTS_OUT, x_modes_in, y_modes_in, = gen_input_spots_array(waist_out, D_between_modes, XX, YY, dim,
                                                                 deltax_in=deltax_out, deltay_in=deltay_out)
 
     # implicitly assume here dim=5, and carve out the 5 modes of the third column on top and on bottom

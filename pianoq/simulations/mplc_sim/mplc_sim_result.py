@@ -8,7 +8,7 @@ import copy
 class MPLCSimResult:
     def __init__(self, conf=None):
         self.conf = conf or {}
-        self.masks = np.array([])
+        self.masks = np.array([], dtype=np.complex64)
         self.forward_fields = np.array([], dtype=np.complex64)
         self.backward_fields = np.array([], dtype=np.complex64)
         self.active_slice = None
@@ -161,7 +161,7 @@ class MPLCSimResult:
                 self.__dict__[k] = v
         self.active_slice = tuple(self.active_slice)
         if self.masks[0].shape != self.forward_fields.shape[-2:]:
-            new_masks = np.zeros((len(self.masks), *self.forward_fields.shape[-2:]))
+            new_masks = np.zeros((len(self.masks), *self.forward_fields.shape[-2:]), dtype=np.complex64)
             m_shape = new_masks.shape
             new_masks[:, m_shape[1] // 3: 2*m_shape[1] // 3, m_shape[2] // 3: 2*m_shape[2] // 3] = self.masks
             self.masks = new_masks

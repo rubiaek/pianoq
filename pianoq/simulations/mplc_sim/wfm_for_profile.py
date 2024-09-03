@@ -56,7 +56,7 @@ conf = {'wavelength': 810e-9,  # mm
 
 mplc = MPLCSim(conf=conf)
 # input_modes = get_spots_modes_conf(conf, sig=0.1, N_rows=N_N_modes, N_cols=N_N_modes, spacing=0.6)
-input_spots, x_modes_in, y_modes_in = gen_input_spots_arrayd(waist_in=waist_in, D_between_modes=D_between_modes_in, XX=mplc.XX, YY=mplc.YY, dim=dim)
+input_spots, x_modes_in, y_modes_in = gen_input_spots_arrayd(waist=waist_in, D_between_modes=D_between_modes_in, XX=mplc.XX, YY=mplc.YY, dim=dim)
 input_modes = input_spots[which_modes]
 x_modes_in = x_modes_in[which_modes]
 y_modes_in = y_modes_in[which_modes]
@@ -64,7 +64,7 @@ y_modes_in = y_modes_in[which_modes]
 output_modes, phase_pos_x, phase_pos_y = gen_output_modes_Unitary(waist_out, D_between_modes_out, mplc.XX, mplc.YY, full_transformation, dim, which_modes)
 
 mplc.set_modes(input_modes, output_modes)
-mplc.find_phases(show_fidelities=False, iterations=5, fix_initial_phases=True)
+mplc.find_phases(show_mean_overlap=False, iterations=5, fix_initial_phases=True)
 
 mplc.res._calc_normalized_overlap()
 print(np.angle(np.diag(mplc.res.forward_overlap)))

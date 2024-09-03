@@ -77,7 +77,7 @@ class MPLCSim:
         self.res.backward_fields[self.N_planes - 1, :, :, :] = output_modes
 
     # @profile
-    def find_phases(self, iterations=None, show_fidelities=True, fix_initial_phases=True):
+    def find_phases(self, iterations=None, show_mean_overlap=False, fix_initial_phases=True):
         """
             Fix initial phases is relevant only when input modes are spatially separated spots
         """
@@ -89,9 +89,9 @@ class MPLCSim:
             # TODO: Actually maybe in backward passes I should update masks also in first iteration?
             self.backward_pass(should_update_masks=should_update_masks)
 
-            if show_fidelities:
-                self.res._calc_fidelity()
-                self.log(f'{iter_no}. Fidelity: {self.res.fidelity}')
+            if show_mean_overlap:
+                self.res._calc_normalized_overlap()
+                self.log(f'{iter_no}. mean overlap: {np.mean(np.abs(np.diag(self.res.forward_overlap)))}')
 
         # Finish with a forward pass, so final field will be with the updated masks, update masks on the way, why not
         self.forward_pass(should_update_masks=True)
