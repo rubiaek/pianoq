@@ -35,6 +35,21 @@ def show_field(E, figshow=True, active_slice=None, title=''):
         fig.show()
 
 
+def show_mask(mask, figshow=True, active_slice=None, title=''):
+    fig, ax = plt.subplots()
+    imm = ax.imshow(mask, cmap='gray')
+    ax.set_title(title)
+
+    if active_slice:
+        rows = active_slice[0]
+        cols = active_slice[1]
+        ax.add_patch(Rectangle((cols.start, rows.start), cols.stop - cols.start, rows.stop-rows.start,
+                               facecolor="none", ec='k', lw=2))
+
+    fig.colorbar(imm, ax=ax)
+    if figshow:
+        fig.show()
+
 def downsample_with_mean(data, block_size):
     # Ugly code by chatgpt
     i, j = block_size

@@ -69,9 +69,10 @@ class MPLCScalingSimulation:
         # flipping from 2f (anti-correlations)
         E_flipped = np.fliplr(np.flipud(E_SLM2_plane))
         # simulate Cr mask -> kill light outside the active_slice
-        E_flipped[self.res.active_slice] = 0
+        E_filtered = np.zeros_like(E_flipped)
+        E_filtered[self.res.active_slice] = E_flipped[self.res.active_slice]
 
-        E_out = self.mplc.propagate_mplc(initial_field=E_flipped,
+        E_out = self.mplc.propagate_mplc(initial_field=E_filtered,
                                          start_plane=self.SLM2_plane,
                                          end_plane=self.mplc.N_planes - 1,
                                          prop_first_mask=True,  # again, after the flip
@@ -98,13 +99,14 @@ class MPLCScalingSimulation:
         # flipping from 2f (anti-correlations)
         E_0_plane_backward = np.fliplr(np.flipud(E_0_plane_backward))
         # simulate Cr mask -> kill light outside the active_slice
-        E_0_plane_backward[self.res.active_slice] = 0
+        E_filtered = np.zeros_like(E_0_plane_backward)
+        E_filtered[self.res.active_slice] = E_0_plane_backward[self.res.active_slice]
 
         if slm_plane == 0:
             # No need for any more propagation: no free-space, and no phase, since the forward wave accumulated the phase
-            E_SLM_plane_backward = E_0_plane_backward
+            E_SLM_plane_backward = E_filtered
         else:
-            E_SLM_plane_backward = self.mplc.propagate_mplc(initial_field=E_0_plane_backward,
+            E_SLM_plane_backward = self.mplc.propagate_mplc(initial_field=E_filtered,
                                                             start_plane=0,
                                                             end_plane=slm_plane,
                                                             prop_first_mask=True,  # why not
