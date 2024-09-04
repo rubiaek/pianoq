@@ -83,6 +83,7 @@ def downsample_phase(A, L, weighted=True):
         weighted_phase = np.where(
             zero_weight_mask,
             np.nan,  # Temporarily assign NaN where weights are zero
+            # TODO: this doesn't work.
             np.average(phase_reshaped, weights=weights, axis=(1, 3))
         )
 
