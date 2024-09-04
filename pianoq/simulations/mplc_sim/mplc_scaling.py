@@ -2,7 +2,7 @@ import numpy as np
 from pianoq.simulations.mplc_sim.mplc_sim_result import MPLCSimResult, MPLCMasks
 from pianoq.simulations.mplc_sim.mplc_sim import MPLCSim
 from pianoq.simulations.mplc_sim.mplc_modes import get_spot_conf
-from simulations.mplc_sim.mplc_utils import downsample_phase
+from pianoq.simulations.mplc_sim.mplc_utils import downsample_phase
 
 
 class MPLCScalingSimulation:
@@ -126,7 +126,7 @@ class MPLCScalingSimulation:
         return self.get_mask_with_degree_of_control(overlap, 1)
 
     def get_mask_with_degree_of_control(self, overlap, degree_of_control, weighted=True):
-        block_size = (int(1/degree_of_control), int(1/degree_of_control))
+        block_size = int(1/degree_of_control)
         downsampled_phase = downsample_phase(overlap, block_size, weighted=weighted)
 
         display_phase = np.ones_like(downsampled_phase, dtype=np.complex64)

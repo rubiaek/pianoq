@@ -54,9 +54,13 @@ def show_mask(mask, figshow=True, active_slice=None, title=''):
 def downsample_phase(A, L, weighted=True):
     """ A is a complex field.
         Returns the down-sampled phase of A (in an exponent)"""
+
     N, M = A.shape
     phase = np.angle(A)
     amplitude = np.abs(A)
+
+    if L == 1:
+        return np.exp(1j * phase)
 
     # Pad arrays if necessary
     pad_n, pad_m = (L - N % L) % L, (L - M % L) % L
@@ -64,11 +68,28 @@ def downsample_phase(A, L, weighted=True):
     amplitude_padded = np.pad(amplitude, ((0, pad_n), (0, pad_m)), mode='constant')  # the zero amplitude makes sure it won't affect the weighted mean
 
     # Reshape and compute weighted mean
-    phase_reshaped = phase_padded.reshape(N // L, L, M // L, L)
-    amplitude_reshaped = amplitude_padded.reshape(N // L, L, M // L, L)
+    phase_reshaped = phase_padded.reshape((N + pad_n) // L, L, (M + pad_m) // L, L)
+    amplitude_reshaped = amplitude_padded.reshape((N + pad_n) // L, L, (M + pad_m) // L, L)
 
     weights = amplitude_reshaped if weighted else None
-    weighted_phase = np.average(phase_reshaped, weights=weights, axis=(1, 3))
+
+    if not weighted:
+        weighted_phase = np.average(phase_reshaped, axis=(1, 3))
+    else:
+        weight_sum = np.sum(weights, axis=(1, 3))
+        zero_weight_mask = weight_sum == 0  # Create a mask for areas where the sum of weights is zero (some areas have zero amplitude)
+
+        # Calculate the weighted average, but only where weights are non-zero
+        weighted_phase = np.where(
+            zero_weight_mask,
+            np.nan,  # Temporarily assign NaN where weights are zero
+            np.average(phase_reshaped, weights=weights, axis=(1, 3))
+        )
+
+        # Replace NaN values with the regular average
+        if np.any(zero_weight_mask):
+            regular_avg = np.average(phase_reshaped, axis=(1, 3))
+            weighted_phase = np.where(zero_weight_mask, regular_avg, weighted_phase)
 
     # Upsample the result back to NxM
     result = np.repeat(np.repeat(weighted_phase, L, axis=0), L, axis=1)
