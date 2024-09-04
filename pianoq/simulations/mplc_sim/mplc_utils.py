@@ -50,54 +50,31 @@ def show_mask(mask, figshow=True, active_slice=None, title=''):
     if figshow:
         fig.show()
 
-def downsample_with_mean(data, block_size):
-    # Ugly code by chatgpt
-    i, j = block_size
-    N, M = data.shape
 
-    # Calculate the number of full blocks in each dimension
-    num_full_blocks_x = N // i
-    num_full_blocks_y = M // j
+def downsample_phase(A, L, weighted=True):
+    """ A is a complex field.
+        Returns the down-sampled phase of A (in an exponent)"""
+    N, M = A.shape
+    phase = np.angle(A)
+    amplitude = np.abs(A)
 
-    # Initialize the downsampled array
-    downsampled = np.zeros((N, M))
+    # Pad arrays if necessary
+    pad_n, pad_m = (L - N % L) % L, (L - M % L) % L
+    phase_padded = np.pad(phase, ((0, pad_n), (0, pad_m)), mode='constant')  # default constant_values is 0
+    amplitude_padded = np.pad(amplitude, ((0, pad_n), (0, pad_m)), mode='constant')  # the zero amplitude makes sure it won't affect the weighted mean
 
-    # Handle the main body with full blocks
-    main_body = data[:num_full_blocks_x * i, :num_full_blocks_y * j]
-    reshaped = main_body.reshape(num_full_blocks_x, i, num_full_blocks_y, j)
-    block_means = reshaped.mean(axis=(1, 3))
+    # Reshape and compute weighted mean
+    phase_reshaped = phase_padded.reshape(N // L, L, M // L, L)
+    amplitude_reshaped = amplitude_padded.reshape(N // L, L, M // L, L)
 
-    # Fill the main body of the downsampled array
-    downsampled[:num_full_blocks_x * i, :num_full_blocks_y * j] = np.kron(block_means, np.ones((i, j)))
+    weights = amplitude_reshaped if weighted else None
+    weighted_phase = np.average(phase_reshaped, weights=weights, axis=(1, 3))
 
-    # Handle the right edge
-    if M % j != 0:
-        right_edge_start_y = num_full_blocks_y * j
-        for bx in range(num_full_blocks_x):
-            start_x = bx * i
-            end_x = start_x + i
-            block = data[start_x:end_x, right_edge_start_y:M]
-            block_mean = block.mean()
-            downsampled[start_x:end_x, right_edge_start_y:M] = block_mean
+    # Upsample the result back to NxM
+    result = np.repeat(np.repeat(weighted_phase, L, axis=0), L, axis=1)
 
-    # Handle the bottom edge
-    if N % i != 0:
-        bottom_edge_start_x = num_full_blocks_x * i
-        for by in range(num_full_blocks_y):
-            start_y = by * j
-            end_y = start_y + j
-            block = data[bottom_edge_start_x:N, start_y:end_y]
-            block_mean = block.mean()
-            downsampled[bottom_edge_start_x:N, start_y:end_y] = block_mean
-
-    # Handle the bottom-right corner
-    if N % i != 0 and M % j != 0:
-        bottom_right_block = data[bottom_edge_start_x:N, right_edge_start_y:M]
-        block_mean = bottom_right_block.mean()
-        downsampled[bottom_edge_start_x:N, right_edge_start_y:M] = block_mean
-
-    return downsampled
-
+    # Trim to original size
+    return np.exp(1j*result[:N, :M])
 
 def corr(A, B):
     return np.abs((A.conj() * B).sum())

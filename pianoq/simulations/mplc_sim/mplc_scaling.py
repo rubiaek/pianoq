@@ -1,9 +1,8 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from pianoq.simulations.mplc_sim.mplc_sim_result import MPLCSimResult, MPLCMasks
 from pianoq.simulations.mplc_sim.mplc_sim import MPLCSim
 from pianoq.simulations.mplc_sim.mplc_modes import get_spot_conf
-from pianoq.simulations.mplc_sim.mplc_utils import show_field, downsample_with_mean, corr
+from simulations.mplc_sim.mplc_utils import downsample_phase
 
 
 class MPLCScalingSimulation:
@@ -68,9 +67,7 @@ class MPLCScalingSimulation:
 
         # flipping from 2f (anti-correlations)
         E_flipped = np.fliplr(np.flipud(E_SLM2_plane))
-        # simulate Cr mask -> kill light outside the active_slice
-        E_filtered = np.zeros_like(E_flipped)
-        E_filtered[self.res.active_slice] = E_flipped[self.res.active_slice]
+        E_filtered = self.filter_cr_mask(E_flipped)
 
         E_out = self.mplc.propagate_mplc(initial_field=E_filtered,
                                          start_plane=self.SLM2_plane,
@@ -98,9 +95,7 @@ class MPLCScalingSimulation:
 
         # flipping from 2f (anti-correlations)
         E_0_plane_backward = np.fliplr(np.flipud(E_0_plane_backward))
-        # simulate Cr mask -> kill light outside the active_slice
-        E_filtered = np.zeros_like(E_0_plane_backward)
-        E_filtered[self.res.active_slice] = E_0_plane_backward[self.res.active_slice]
+        E_filtered = self.filter_cr_mask(E_0_plane_backward)
 
         if slm_plane == 0:
             # No need for any more propagation: no free-space, and no phase, since the forward wave accumulated the phase
@@ -116,54 +111,25 @@ class MPLCScalingSimulation:
         overlap = np.conj(E_SLM_plane_forward) * E_SLM_plane_backward
         return overlap
 
+    def filter_cr_mask(self, E, type='rect'):
+        if type == 'rect':
+            # kill light outside the active_slice
+            E_filtered = np.zeros_like(E)
+            E_filtered[self.res.active_slice] = E[self.res.active_slice]
+            return E_filtered
+        else:
+            # TODO: holes of Ohad mask
+            raise NotImplementedError
+
     def get_fixing_phase_SLM(self, slm_plane):
         overlap = self.get_overlap_at_plane(slm_plane)
-        SLM_phase = np.exp(1j*np.angle(overlap))
-        display_phase = np.ones_like(SLM_phase, dtype=np.complex64)
-        display_phase[self.res.active_slice] = SLM_phase[self.res.active_slice]
+        return self.get_mask_with_degree_of_control(overlap, 1)
+
+    def get_mask_with_degree_of_control(self, overlap, degree_of_control, weighted=True):
+        block_size = (int(1/degree_of_control), int(1/degree_of_control))
+        downsampled_phase = downsample_phase(overlap, block_size, weighted=weighted)
+
+        display_phase = np.ones_like(downsampled_phase, dtype=np.complex64)
+        display_phase[self.res.active_slice] = downsampled_phase[self.res.active_slice]
 
         return display_phase
-
-    def get_mask_with_degree_of_control(self, mask, degree_of_control):
-        phase = np.angle(mask[self.res.active_slice])
-        # Nrows, Ncols = phase.shape
-        # new_Nrows, new_Ncols = int(degree_of_control*Nrows), int(degree_of_control*Ncols)
-        block_size = (int(1/degree_of_control), int(1/degree_of_control))
-
-        downsampled_phase = downsample_with_mean(phase, block_size)
-
-        new_mask = np.zeros_like(mask)
-        new_mask[self.res.active_slice] = downsampled_phase
-        return np.exp(1j*new_mask)
-
-
-"""
-path1 = "C:\\temp\\speckle_speckle3.mplc_sim"
-path2 = "C:\\temp\\speckle_speckle4.mplc_sim"
-s = MPLCScalingSimulation(path1, path2)
-s.set_intial_spot(sig=0.1, Dx0=-0.3, Dy0=-0.4)
-s.set_out_desired_spot(sig=0.6, Dx0=0.3, Dy0=0.5)
-speckles = s.propagate_klyshko()
-s.slm1_phase = s.get_fixing_phase_SLM(s.SLM1_plane)
-s.slm2_phase = s.get_fixing_phase_SLM(s.SLM2_plane)
-fixed_SLM1 = s.propagate_klyshko(use_slm1=True)
-fixed_SLM2 = s.propagate_klyshko(use_slm2=True)
-show_field(s.initial_field, active_slice=s.mplc_sim.res.active_slice, title='initial_field')
-show_field(speckles, active_slice=s.mplc_sim.res.active_slice, title='speckles')
-show_field(fixed_SLM1, active_slice=s.mplc_sim.res.active_slice, title='fixed_SLM1')
-show_field(fixed_SLM2, active_slice=s.mplc_sim.res.active_slice, title='fixed_SLM2')
-plt.show()
-# show_field(spot, active_slice=res.active_slice)
-# spot_power = ((np.abs(spot)**2)[res.active_slice]).sum()
-# print(f'{spot_power=}')
-"""
-
-
-# TODO: Plan
-#  Implement SLM for focusing in relevant region (Start with SLM1 in backprop)
-#  Probably will need some statistics with different MPLC phase realizations
-#  Scale incomplete control
-#  Practically:
-#  * implement SLM WFS `find phase` which should be pretty easy
-#  * implement some incomplete control mechanism
-#  * SLM2 probably has much more active pixels. Check what happens to the spot after the lens in MPLC 1
