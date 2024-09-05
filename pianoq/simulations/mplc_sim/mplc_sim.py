@@ -89,20 +89,21 @@ class MPLCSim:
         """
             Fix initial phases is relevant only when input modes are spatially separated spots
         """
-        # Running with iterations = 1 will result with only field initialization
+
+        # Backpropagate the output modes to the input
+        self.backward_pass(should_update_masks=False)
+
         iterations = iterations or self.N_iterations
         for iter_no in tqdm(range(iterations)):
-            should_update_masks = False if iter_no == 0 else True
-            self.forward_pass(should_update_masks=should_update_masks)
-            # TODO: Actually maybe in backward passes I should update masks also in first iteration?
-            self.backward_pass(should_update_masks=should_update_masks)
+            self.forward_pass(should_update_masks=True)
+            self.backward_pass(should_update_masks=True)
 
             if show_mean_overlap:
                 self.res._calc_normalized_overlap()
                 self.log(f'{iter_no}. mean overlap: {np.mean(np.abs(np.diag(self.res.forward_overlap)))}')
 
-        # Finish with a forward pass, so final field will be with the updated masks, update masks on the way, why not
-        self.forward_pass(should_update_masks=True)
+        # Finish with a forward pass, so final field will be with the updated masks
+        self.forward_pass(should_update_masks=False)
         if fix_initial_phases:
             self.fix_initial_phases()
 
