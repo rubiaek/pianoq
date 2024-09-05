@@ -13,7 +13,7 @@ from pianoq.lab.mplc.phase_finder_result import PhaseFinderResult
 DIR_PATH = r'G:\My Drive\People\Ronen\PHD\MPLC\results'
 
 
-def idler_scan(name='', integration_time=1.0, coin_window=2e-9, resolution=1):
+def idler_scan(name='', integration_time=1.0, coin_window=2e-9, resolution=1, out_path=None):
 
     start_x = 8.75
     end_x = 9.45
@@ -27,7 +27,7 @@ def idler_scan(name='', integration_time=1.0, coin_window=2e-9, resolution=1):
 
 
     timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-    path = f'{DIR_PATH}\\{timestamp}_{name}.scan'
+    path = out_path or f'{DIR_PATH}\\{timestamp}_{name}.scan'
     scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
                             run_name=name, is_timetagger=True, coin_window=2e-9, saveto_path=path)
 
@@ -47,7 +47,7 @@ def idler_scan(name='', integration_time=1.0, coin_window=2e-9, resolution=1):
     time_tagger.close()
 
 
-def signal_scan(name='', integration_time=1.0, coin_window=2e-9, resolution=1):
+def signal_scan(name='', integration_time=1.0, coin_window=2e-9, resolution=1, out_path=None):
     start_x = 11.2
     end_x = 11.9
     start_y = 6.5
@@ -59,7 +59,7 @@ def signal_scan(name='', integration_time=1.0, coin_window=2e-9, resolution=1):
     pixel_size_y = 0.025 * resolution
 
     timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-    path = f'{DIR_PATH}\\{timestamp}_{name}.scan'
+    path = out_path or f'{DIR_PATH}\\{timestamp}_{name}.scan'
     scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
                             run_name=name, is_timetagger=True, coin_window=2e-9, saveto_path=path)
 
