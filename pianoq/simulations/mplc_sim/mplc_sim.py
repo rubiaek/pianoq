@@ -76,6 +76,14 @@ class MPLCSim:
         self.res.forward_fields[0, :, :, :] = input_modes
         self.res.backward_fields[self.N_planes - 1, :, :, :] = output_modes
 
+    @property
+    def input_modes(self):
+        return self.res.forward_fields[0, :, :, :]
+
+    @property
+    def output_modes(self):
+        return self.res.backward_fields[self.N_planes - 1, :, :, :]
+
     # @profile
     def find_phases(self, iterations=None, show_mean_overlap=False, fix_initial_phases=True):
         """

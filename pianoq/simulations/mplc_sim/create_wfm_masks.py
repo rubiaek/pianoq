@@ -39,7 +39,6 @@ def create_WFM_diffuser_masks(same_diffuser=False, out_path=None, name=None):
     which_modes = np.array([7, 17, 9, 19,
                             32, 42, 34, 44])
 
-    mplc = MPLCSim(conf=conf)
     input_spots, _, _ = gen_input_spots_array(waist=waist_in, D_between_modes=D_between_modes_in, XX=mplc.XX,
                                               YY=mplc.YY, dim=dim)
     input_spots = input_spots[which_modes]
@@ -75,6 +74,8 @@ def create_WFM_diffuser_masks(same_diffuser=False, out_path=None, name=None):
     name = name or 'unitary'
     path = out_path or fr'{DEFAULT_DIR}\{timestamp}_{name}.masks'
     mplc.res.save_masks(path)
+
+    return mplc
 
 
 def create_WFM_unitary_masks(U1, U2=None, out_path=None, name=None):
@@ -123,8 +124,10 @@ def create_WFM_unitary_masks(U1, U2=None, out_path=None, name=None):
     path = out_path or fr'{DEFAULT_DIR}\{timestamp}_{name}.masks'
     mplc.res.save_masks(path)
 
+    return mplc
 
-def create_WFM_unitary_masks(path=None, name=None):
+
+def create_WFM_QKD_masks(out_path=None, name='MUB2_QKD'):
     #  Based on "All Mutually Unbiased Bases in Dimensions Two to Five" (2018)
     #  The columns in the matrix are the basis elements
     q = np.exp(2j * np.pi / 5)  # Complex fifth root of unity
@@ -137,4 +140,4 @@ def create_WFM_unitary_masks(path=None, name=None):
     ]) / np.sqrt(5)  # eq. 33
 
     U = MUB.conj().T  # To measure in X basis, we need to act with X^dag on the state
-    create_WFM_unitary_masks(U1=U, name='MUB5_QKD')
+    return create_WFM_unitary_masks(U1=U, out_path=out_path, name=name)
