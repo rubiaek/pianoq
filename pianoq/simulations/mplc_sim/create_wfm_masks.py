@@ -23,6 +23,7 @@ def create_WFM_diffuser_masks(same_diffuser=False, out_path=None, name=None):
     conf = copy.deepcopy(default_wfm_conf)
     conf['active_planes'] = active_planes
     conf['N_modes'] = N_modes
+    conf['symmetric_masks'] = same_diffuser
     mplc = MPLCSim(conf=conf)
 
     lens_mask = get_lens_mask(Nx=conf['Nx'], Ny=conf['Ny'] // 2, dx=conf['dx'], dy=conf['dy'], wl=mplc.wavelength,
@@ -33,7 +34,7 @@ def create_WFM_diffuser_masks(same_diffuser=False, out_path=None, name=None):
     waist_in = 80e-6
     waist_out = 80e-6
     D_between_modes_in = 300e-6
-    D_between_modes_out = 360e-6
+    D_between_modes_out = 300e-6
     dim = 5  # to create the spot array similar to the spots Cr masks
     # modes are ordered like this: lab/mplc/mask_utils.py
     which_modes = np.array([7, 17, 9, 19,
@@ -46,24 +47,27 @@ def create_WFM_diffuser_masks(same_diffuser=False, out_path=None, name=None):
                                                YY=mplc.YY, dim=dim)
     output_spots = output_spots[which_modes]
 
+    upper_active_slice = np.index_exp[360 + 30:360 + 180 - 15, 160:260]
+    upper_active_slice = None
+    upper_speckles = get_speckle_modes_conf(conf, N_modes=8, sig=0.48e-3, diffuser_pix_size=0.15e-3,
+                                            active_slice=upper_active_slice, y_displace=72)
+    lower_active_slice = np.index_exp[360 + 180 + 15:360 + 180 + 150, 160:260]
+    lower_active_slice = None  # TODO: maybe I do want this?
+    lower_speckles = get_speckle_modes_conf(conf, N_modes=8, sig=0.48e-3, diffuser_pix_size=0.15e-3,
+                                            active_slice=lower_active_slice, y_displace=-72)
     if not same_diffuser:
-        # This here is for different diffusers for the two photons.
-        upper_active_slice = np.index_exp[360 + 30:360 + 180 - 15, 160:260]
-        upper_active_slice = None
-        upper_speckles = get_speckle_modes_conf(conf, N_modes=8, sig=0.48e-3, diffuser_pix_size=0.15e-3,
-                                                active_slice=upper_active_slice, y_displace=72)
-        lower_active_slice = np.index_exp[360 + 180 + 15:360 + 180 + 150, 160:260]
-        lower_active_slice = None
-        lower_speckles = get_speckle_modes_conf(conf, N_modes=8, sig=0.48e-3, diffuser_pix_size=0.15e-3,
-                                                active_slice=lower_active_slice, y_displace=-72)
-
         # lower number spots are for lower half of SLM speckles
         input_modes = np.concatenate([input_spots, lower_speckles[:4], upper_speckles[:4]])
-        output_modes = np.concatenate([lower_speckles[4:], upper_speckles[4:], output_spots])
+        output_modes = np.concatenate([lower_speckles[4:], upper_speckles[4:],  output_spots])
     else:
-        # For same diffusers for both photons we need to generate
-        # the same speckles + correct flips between upper and lower halves
-        raise NotImplemented('TODO!')
+        # the same speckles (+ correct flips) between upper and lower corresponding spots,
+        # the same things happen to corresponding modes of upper and lower photons
+        input_modes = np.concatenate([input_spots, lower_speckles[:4], np.fliplr(np.flipud(lower_speckles[:4]))])
+        # Using input_spots twice, because the whole point is for them to be the same
+        output_modes = np.concatenate([lower_speckles[4:], np.fliplr(np.flipud(lower_speckles[4:])),  input_spots])
+        # TODO: check! before you uncomment (just look at the modes and make sure they are symmetric,
+        #  and also run WFM once and see it works reasonably well)
+        raise NotImplemented()
 
     # Run #
     mplc.set_modes(input_modes, output_modes)

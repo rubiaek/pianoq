@@ -44,6 +44,7 @@ class MPLCSim:
         self.use_mask_offset = conf['use_mask_offset']
         # TODO: this does not make sense, N_modes has opposite effect than Nx, Ny
         self.mask_offset = np.sqrt(1e-3/(self.Nx * self.Ny * self.N_modes))
+        self.symmetric_masks = conf['symmetric_masks']
 
         self.X = (np.arange(1, self.Nx + 1) - (self.Nx / 2 + 0.5)) * self.dx
         self.Y = (np.arange(1, self.Ny + 1) - (self.Ny / 2 + 0.5)) * self.dy
@@ -212,7 +213,9 @@ class MPLCSim:
         # to keep the value consistent even if the resolution or number of modes is
         # changed.
         if self.use_mask_offset:
-            new_mask += self.mask_offset
+            abs_new_mask = np.abs(new_mask)
+            # Use the mask offset only on the really weak parts, so don't ruin good phases found
+            new_mask[abs_new_mask < abs_new_mask.max()*1e-2] += self.mask_offset
 
         # make phase mask really a phase mask with no varying amplitude
         new_mask = np.exp(+1j * np.angle(new_mask))
@@ -236,6 +239,9 @@ class MPLCSim:
             filtered_mask = np.ones_like(new_mask)  # np.exp(1j*0) = 1
             filtered_mask[self.res.active_slice] = new_mask[self.res.active_slice]
             new_mask = filtered_mask
+
+        if self.symmetric_masks:
+            new_mask = (new_mask + np.fliplr(np.flipud(new_mask))) / 2
 
         return new_mask
 
