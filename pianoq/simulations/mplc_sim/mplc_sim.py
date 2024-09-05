@@ -215,7 +215,7 @@ class MPLCSim:
         if self.use_mask_offset:
             abs_new_mask = np.abs(new_mask)
             # Use the mask offset only on the really weak parts, so don't ruin good phases found
-            new_mask[abs_new_mask < abs_new_mask.max()*0.1] += self.mask_offset
+            new_mask[abs_new_mask < abs_new_mask.max()*1e-3] += self.mask_offset
 
         # make phase mask really a phase mask with no varying amplitude
         new_mask = np.exp(+1j * np.angle(new_mask))
