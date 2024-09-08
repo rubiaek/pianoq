@@ -13,7 +13,7 @@ from pianoq.lab.mplc.phase_finder_result import PhaseFinderResult
 DIR_PATH = r'G:\My Drive\People\Ronen\PHD\MPLC\results'
 
 
-def idler_scan(name='', integration_time=1.0, coin_window=2e-9, resolution=1, out_path=None):
+def idler_scan(name='', integration_time=1.0, coin_window=2e-9, resolution=1, out_path=None, half_scan=True):
 
     start_x = 8.75
     end_x = 9.45
@@ -25,6 +25,8 @@ def idler_scan(name='', integration_time=1.0, coin_window=2e-9, resolution=1, ou
     pixel_size_x = 0.025 * resolution
     pixel_size_y = 0.025 * resolution
 
+    if half_scan:
+        y_pixels = (y_pixels // 2) + 6
 
     timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
     path = out_path or f'{DIR_PATH}\\{timestamp}_{name}.scan'
@@ -47,7 +49,8 @@ def idler_scan(name='', integration_time=1.0, coin_window=2e-9, resolution=1, ou
     time_tagger.close()
 
 
-def signal_scan(name='', integration_time=1.0, coin_window=2e-9, resolution=1, out_path=None):
+def signal_scan(name='', integration_time=1.0, coin_window=2e-9, resolution=1, out_path=None, half_scan=True):
+    """ higher y values, zaber motors """
     start_x = 11.2
     end_x = 11.9
     start_y = 6.5
@@ -57,6 +60,10 @@ def signal_scan(name='', integration_time=1.0, coin_window=2e-9, resolution=1, o
     y_pixels = 160  // resolution
     pixel_size_x = 0.025 * resolution
     pixel_size_y = 0.025 * resolution
+
+    if half_scan:
+        start_y = start_y + pixel_size_y * (y_pixels / 2)
+        y_pixels = y_pixels // 2
 
     timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
     path = out_path or f'{DIR_PATH}\\{timestamp}_{name}.scan'

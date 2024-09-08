@@ -1,7 +1,7 @@
 import numpy as np
 from tqdm import tqdm
 from pianoq.simulations.mplc_sim.mplc_sim_result import MPLCSimResult
-from line_profiler_pycharm import profile
+# from line_profiler_pycharm import profile
 from functools import cache
 import pyfftw
 pyfftw.interfaces.cache.enable()
@@ -272,7 +272,7 @@ class MPLCSim:
         E_out = np.fft.fftshift(np.fft.ifft2(np.fft.fftshift(E_K)))
         return E_out
 
-    @profile
+    # @profile
     def propagate_freespace2(self, E, L, backprop=False):
         # a = pyfftw.empty_aligned(E.shape, dtype='complex64')
         # a[:] = E

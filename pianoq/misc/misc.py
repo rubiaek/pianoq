@@ -2,7 +2,10 @@ import numpy as np
 from functools import wraps
 from matplotlib.animation import FuncAnimation
 from colorsys import hls_to_rgb
-
+import threading
+import io
+import sys
+import time
 
 # https://stackoverflow.com/questions/44985966/managing-dynamic-plotting-in-matplotlib-animation-module
 class Player(FuncAnimation):
@@ -97,3 +100,52 @@ def retry_if_exception(ex=Exception, max_retries=3):
                         raise
         return wrapper
     return outer
+
+
+from IPython.display import display, HTML
+
+
+class ThreadWithPrintCapture(threading.Thread):
+    def __init__(self, target, args=(), kwargs=None):
+        super().__init__()
+        self.target = target
+        self.args = args
+        self.kwargs = kwargs or {}
+        self.output = io.StringIO()
+
+    def run(self):
+        old_stdout = sys.stdout
+        sys.stdout = self.output
+        try:
+            self.target(*self.args, **self.kwargs)
+        finally:
+            sys.stdout = old_stdout
+
+
+def display_thread_output(thread):
+    while thread.is_alive():
+        output = thread.output.getvalue()
+        if output:
+            display(HTML(f"<pre>{output}</pre>"))
+            thread.output.truncate(0)
+            thread.output.seek(0)
+        time.sleep(0.1)
+
+    # Display any remaining output
+    output = thread.output.getvalue()
+    if output:
+        display(HTML(f"<pre>{output}</pre>"))
+
+
+def run_in_thread(func, *args, **kwargs):
+    thread = ThreadWithPrintCapture(target=func, args=args, kwargs=kwargs)
+    thread.start()
+    display_thread = threading.Thread(target=display_thread_output, args=(thread,))
+    display_thread.start()
+    return thread
+
+
+def run_in_thread_simple(func, *args, **kwargs):
+    thread = threading.Thread(target=func, args=args, kwargs=kwargs)
+    thread.start()
+    return thread

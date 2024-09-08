@@ -5,7 +5,7 @@ from pianoq.lab.mplc.consts import MASK_CENTERS, MASK_DIMS, SLM_DIMS
 from pianoq.lab.mplc.mask_utils import mask_centers_to_mask_slices
 
 
-CORRECTION_PATH = r"G:\My Drive\People\Ronen\PHD\MPLC\technical\correction_pattern_14_12_22.mat"
+CORRECTION_PATH = r"G:\My Drive\Projects\MPLC\Technical\correction_pattern_14_12_22.mat"
 
 
 class MPLCDevice:
