@@ -56,7 +56,7 @@ class MPLCDevice:
 
     def restore_location(self, geometry=None):
         geom = geometry or self.geometry
-        self.fig.canvas.manager.window.geometry(self.geometry)
+        self.fig.canvas.manager.window.geometry(geom)
 
     def load_masks_from_path(self, masks_path, linear_tilts=True):
         """
