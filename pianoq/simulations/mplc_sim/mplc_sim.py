@@ -44,7 +44,7 @@ class MPLCSim:
         self.use_mask_offset = conf['use_mask_offset']
         # TODO: this does not make sense, N_modes has opposite effect than Nx, Ny
         self.mask_offset = np.sqrt(1e-3/(self.Nx * self.Ny * self.N_modes))
-        self.symmetric_masks = conf['symmetric_masks']
+        self.symmetric_masks = conf.get('symmetric_masks', False)
 
         self.X = (np.arange(1, self.Nx + 1) - (self.Nx / 2 + 0.5)) * self.dx
         self.Y = (np.arange(1, self.Ny + 1) - (self.Ny / 2 + 0.5)) * self.dy
