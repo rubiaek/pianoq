@@ -240,3 +240,8 @@ class MPLCMasks:
     def real_masks(self):
         # the 11th mask is not physical. But we keep it for simulations etc. so we know about the existence of the 11th plane
         return self.masks[:10]
+
+    def show(self):
+        fig, axes = plt.subplots(2, 5)
+        for i, ax in enumerate(axes.flat):
+            ax.imshow(np.angle(self.real_masks[i]), cmap='gray')

@@ -77,6 +77,8 @@ class PhaseFinder(object):
         self.time_tagger.close()
         self.m_sig_x.close()
         self.m_sig_y.close()
+        self.m_idl_x.close()
+        self.m_idl_y.close()
 
 
 def QKD_row_3_3():

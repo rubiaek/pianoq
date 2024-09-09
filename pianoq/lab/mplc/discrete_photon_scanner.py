@@ -11,7 +11,7 @@ from pianoq.lab.mplc.mplc_device import MPLCDevice
 from pianoq.lab.mplc.mask_utils import remove_input_modes, add_phase_input_spots, get_masks_matlab
 from pianoq.lab.mplc.phase_finder_result import PhaseFinderResult
 
-LOGS_DIR = r"G:\My Drive\People\Ronen\PHD\MPLC\results"
+LOGS_DIR = r"G:\My Drive\Projects\MPLC\results\lab\temp"
 
 
 class DiscretePhotonScanner:
@@ -80,26 +80,28 @@ class DiscretePhotonScanner:
         self.time_tagger.close()
         self.m_sig_x.close()
         self.m_sig_y.close()
+        self.m_idl_x.close()
+        self.m_idl_y.close()
 
 
 def run_QKD_row_3_3():
     coin_window = 0.4e-9
-    integration_time = 50
+    integration_time = 4
 
     # Full python impl.
-    if False:
+    if True:
         mplc = MPLCDevice()
-        path = r"G:\My Drive\People\Ronen\PHD\MPLC\results\rss_wfm1.masks"
+        path = r"G:\My Drive\Projects\MPLC\results\lab\temp\rss_wfm1.masks"
         masks = np.load(path)['masks']
         modes_to_keep = np.array([3, 8, 13, 18, 23, 28, 33, 38, 43, 48])
         masks = remove_input_modes(masks, modes_to_keep=modes_to_keep)
         phases_result = PhaseFinderResult()
-        phases_result.loadfrom(r"G:\My Drive\People\Ronen\PHD\MPLC\results\2024_08_11_10_26_11_QKD_row3_phases.phases")
+        phases_result.loadfrom(r"G:\My Drive\Projects\MPLC\results\lab\temp\2024_08_11_10_26_11_QKD_row3_phases.phases")
         masks = add_phase_input_spots(masks, phases_result.phases)
         mplc.load_masks(masks, linear_tilts=True)
 
     # Matlab WFM - python lab
-    if True:
+    if False:
         mplc = MPLCDevice()
         # phases
         phases_path = r"G:\My Drive\Ohad and Giora\MPLC\matlab codes\Ronen stuff 17.7.24\phase_align_QKD5d_10_11_23_3.mat"
