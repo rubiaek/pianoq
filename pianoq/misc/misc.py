@@ -126,7 +126,7 @@ def display_thread_output(thread):
     while thread.is_alive():
         output = thread.output.getvalue()
         if output:
-            display(HTML(f"<pre>{output}</pre>"))
+            # display(HTML(f"<pre>{output}</pre>"))
             thread.output.truncate(0)
             thread.output.seek(0)
         time.sleep(0.1)
@@ -134,7 +134,8 @@ def display_thread_output(thread):
     # Display any remaining output
     output = thread.output.getvalue()
     if output:
-        display(HTML(f"<pre>{output}</pre>"))
+        # display(HTML(f"<pre>{output}</pre>"))
+        pass
 
 
 def run_in_thread(func, *args, **kwargs):
