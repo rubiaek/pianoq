@@ -14,7 +14,14 @@ DIR_PATH = r'G:\My Drive\People\Ronen\PHD\MPLC\results'
 
 
 def idler_scan(name='', integration_time=1.0, coin_window=2e-9, resolution=1, out_path=None, half_scan=True):
+    scanner, x_motor, y_motor, time_tagger = get_idler_scanner(name=name, integration_time=integration_time, coin_window=coin_window,
+                      resolution=resolution, out_path=out_path, half_scan=half_scan)
+    single1s, single2s, coincidences = scanner.scan(x_motor=x_motor, y_motor=y_motor, ph=time_tagger)
+    # x_motor.close()
+    # y_motor.close()  # pesky bug?
+    time_tagger.close()
 
+def get_idler_scanner(name='', integration_time=1.0, coin_window=2e-9, resolution=1, out_path=None, half_scan=True):
     start_x = 8.75
     end_x = 9.45
     start_y = 1.2
@@ -43,13 +50,18 @@ def idler_scan(name='', integration_time=1.0, coin_window=2e-9, resolution=1, ou
                                single_channel_delays=TIMETAGGER_DELAYS)
     print('got timetagger!')
 
+    return scanner, x_motor, y_motor, time_tagger
+
+
+def signal_scan(name='', integration_time=1.0, coin_window=2e-9, resolution=1, out_path=None, half_scan=True):
+    scanner, x_motor, y_motor, time_tagger = get_signal_scanner(name=name, integration_time=integration_time, coin_window=coin_window,
+                      resolution=resolution, out_path=out_path, half_scan=half_scan)
     single1s, single2s, coincidences = scanner.scan(x_motor=x_motor, y_motor=y_motor, ph=time_tagger)
     # x_motor.close()
     # y_motor.close()  # pesky bug?
     time_tagger.close()
 
-
-def signal_scan(name='', integration_time=1.0, coin_window=2e-9, resolution=1, out_path=None, half_scan=True):
+def get_signal_scanner(name='', integration_time=1.0, coin_window=2e-9, resolution=1, out_path=None, half_scan=True):
     """ higher y values, zaber motors """
     start_x = 11.2
     end_x = 11.9
@@ -80,9 +92,7 @@ def signal_scan(name='', integration_time=1.0, coin_window=2e-9, resolution=1, o
                                single_channel_delays=TIMETAGGER_DELAYS)
     print('got timetagger!')
 
-    single1s, single2s, coincidences = scanner.scan(x_motor=x_motor, y_motor=y_motor, ph=time_tagger, use_power_meter=False)
-    x_motor.close()
-    time_tagger.close()
+    return scanner, x_motor, y_motor, time_tagger
 
 
 if __name__ == '__main__':
