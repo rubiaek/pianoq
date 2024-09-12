@@ -6,6 +6,9 @@ import threading
 import io
 import sys
 import time
+from scipy import ndimage
+from skimage.feature import peak_local_max
+
 
 # https://stackoverflow.com/questions/44985966/managing-dynamic-plotting-in-matplotlib-animation-module
 class Player(FuncAnimation):
@@ -150,3 +153,43 @@ def run_in_thread_simple(func, *args, **kwargs):
     thread = threading.Thread(target=func, args=args, kwargs=kwargs)
     thread.start()
     return thread
+
+
+def detect_gaussian_spots_subpixel(scan, X, Y, num_spots=5, min_distance=5, window_size=4):
+    """
+    Claude code
+    Detect Gaussian spots in a 2D scan and estimate their coordinates with sub-pixel resolution.
+
+    Parameters:
+    scan (numpy.ndarray): 2D array representing the scan
+    X (numpy.ndarray): 1D array of x-coordinates (assumed to be equally spaced)
+    Y (numpy.ndarray): 1D array of y-coordinates (assumed to be equally spaced)
+    num_spots (int): Number of spots to detect (default: 5)
+    min_distance (int): Minimum distance between spots in pixels (default: 5)
+    window_size (int): Size of the window for center of mass calculation (default: 4)
+
+    Returns:
+    numpy.ndarray: Array of shape (num_spots, 2) containing the (x, y) coordinates of detected spots
+    """
+    # Apply Gaussian filter to reduce noise
+    smoothed_scan = ndimage.gaussian_filter(scan, sigma=1)
+
+    # Find local maxima
+    coordinates = peak_local_max(smoothed_scan, num_peaks=num_spots, min_distance=min_distance)
+
+    # Refine coordinates with sub-pixel resolution
+    refined_coordinates = []
+    half_window = window_size // 2
+
+    for y, x in coordinates:
+        window = scan[max(0, y - half_window):min(scan.shape[0], y + half_window + 1),
+                 max(0, x - half_window):min(scan.shape[1], x + half_window + 1)]
+
+        com_y, com_x = ndimage.center_of_mass(window)
+
+        refined_y = Y[y] + (com_y - half_window) * (Y[1] - Y[0])
+        refined_x = X[x] + (com_x - half_window) * (X[1] - X[0])
+
+        refined_coordinates.append((refined_x, refined_y))
+
+    return np.array(refined_coordinates)
