@@ -155,7 +155,7 @@ def run_in_thread_simple(func, *args, **kwargs):
     return thread
 
 
-def detect_gaussian_spots_subpixel(scan, X, Y, num_spots=5, min_distance=5, window_size=4):
+def detect_gaussian_spots_subpixel(scan, X, Y, num_spots=5, min_distance=5, window_size=4, sort_top_to_bottom=True):
     """
     Claude code
     Detect Gaussian spots in a 2D scan and estimate their coordinates with sub-pixel resolution.
@@ -173,6 +173,7 @@ def detect_gaussian_spots_subpixel(scan, X, Y, num_spots=5, min_distance=5, wind
     """
     # Apply Gaussian filter to reduce noise
     smoothed_scan = ndimage.gaussian_filter(scan, sigma=1)
+    # smoothed_scan = scan
 
     # Find local maxima
     coordinates = peak_local_max(smoothed_scan, num_peaks=num_spots, min_distance=min_distance)
@@ -192,4 +193,6 @@ def detect_gaussian_spots_subpixel(scan, X, Y, num_spots=5, min_distance=5, wind
 
         refined_coordinates.append((refined_x, refined_y))
 
-    return np.array(refined_coordinates)
+    sorted_coordinates = sorted(refined_coordinates, key=lambda c: c[1], reverse=not sort_top_to_bottom)
+
+    return np.array(sorted_coordinates)
