@@ -8,6 +8,7 @@ import sys
 import time
 from scipy import ndimage
 from skimage.feature import peak_local_max
+from scipy.optimize import curve_fit
 
 
 # https://stackoverflow.com/questions/44985966/managing-dynamic-plotting-in-matplotlib-animation-module
@@ -155,6 +156,11 @@ def run_in_thread_simple(func, *args, **kwargs):
     return thread
 
 
+def gaussian_2d(xy, amplitude, x0, y0, sigma_x, sigma_y):
+    x, y = xy
+    return amplitude * np.exp(-(((x-x0)/sigma_x)**2 + ((y-y0)/sigma_y)**2)/2)
+
+
 def detect_gaussian_spots_subpixel(scan, X, Y, num_spots=5, min_distance=5, window_size=4, sort_top_to_bottom=True):
     """
     Claude code
@@ -183,15 +189,26 @@ def detect_gaussian_spots_subpixel(scan, X, Y, num_spots=5, min_distance=5, wind
     half_window = window_size // 2
 
     for y, x in coordinates:
-        window = scan[max(0, y - half_window):min(scan.shape[0], y + half_window + 1),
-                 max(0, x - half_window):min(scan.shape[1], x + half_window + 1)]
+        y_start = max(0, y - half_window)
+        y_end = min(scan.shape[0], y + half_window + 1)
+        x_start = max(0, x - half_window)
+        x_end = min(scan.shape[1], x + half_window + 1)
 
-        com_y, com_x = ndimage.center_of_mass(window)
+        # Use the original (unfiltered) scan data for fitting
+        window = scan[y_start:y_end, x_start:x_end]
 
-        refined_y = Y[y] + (com_y - half_window) * (Y[1] - Y[0])
-        refined_x = X[x] + (com_x - half_window) * (X[1] - X[0])
+        x_window, y_window = np.meshgrid(np.arange(x_start, x_end), np.arange(y_start, y_end))
 
-        refined_coordinates.append((refined_x, refined_y))
+        initial_guess = [window.max(), x, y, 1, 1]
+        try:
+            popt, _ = curve_fit(gaussian_2d, (x_window.ravel(), y_window.ravel()), window.ravel(), p0=initial_guess)
+            _, x0, y0, _, _ = popt
+            refined_x = X[0] + x0 * (X[1] - X[0])
+            refined_y = Y[0] + y0 * (Y[1] - Y[0])
+            refined_coordinates.append((refined_x, refined_y))
+        except RuntimeError:
+            print(f"Fitting failed for spot at ({x}, {y}). Using original coordinates.")
+            refined_coordinates.append((X[x], Y[y]))
 
     sorted_coordinates = sorted(refined_coordinates, key=lambda c: c[1], reverse=not sort_top_to_bottom)
 
