@@ -16,7 +16,7 @@ LOGS_DIR = r"G:\My Drive\Projects\MPLC\results\lab\temp"
 
 class DiscretePhotonScanner:
     def __init__(self, locs_signal, locs_idler, integration_time=1, coin_window=1e-9, remote_tagger=True,
-                 saveto_path='', run_name='', backlash=0., wait_after_move=0.1):
+                 saveto_path='', run_name='', backlash=0., wait_after_move=0.1, no_hw_mode=False):
         self.res = DiscreetScanResult()
         self.res.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
         self.res.path = saveto_path or f"{LOGS_DIR}\\{self.res.timestamp}_{run_name}.dscan"
@@ -35,7 +35,8 @@ class DiscretePhotonScanner:
         self.m_idl_x = None
         self.m_idl_y = None
         self.time_tagger = None
-        self._get_hardware(remote_tagger=remote_tagger)
+        if not no_hw_mode:
+            self._get_hardware(remote_tagger=remote_tagger)
 
     def _get_hardware(self, remote_tagger=True):
         self.zaber_ms = ZaberMotors(backlash=self.res.backlash, wait_after_move=self.res.wait_after_move)

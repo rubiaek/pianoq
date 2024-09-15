@@ -48,7 +48,7 @@ class QPTimeTagger(object):
     def set_integration_time(self, integration_time):
         self.integration_time = integration_time
         # TODO: close previous counter somehow, or maybe we can somehow simply change the binwidth?
-        self.counter = TimeTagger.Counter(tagger=self.tagger, channels=[1, 2, self.coin_virtual_channel.getChannel()],
+        self.counter = TimeTagger.Counter(tagger=self.tagger, channels=[1, 2, self.coin_virtual_channels[0].getChannel()],
                                           binwidth=self.integration_time * 1e12, n_values=1)
 
     def read(self):
