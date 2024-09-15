@@ -21,7 +21,7 @@ def idler_scan(name='', integration_time=1.0, coin_window=2e-9, resolution=1, ou
     # y_motor.close()  # pesky bug?
     time_tagger.close()
 
-def get_idler_scanner(name='', integration_time=1.0, coin_window=2e-9, resolution=1, out_path=None, half_scan=True):
+def get_idler_scanner(name='', integration_time=1.0, coin_window=2e-9, resolution=1, out_path=None, half_scan=True, no_hw_mode=False):
     start_x = 8.75
     end_x = 9.45
     start_y = 1.2
@@ -39,6 +39,9 @@ def get_idler_scanner(name='', integration_time=1.0, coin_window=2e-9, resolutio
     path = out_path or f'{DIR_PATH}\\{timestamp}_{name}.scan'
     scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
                             run_name=name, is_timetagger=True, coin_window=2e-9, saveto_path=path)
+
+    if no_hw_mode:
+        return scanner, None, None, None
 
     x_motor = ThorlabsKcubeDC(thorlabs_x_serial, backlash=0.2, wait_after_move=0.3)
     print('got x_motor!')
@@ -61,7 +64,7 @@ def signal_scan(name='', integration_time=1.0, coin_window=2e-9, resolution=1, o
     # y_motor.close()  # pesky bug?
     time_tagger.close()
 
-def get_signal_scanner(name='', integration_time=1.0, coin_window=2e-9, resolution=1, out_path=None, half_scan=True):
+def get_signal_scanner(name='', integration_time=1.0, coin_window=2e-9, resolution=1, out_path=None, half_scan=True, no_hw_mode=False):
     """ higher y values, zaber motors """
     start_x = 11.2
     end_x = 11.9
@@ -81,6 +84,9 @@ def get_signal_scanner(name='', integration_time=1.0, coin_window=2e-9, resoluti
     path = out_path or f'{DIR_PATH}\\{timestamp}_{name}.scan'
     scanner = PhotonScanner(integration_time, start_x, start_y, x_pixels, y_pixels, pixel_size_x, pixel_size_y,
                             run_name=name, is_timetagger=True, coin_window=2e-9, saveto_path=path)
+
+    if no_hw_mode:
+        return scanner, None, None, None
 
     zaber_ms = ZaberMotors(backlash=0.2, wait_after_move=0.3)
     x_motor = zaber_ms.motors[1]
