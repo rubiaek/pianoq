@@ -11,7 +11,7 @@ from pianoq.simulations.mplc_sim.mplc_utils import get_lens_mask_conf, get_lens_
 DEFAULT_DIR = r"G:\My Drive\Projects\MPLC\results\simulations\masks"
 
 
-def create_WFM_diffuser_masks(same_diffuser=False, out_path=None, name=None):
+def create_WFM_diffuser_masks(same_diffuser=False, out_path=None, name=None, N_iterations=None):
     # All in m
 
     # MPLC WFM conf #
@@ -24,6 +24,9 @@ def create_WFM_diffuser_masks(same_diffuser=False, out_path=None, name=None):
     conf['active_planes'] = active_planes
     conf['N_modes'] = N_modes
     conf['symmetric_masks'] = same_diffuser
+    if N_iterations is not None:
+        conf['N_iterations'] = N_iterations
+
     mplc = MPLCSim(conf=conf)
 
     lens_mask = get_lens_mask(Nx=conf['Nx'], Ny=conf['Ny'] // 2, dx=conf['dx'], dy=conf['dy'], wl=mplc.wavelength,
