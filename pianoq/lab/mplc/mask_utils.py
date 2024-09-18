@@ -103,7 +103,7 @@ def get_lens(f):
 
 def get_imaging_masks():
     """ image plane 1 to plane 11 of detectors """
-    masks = np.ones((10, MASK_DIMS[0], MASK_DIMS[1]))
+    masks = np.ones((10, MASK_DIMS[0], MASK_DIMS[1]), dtype=complex)
     # 4f between 1 and 5 with 2 and 4
     masks[1] = get_lens(f=1)
     masks[3] = get_lens(f=1)
