@@ -139,7 +139,7 @@ class PhotonScanner(object):
                 if not self.is_double_spot:
                     self.single1s[i, j], self.single2s[i, j], self.coincidences[i, j] = ph.read_interesting()
                     print(f'dur: {int(duration_till_now)}. pix: {i}, {j}. Singles1: {self.single1s[i, j]:.0f}. '
-                          f'Singles2: {self.single2s[i, j]:.0f}. Coincidence: {self.coincidences[i, j]:.0f}.')
+                          f'Singles2: {self.single2s[i, j]:.0f}. Coincidence: {self.coincidences[i, j]:.2f}.')
                 else:
                     self.single1s[i, j], self.single2s[i, j], self.single3s[i, j], \
                         self.coincidences[i, j], self.coincidences2[i, j] = ph.read_double_spot()
