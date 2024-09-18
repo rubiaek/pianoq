@@ -1,5 +1,6 @@
 import numpy as np
-from pianoq.lab.mplc.consts import SLM_DIMS, MASK_DIMS, PIXEL_SIZE, N_SPOTS, D_BETWEEN_SPOTS_INPUT, SPOT_WAIST_IN
+from pianoq.lab.mplc.consts import (SLM_DIMS, MASK_DIMS, PIXEL_SIZE, N_SPOTS, D_BETWEEN_SPOTS_INPUT, SPOT_WAIST_IN, K,
+                                    D_BETWEEN_PLANES, D1, D2)
 import scipy.io
 
 """
@@ -92,6 +93,22 @@ def remove_input_modes(masks, modes_to_keep):
 
     return masks
 
+
+def get_lens(f):
+    """ f in units of D_BETWEEN_PLANES. return e^i*phase """
+    XX, YY = make_grid_phasmask()
+    phase_lens = -K * (XX ** 2 + YY ** 2) / (2 * f * D_BETWEEN_PLANES)
+    phase_lens = phase_lens - np.min(phase_lens) + 0.01
+    return np.exp(1j*phase_lens)
+
+def get_imaging_masks():
+    """ image plane 1 to plane 11 of detectors """
+    masks = np.ones((10, MASK_DIMS[0], MASK_DIMS[1]))
+    # 4f between 1 and 5 with 2 and 4
+    masks[1] = get_lens(f=1)
+    masks[3] = get_lens(f=1)
+    masks[7] = get_lens(3 * (2 * D1 + D2) / (5 * D1 + D2))
+    return masks
 
 def get_masks_matlab(wfm_masks_path):
     masks = scipy.io.loadmat(wfm_masks_path)['MASKS'].astype(complex)

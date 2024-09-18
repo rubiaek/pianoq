@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io
-from pianoq.lab.mplc.consts import MASK_CENTERS, MASK_DIMS, SLM_DIMS
-from pianoq.lab.mplc.mask_utils import mask_centers_to_mask_slices
+from pianoq.lab.mplc.consts import MASK_CENTERS, MASK_DIMS, SLM_DIMS, D1, D2
+from pianoq.lab.mplc.mask_utils import mask_centers_to_mask_slices, get_imaging_masks
 
 
 CORRECTION_PATH = r"G:\My Drive\Projects\MPLC\Technical\correction_pattern_14_12_22.mat"
@@ -148,6 +148,11 @@ class MPLCDevice:
 
         uint_mask = np.uint8(phase_mask)
         return uint_mask
+
+    def set_imaging(self):
+        """ image plane 1 to plane 11 of detectors """
+        masks = get_imaging_masks()
+        self.load_masks(masks)
 
     def close(self):
         plt.close(self.fig)
