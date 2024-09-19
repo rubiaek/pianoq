@@ -55,6 +55,7 @@ class PhaseFinder(object):
         print("Got TimeTagger!")
 
     def find_phases(self):
+        # TODO: add option for several iterations (and the initialize the dimensions of single1s etc. accordingly. (another dimension of dim n_iterations)
         for i, mode_no in enumerate(self.res.modes_to_keep):
             for j, phase in enumerate(self.res.phase_vec):
                 # Python 0-based, and modes begin at 1
