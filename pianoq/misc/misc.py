@@ -188,6 +188,9 @@ def detect_gaussian_spots_subpixel(scan, X, Y, num_spots=5, min_distance=5, wind
     refined_coordinates = []
     half_window = window_size // 2
 
+    assert (Y[:-1] < Y[1:]).all(), 'We assume Y to be ascending'
+    assert (X[:-1] < X[1:]).all(), 'We assume X to be ascending'
+
     for y, x in coordinates:
         y_start = max(0, y - half_window)
         y_end = min(scan.shape[0], y + half_window + 1)
