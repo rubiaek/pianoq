@@ -70,7 +70,7 @@ class QPTimeTagger(object):
     def read_interesting(self):
         while True:
             self.counter.clear()
-            time.sleep(0.1)  # Need to sleep a bit more than him so the data will get here
+            time.sleep(0.15)  # Need to sleep a bit more than him so the data will get here
             time.sleep(self.integration_time)
             data = self.counter.getDataNormalized()
             data = [i[0] for i in data]
