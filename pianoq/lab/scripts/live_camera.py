@@ -12,14 +12,17 @@ def main():
     live_cam(cam)
 
 
-def live_cam(cam, interval=100, close_at_end=False, remove_min=True, cut_line=None, show_max=True, **kwargs):
+def live_cam(cam, interval=100, close_at_end=False, remove_min=True, cut_line=None, show_max=True, roi=None, **kwargs):
     if cut_line is None:
         fig, ax = plt.subplots()
     else:
         fig, axes = plt.subplots(2)
         ax = axes[0]
         ax_line = axes[1]
-    imm = cam.get_image()
+    if roi is not None:
+        imm = cam.get_image(roi=roi)
+    else:
+        imm = cam.get_image()
     if remove_min:
         imm -= imm.min()
     im = ax.imshow(imm, **kwargs)
@@ -30,7 +33,10 @@ def live_cam(cam, interval=100, close_at_end=False, remove_min=True, cut_line=No
         line = line[0]
 
     def update(i):
-        imm = cam.get_image()
+        if roi is not None:
+            imm = cam.get_image(roi=roi)
+        else:
+            imm = cam.get_image()
         if remove_min:
             imm -= imm.min()
         im.set_data(imm)
