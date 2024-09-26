@@ -87,4 +87,7 @@ In Matlab:
 * Signal - d2 - Zaber, higher numbers in y (lower in picture) 
 * pos1 = y
 * pos2 = x  
+
+but with mirror I actually want the idler with the higher numbers 
+
 """

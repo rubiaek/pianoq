@@ -21,15 +21,27 @@ class _ZaberMotor:
         self.wait_after_move = wait_after_move
 
     def move_relative(self, mms, blocking=True):
-        self.ax.move_relative(mms, Units.LENGTH_MILLIMETRES, wait_until_idle=blocking)
+        for i in range(5):
+            try:
+                self.ax.move_relative(mms, Units.LENGTH_MILLIMETRES, wait_until_idle=blocking)
+                break
+            except Exception as e:
+                print(e)
+                time.sleep(1)
         time.sleep(self.wait_after_move)
 
     def move_absolute(self, mms, blocking=True):
-        if self.backlash != 0:
-            self.ax.move_absolute(mms - self.backlash, Units.LENGTH_MILLIMETRES, wait_until_idle=blocking)
-            time.sleep(self.wait_after_move)
-        self.ax.move_absolute(mms, Units.LENGTH_MILLIMETRES, wait_until_idle=blocking)
-        time.sleep(self.wait_after_move)
+        for i in range(5):
+            try:
+                if self.backlash != 0:
+                    self.ax.move_absolute(mms - self.backlash, Units.LENGTH_MILLIMETRES, wait_until_idle=blocking)
+                    time.sleep(self.wait_after_move)
+                self.ax.move_absolute(mms, Units.LENGTH_MILLIMETRES, wait_until_idle=blocking)
+                time.sleep(self.wait_after_move)
+                break
+            except Exception as e:
+                print(e)
+                time.sleep(1)
 
     def get_position(self):
         return self.ax.get_position(Units.LENGTH_MILLIMETRES)
