@@ -98,6 +98,9 @@ def create_WFM_unitary_masks(U1, U2=None, out_path=None, name=None, N_iterations
     conf['N_modes'] = N_modes
     if N_iterations is not None:
         conf['N_iterations'] = N_iterations
+
+    conf['dist_after_plane'][9] = 87e-3 + 8.4e-3
+    print(conf)
     mplc = MPLCSim(conf=conf)
 
     # Transformation #
