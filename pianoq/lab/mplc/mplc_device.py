@@ -58,7 +58,7 @@ class MPLCDevice:
         geom = geometry or self.geometry
         self.fig.canvas.manager.window.geometry(geom)
 
-    def load_masks_from_path(self, masks_path, linear_tilts=True):
+    def load_masks_from_path(self, masks_path, linear_tilts=True, plane_10_tilts=None):
         """
            The sending away of light from unwanted modes is the job of whoever supplies the masks.
            The masks will be of both upper and lower halves (signal and idler).
@@ -69,12 +69,12 @@ class MPLCDevice:
         data = np.load(f, allow_pickle=True)
         masks = data['masks']
         f.close()
-        self.load_masks(masks, linear_tilts=linear_tilts)
+        self.load_masks(masks, linear_tilts=linear_tilts, plane_10_tilts=plane_10_tilts)
 
-    def load_masks(self, masks, linear_tilts=True):
+    def load_masks(self, masks, linear_tilts=True, plane_10_tilts=None):
         self.masks = masks
         masks = np.angle(masks).astype(float)
-        self.slm_mask = self.create_slm_mask(masks=masks, linear_tilts=linear_tilts)
+        self.slm_mask = self.create_slm_mask(masks=masks, linear_tilts=linear_tilts, plane_10_tilts=plane_10_tilts)
         self.uint_final_mask = self.convert_to_uint8(self.slm_mask)
         self._update_screen(self.uint_final_mask)
 
@@ -92,7 +92,7 @@ class MPLCDevice:
         self.uint_final_mask = self.convert_to_uint8(self.slm_mask)
         self._update_screen(self.uint_final_mask)
 
-    def create_slm_mask(self, masks, linear_tilts=True):
+    def create_slm_mask(self, masks, linear_tilts=True, plane_10_tilts=None):
         slm_mask = np.zeros(SLM_DIMS, dtype=float)
 
         # add opposite linear tilts on all SLM
@@ -117,6 +117,17 @@ class MPLCDevice:
             slm_mask[self.mask_slices[i]] = mask + self.correction[self.mask_slices[i]]
             # Moving the phase to start from zero, negative numbers produce jumps
             slm_mask[self.mask_slices[i]] = slm_mask[self.mask_slices[i]] - slm_mask[self.mask_slices[i]].min() + 0.01
+
+        if plane_10_tilts is not None:
+            assert isinstance(plane_10_tilts, (int, float)), 'This should represent the number of pixels per 2-pi'
+            XX, YY = np.meshgrid(np.arange(MASK_DIMS[1]) + 1, np.arange(MASK_DIMS[0]) + 1)
+            # upper half of mask tilts a bit up, and lower a bit down, to avoid the sharp mirror edge
+            lin_tilt10 = -2 * np.pi * np.vstack((YY[:MASK_DIMS[0]//2, :], -YY[MASK_DIMS[0]//2:, :])) / plane_10_tilts
+            lin_tilt10 = lin_tilt10 - np.min(lin_tilt10) + 0.01
+
+            slm_mask[self.mask_slices[-1]] += lin_tilt10
+            slm_mask[self.mask_slices[-1]] = slm_mask[self.mask_slices[-1]] - slm_mask[self.mask_slices[-1]].min() + 0.01
+
 
         return slm_mask
 
