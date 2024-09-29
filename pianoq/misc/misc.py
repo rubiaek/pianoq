@@ -205,7 +205,7 @@ def detect_gaussian_spots_subpixel(scan, X, Y, num_spots=5, min_distance=5, wind
         initial_guess = [window.max(), x, y, 1, 1]
         try:
             popt, _ = curve_fit(gaussian_2d, (x_window.ravel(), y_window.ravel()), window.ravel(), p0=initial_guess)
-            _, x0, y0, _, _ = popt
+            ampl, x0, y0, sig_x, sig_y = popt
             refined_x = X[0] + x0 * (X[1] - X[0])
             refined_y = Y[0] + y0 * (Y[1] - Y[0])
             refined_coordinates.append((refined_x, refined_y))
