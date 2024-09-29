@@ -85,9 +85,10 @@ def create_WFM_diffuser_masks(same_diffuser=False, out_path=None, name=None, N_i
     return mplc
 
 
-def create_WFM_unitary_masks(U1, U2=None, out_path=None, name=None, N_iterations=None):
+def create_WFM_unitary_masks(U1, U2=None, out_path=None, name=None, N_iterations=None,
+                             dead_middle_zone=0, last_plane_extra_dist=8.4e-3):
     """
-    Assuming U is a 5X5 unitary, and using the top and bottom third rows of spots.
+    Assuming U is a 5X5 unitary, and using the top and bottom third rows of spots for input, and 3rd columns for output
     if U2 is None, so U2 = conj(U)
     """
     # MPLC WFM conf #
@@ -99,7 +100,7 @@ def create_WFM_unitary_masks(U1, U2=None, out_path=None, name=None, N_iterations
     if N_iterations is not None:
         conf['N_iterations'] = N_iterations
 
-    conf['dist_after_plane'][9] = 87e-3 + 8.4e-3
+    conf['dist_after_plane'][9] = 87e-3 + last_plane_extra_dist
     print(conf)
     mplc = MPLCSim(conf=conf)
 
@@ -123,7 +124,8 @@ def create_WFM_unitary_masks(U1, U2=None, out_path=None, name=None, N_iterations
                                                                 XX=mplc.XX, YY=mplc.YY, dim=dim)
     input_modes = input_spots[which_modes]
     output_modes, phase_pos_x, phase_pos_y = gen_output_modes_Unitary(waist_out, D_between_modes_out, mplc.XX, mplc.YY,
-                                                                      full_transformation, dim, which_modes)
+                                                                      full_transformation, dim, which_modes,
+                                                                      dead_middle_zone=dead_middle_zone)
 
     # run #
     mplc.set_modes(input_modes, output_modes)
