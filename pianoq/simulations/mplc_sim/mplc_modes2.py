@@ -5,8 +5,23 @@ just making sure it will be one to one
 
 import numpy as np
 
+"""
+modes are ordered like this:
+25 20 15 10 5 
+24 19 14 9  4 
+23 18 13 8  3 
+22 17 12 7  2 
+21 16 11 6  1 
 
-def gen_input_spots_array(waist, D_between_modes, XX, YY, dim, deltax_in=0, deltay_in=0):
+26 31 36 41 46
+27 32 37 42 47
+28 33 35 43 48
+29 34 39 44 49
+30 35 40 45 50 
+"""
+
+
+def gen_input_spots_array(waist, D_between_modes, XX, YY, dim, deltax_in=0, deltay_in=0, dead_middle_zone=0):
     # generates the 50 spots
     n_steps_x = []
     n_steps_y = []
@@ -26,6 +41,10 @@ def gen_input_spots_array(waist, D_between_modes, XX, YY, dim, deltax_in=0, delt
 
     SPOTS = np.zeros((2 * dim ** 2, XX.shape[0], XX.shape[1]), dtype=complex)
 
+    if dead_middle_zone != 0:
+        y_modes_in[y_modes_in < 0] -= dead_middle_zone
+        y_modes_in[y_modes_in > 0] += dead_middle_zone
+
     for i in range(2 * dim ** 2):
         spot = np.exp(-((XX - x_modes_in[i]) ** 2 + (YY - y_modes_in[i]) ** 2) / waist ** 2)  # assuming a Gaussian
         spot = spot / np.sqrt(np.sum(np.abs(spot) ** 2))  # normalization
@@ -34,9 +53,11 @@ def gen_input_spots_array(waist, D_between_modes, XX, YY, dim, deltax_in=0, delt
     return SPOTS, x_modes_in, y_modes_in
 
 
-def gen_output_modes_Unitary(waist_out, D_between_modes, XX, YY, Matrix_trans, dim, which_modes, deltax_out=0, deltay_out=0):
+def gen_output_modes_Unitary(waist_out, D_between_modes, XX, YY, Matrix_trans, dim, which_modes,
+                             deltax_out=0, deltay_out=0, dead_middle_zone=0):
     SPOTS_OUT, x_modes_in, y_modes_in, = gen_input_spots_array(waist_out, D_between_modes, XX, YY, dim,
-                                                                deltax_in=deltax_out, deltay_in=deltay_out)
+                                                                deltax_in=deltax_out, deltay_in=deltay_out,
+                                                                dead_middle_zone=dead_middle_zone)
 
     # implicitly assume here dim=5, and carve out the 5 modes of the third column on top and on bottom
     SPOTS_OUT = np.concatenate([SPOTS_OUT[10:15], SPOTS_OUT[35:40]])
