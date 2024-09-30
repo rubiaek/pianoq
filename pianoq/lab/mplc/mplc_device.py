@@ -13,7 +13,7 @@ class MPLCDevice:
     GEOMETRY = '1280x1024+1919+1'  # [width, height, x_offset, y_offset] pixel exact to Ohad MPLC class
     ALPHA = 213
 
-    def __init__(self, mask_centers=MASK_CENTERS, geometry=None):
+    def __init__(self, mask_centers=MASK_CENTERS, geometry=None, init_fig=True):
         self.masks = []  # exp(1j*phase)
         self.slm_mask = np.zeros(SLM_DIMS, dtype=float)  # phase [rads]
         self.uint_final_mask = np.zeros(SLM_DIMS, dtype=float)  # phase [1-255]
@@ -27,8 +27,9 @@ class MPLCDevice:
         self.ax = None
         self.image = None
         self.window = None
-        self.init_fig()
-        self.background = self.fig.canvas.copy_from_bbox(self.ax.bbox)
+        if init_fig:
+            self.init_fig()
+            self.background = self.fig.canvas.copy_from_bbox(self.ax.bbox)
 
     def init_fig(self):
         # copied from SLMDevice
