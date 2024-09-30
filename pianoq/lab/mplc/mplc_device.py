@@ -69,6 +69,9 @@ class MPLCDevice:
         data = np.load(f, allow_pickle=True)
         masks = data['masks']
         f.close()
+        if len(masks) == 11:
+            # Remove redundant last mask 11
+            masks = masks[:10]
         self.load_masks(masks, linear_tilts=linear_tilts, plane_10_tilts=plane_10_tilts)
 
     def load_masks(self, masks, linear_tilts=True, plane_10_tilts=None):
