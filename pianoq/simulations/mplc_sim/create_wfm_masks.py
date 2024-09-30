@@ -116,7 +116,7 @@ def create_WFM_unitary_masks(U1, U2=None, out_path=None, name=None, N_iterations
     waist_in = 80e-6
     waist_out = 45e-6
     D_between_modes_in = 300e-6
-    D_between_modes_out = 360e-6
+    D_between_modes_out = 330e-6
     dim = 5
     which_modes = np.array([2, 7, 12, 17, 22,
                             27, 32, 37, 42, 47])
