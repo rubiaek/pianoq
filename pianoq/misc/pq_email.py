@@ -24,4 +24,4 @@ def send_email(content, to='ronen.shekel@mail.huji.ac.il', subject='Automatic ma
     m.send(content, to, subject)
 
 
-# LOL
+# LOL BAR
