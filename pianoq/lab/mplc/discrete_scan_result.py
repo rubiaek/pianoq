@@ -4,8 +4,8 @@ import traceback
 
 
 class DiscreetScanResult:
-    def __init__(self):
-        self.path = None
+    def __init__(self, path=None):
+        self.path = path
         self.timestamp = None
         self.locs_signal = None
         self.locs_idler = None
@@ -16,6 +16,8 @@ class DiscreetScanResult:
         self.coincidences = None
         self.wait_after_move = None
         self.backlash = None
+        if self.path is not None:
+            self.loadfrom(self.path)
 
     @property
     def real_coins(self):
@@ -25,22 +27,24 @@ class DiscreetScanResult:
     def accidentals(self):
         return 2*self.single1s*self.single2s*self.coin_window
 
-    def show(self, remove_accidentals=False):
+    def show(self, remove_accidentals=False, figshow=True):
         fig, ax = plt.subplots()
         if remove_accidentals:
             imm = ax.imshow(self.real_coins)
         else:
             imm = ax.imshow(self.coincidences)
         fig.colorbar(imm, ax=ax)
-        fig.show()
+        if figshow:
+            fig.show()
 
-    def show_singles(self):
+    def show_singles(self, figshow=True):
         fig, axes = plt.subplots(1, 2)
         imm = axes[0].imshow(self.single1s)
         fig.colorbar(imm, ax=axes[0])
         imm = axes[1].imshow(self.single2s)
         fig.colorbar(imm, ax=axes[1])
-        fig.show()
+        if figshow:
+            fig.show()
 
     def saveto(self, path):
         try:
