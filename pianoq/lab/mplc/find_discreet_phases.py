@@ -18,7 +18,7 @@ LOGS_DIR = r"G:\My Drive\People\Ronen\PHD\MPLC\results"
 
 class PhaseFinder(object):
     def __init__(self, mplc, modes_to_keep, integration_time=1, remote_tagger=True, run_name='', N_phases=10,
-                 intial_phases=None, coin_window=2e-9, saveto_path=None, no_hw_mode=False, linear_tilts=True, plane_10_tilts=35):
+                 intial_phases=None, coin_window=2e-9, saveto_path=None, no_hw_mode=False):
         self.mplc = mplc
         self.orig_masks = mplc.masks.copy()
         self.res = PhaseFinderResult()
@@ -38,9 +38,6 @@ class PhaseFinder(object):
         self.res.phases = self.res.initial_phases
         if not no_hw_mode:
             self._get_hardware(remote_tagger=remote_tagger)
-
-        self.linear_tilts = linear_tilts
-        self.plane_10_tilts = plane_10_tilts
 
     def _get_hardware(self, remote_tagger=True):
         self.zaber_ms = ZaberMotors()
@@ -64,7 +61,7 @@ class PhaseFinder(object):
                 # Python 0-based, and modes begin at 1
                 self.res.phases[mode_no-1] = phase
                 masks = add_phase_input_spots(self.orig_masks, self.res.phases)
-                self.mplc.load_masks(masks, linear_tilts=self.linear_tilts, plane_10_tilts=self.plane_10_tilts)
+                self.mplc.load_masks(masks)
                 time.sleep(0.1)
 
                 s1, s2, c = self.time_tagger.read_interesting()

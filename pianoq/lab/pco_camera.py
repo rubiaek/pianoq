@@ -36,7 +36,8 @@ class PCOCamera:
         if im is None:
             im = self.get_image(roi=roi)
         fig, axes = plt.subplots()
-        axes.imshow(im)
+        imm = axes.imshow(im)
+        fig.colorbar(imm, ax=axes)
         fig.show()
         return fig, axes
 

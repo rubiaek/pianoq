@@ -13,7 +13,9 @@ class MPLCDevice:
     GEOMETRY = '1280x1024+1919+1'  # [width, height, x_offset, y_offset] pixel exact to Ohad MPLC class
     ALPHA = 213
 
-    def __init__(self, mask_centers=MASK_CENTERS, geometry=None, init_fig=True):
+    def __init__(self, mask_centers=MASK_CENTERS, geometry=None, init_fig=True, linear_tilts=True, plane_10_tilts=None):
+        self.linear_tilts = linear_tilts
+        self.plane_10_tilts = plane_10_tilts
         self.masks = []  # exp(1j*phase)
         self.slm_mask = np.zeros(SLM_DIMS, dtype=float)  # phase [rads]
         self.uint_final_mask = np.zeros(SLM_DIMS, dtype=float)  # phase [1-255]
@@ -59,7 +61,7 @@ class MPLCDevice:
         geom = geometry or self.geometry
         self.fig.canvas.manager.window.geometry(geom)
 
-    def load_masks_from_path(self, masks_path, linear_tilts=True, plane_10_tilts=None):
+    def load_masks_from_path(self, masks_path):
         """
            The sending away of light from unwanted modes is the job of whoever supplies the masks.
            The masks will be of both upper and lower halves (signal and idler).
@@ -73,12 +75,12 @@ class MPLCDevice:
         if len(masks) == 11:
             # Remove redundant last mask 11
             masks = masks[:10]
-        self.load_masks(masks, linear_tilts=linear_tilts, plane_10_tilts=plane_10_tilts)
+        self.load_masks(masks)
 
-    def load_masks(self, masks, linear_tilts=True, plane_10_tilts=None):
+    def load_masks(self, masks):
         self.masks = masks
         masks = np.angle(masks).astype(float)
-        self.slm_mask = self.create_slm_mask(masks=masks, linear_tilts=linear_tilts, plane_10_tilts=plane_10_tilts)
+        self.slm_mask = self.create_slm_mask(masks=masks)
         self.uint_final_mask = self.convert_to_uint8(self.slm_mask)
         self._update_screen(self.uint_final_mask)
 
@@ -96,11 +98,11 @@ class MPLCDevice:
         self.uint_final_mask = self.convert_to_uint8(self.slm_mask)
         self._update_screen(self.uint_final_mask)
 
-    def create_slm_mask(self, masks, linear_tilts=True, plane_10_tilts=None):
+    def create_slm_mask(self, masks):
         slm_mask = np.zeros(SLM_DIMS, dtype=float)
 
         # add opposite linear tilts on all SLM
-        if linear_tilts:
+        if self.linear_tilts:
             # +1 for compatibility with Ohad code
             XX, YY = np.meshgrid(np.arange(SLM_DIMS[1]) + 1, np.arange(SLM_DIMS[0]) + 1)
             lin_tilt = -2 * np.pi * np.vstack((YY[:SLM_DIMS[0]//2, :], -YY[SLM_DIMS[0]//2:, :])) / 8
@@ -122,7 +124,7 @@ class MPLCDevice:
             # Moving the phase to start from zero, negative numbers produce jumps
             slm_mask[self.mask_slices[i]] = slm_mask[self.mask_slices[i]] - slm_mask[self.mask_slices[i]].min() + 0.01
 
-        if plane_10_tilts is not None:
+        if self.plane_10_tilts is not None:
             assert isinstance(plane_10_tilts, (int, float)), 'This should represent the number of pixels per 2-pi'
             XX, YY = np.meshgrid(np.arange(MASK_DIMS[1]) + 1, np.arange(MASK_DIMS[0]) + 1)
             # upper half of mask tilts a bit up, and lower a bit down, to avoid the sharp mirror edge
