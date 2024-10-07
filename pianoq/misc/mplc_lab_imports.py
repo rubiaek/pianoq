@@ -71,7 +71,7 @@ def get_hardware(backlash=0, wait_after_move=0.3, coin_window=None, integration_
         # Timetagger
         tt = QPTimeTagger(integration_time=integration_time, remote=True,
                           single_channel_delays=TIMETAGGER_DELAYS, coin_window=coin_window or TIMETAGGER_COIN_WINDOW)
-        print('God timetagger')
+        print('Got timetagger')
 
     if get_mplc:
         mplc = MPLCDevice()
@@ -79,6 +79,29 @@ def get_hardware(backlash=0, wait_after_move=0.3, coin_window=None, integration_
         print('Got MPLC')
 
     return zaber_ms, mxs, mys, mxi, myi, tt, mplc
+
+
+def get_idler_motors(backlash=0, wait_after_move=0.3):
+    mxi = ThorlabsKcubeDC(thorlabs_x_serial, backlash=backlash, wait_after_move=wait_after_move)
+    myi = ThorlabsKcubeStepper(thorlabs_y_serial, backlash=backlash, wait_after_move=wait_after_move)
+    print('Got Thorlabs motors')
+    return mxi, myi
+
+
+def get_signal_motors(backlash=0, wait_after_move=0.3):
+    zaber_ms = ZaberMotors(backlash=backlash, wait_after_move=wait_after_move)
+    mxs = zaber_ms.motors[1]
+    mys = zaber_ms.motors[0]
+    print('Got Zaber motors')
+    return mxs, mys
+
+
+def get_timetagger(coin_window=None, integration_time=None):
+    # Timetagger
+    tt = QPTimeTagger(integration_time=integration_time, remote=True,
+                      single_channel_delays=TIMETAGGER_DELAYS, coin_window=coin_window or TIMETAGGER_COIN_WINDOW)
+    print('God timetagger')
+    return tt
 
 
 def get_good_masks(masks_path, modes_to_keep=None, phases_path=None):
@@ -93,3 +116,6 @@ def get_good_masks(masks_path, modes_to_keep=None, phases_path=None):
         masks = add_phase_input_spots(masks, phases_result.phases)
 
     return masks
+
+def tnow():
+    return datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
