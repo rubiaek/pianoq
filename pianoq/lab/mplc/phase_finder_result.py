@@ -9,8 +9,6 @@ from scipy.optimize import curve_fit
 class PhaseFinderResult(object):
     def __init__(self, path=None):
         self.path = path
-        if path:
-            self.loadfrom()
         self.timestamp = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
         self.coincidences = None
         self.single1s = None
@@ -24,6 +22,8 @@ class PhaseFinderResult(object):
         self.phase_vec_step = 0
         self.phase_vec = np.array([])
         self.initial_phases = np.array([])
+        if self.path is not None:
+            self.loadfrom(self.path)
 
     def plot_best_phases(self):
         for i, mode_to_keep in enumerate(self.modes_to_keep):
