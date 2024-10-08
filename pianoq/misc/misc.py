@@ -216,3 +216,14 @@ def detect_gaussian_spots_subpixel(scan, X, Y, num_spots=5, min_distance=5, wind
     sorted_coordinates = sorted(refined_coordinates, key=lambda c: c[1], reverse=not sort_top_to_bottom)
 
     return np.array(sorted_coordinates)
+
+
+def figshow(fig):
+    try:
+        shell = get_ipython().__class__.__name__
+        if shell == 'ZMQInteractiveShell':  # Jupyter notebook or qtconsole
+            return fig
+        elif shell == 'TerminalInteractiveShell':  # IPython terminal
+            return fig.show()
+    except NameError:  # Regular Python shell
+        return fig.show()
