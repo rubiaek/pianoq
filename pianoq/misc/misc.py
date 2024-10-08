@@ -1,4 +1,5 @@
 import numpy as np
+import requests
 from functools import wraps
 from matplotlib.animation import FuncAnimation
 from colorsys import hls_to_rgb
@@ -227,3 +228,18 @@ def figshow(fig):
             return fig.show()
     except NameError:  # Regular Python shell
         return fig.show()
+
+
+BOT_TOKEN = '7897393437:AAGlhCVyo_aawMfXGaI-qatAwZab6Nr-RUU'
+CHAT_ID = '476169345'
+
+
+def send_telegram_message(message, bot_token=BOT_TOKEN, chat_id=CHAT_ID):
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    payload = {
+        "chat_id": chat_id,
+        "text": message
+    }
+    response = requests.post(url, json=payload)
+    return response.json()
+
