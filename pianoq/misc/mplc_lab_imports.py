@@ -114,6 +114,7 @@ def get_good_masks(masks_path, modes_to_keep=None, phases_path=None):
         masks = remove_input_modes(masks, modes_to_keep=modes_to_keep)
     if phases_path is not None:
         phases_result = PhaseFinderResult(phases_path)
+        print(phases_result.phases)
         phases_result.reload()
         masks = add_phase_input_spots(masks, phases_result.phases)
 
