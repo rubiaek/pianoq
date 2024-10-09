@@ -8,6 +8,7 @@ import time
 import datetime
 import numpy as np
 import matplotlib.pyplot as plt
+import requests
 from scipy.io import loadmat
 from scipy.optimize import curve_fit
 from astropy.io import fits
@@ -34,7 +35,7 @@ from pianoq.misc.misc import run_in_thread, run_in_thread_simple
 from pianoq.misc.mplt import mimshow, mplot
 from pianoq.lab.photon_scan import PhotonScanner
 from pianoq.lab.scripts.live_camera import live_cam
-from pianoq.misc.misc import detect_gaussian_spots_subpixel
+from pianoq.misc.misc import detect_gaussian_spots_subpixel, send_telegram_message
 
 # Results
 from pianoq_results.scan_result import ScanResult
@@ -114,7 +115,6 @@ def get_good_masks(masks_path, modes_to_keep=None, phases_path=None):
         masks = remove_input_modes(masks, modes_to_keep=modes_to_keep)
     if phases_path is not None:
         phases_result = PhaseFinderResult(phases_path)
-        print(phases_result.phases)
         phases_result.reload()
         masks = add_phase_input_spots(masks, phases_result.phases)
 
