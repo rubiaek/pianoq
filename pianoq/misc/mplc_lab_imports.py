@@ -35,7 +35,7 @@ from pianoq.misc.misc import run_in_thread, run_in_thread_simple
 from pianoq.misc.mplt import mimshow, mplot
 from pianoq.lab.photon_scan import PhotonScanner
 from pianoq.lab.scripts.live_camera import live_cam
-from pianoq.misc.misc import detect_gaussian_spots_subpixel, send_telegram_message
+from pianoq.misc.misc import detect_gaussian_spots_subpixel, send_telegram_message, send_telegram_photo, send_telegram_plt_fig
 
 # Results
 from pianoq_results.scan_result import ScanResult

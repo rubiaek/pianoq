@@ -232,7 +232,7 @@ def figshow(fig):
 
 BOT_TOKEN = '7897393437:AAGlhCVyo_aawMfXGaI-qatAwZab6Nr-RUU'
 CHAT_ID = '476169345'
-
+from io import BytesIO
 
 def send_telegram_message(message, bot_token=BOT_TOKEN, chat_id=CHAT_ID):
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
@@ -243,3 +243,21 @@ def send_telegram_message(message, bot_token=BOT_TOKEN, chat_id=CHAT_ID):
     response = requests.post(url, json=payload)
     return response.json()
 
+
+def send_telegram_photo(photo, caption=None, bot_token=BOT_TOKEN, chat_id=CHAT_ID):
+    url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
+
+    files = {'photo': photo}
+    data = {'chat_id': chat_id}
+    if caption:
+        data['caption'] = caption
+
+    response = requests.post(url, data=data, files=files)
+    return response.json()
+
+
+def send_telegram_fig(fig, caption=None, bot_token=BOT_TOKEN, chat_id=CHAT_ID):
+    buf = BytesIO()
+    fig.savefig(buf, format='png')
+    buf.seek(0)
+    return send_telegram_photo(('figure.png', buf, 'image/png'), caption)
