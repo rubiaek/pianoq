@@ -125,10 +125,10 @@ class MPLCDevice:
             slm_mask[self.mask_slices[i]] = slm_mask[self.mask_slices[i]] - slm_mask[self.mask_slices[i]].min() + 0.01
 
         if self.plane_10_tilts is not None:
-            assert isinstance(plane_10_tilts, (int, float)), 'This should represent the number of pixels per 2-pi'
+            assert isinstance(self.plane_10_tilts, (int, float)), 'This should represent the number of pixels per 2-pi'
             XX, YY = np.meshgrid(np.arange(MASK_DIMS[1]) + 1, np.arange(MASK_DIMS[0]) + 1)
             # upper half of mask tilts a bit up, and lower a bit down, to avoid the sharp mirror edge
-            lin_tilt10 = -2 * np.pi * np.vstack((YY[:MASK_DIMS[0]//2, :], -YY[MASK_DIMS[0]//2:, :])) / plane_10_tilts
+            lin_tilt10 = -2 * np.pi * np.vstack((YY[:MASK_DIMS[0]//2, :], -YY[MASK_DIMS[0]//2:, :])) / self.plane_10_tilts
             lin_tilt10 = lin_tilt10 - np.min(lin_tilt10) + 0.01
 
             slm_mask[self.mask_slices[-1]] += lin_tilt10
