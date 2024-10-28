@@ -22,7 +22,7 @@ from pianoq.simulations.mplc_sim.create_wfm_masks import create_WFM_diffuser_mas
 # MPLC Lab
 from pianoq.lab.mplc.singles_scan import signal_scan, idler_scan, get_signal_scanner, get_idler_scanner
 from pianoq.lab.mplc.phase_finder_result import PhaseFinderResult
-from pianoq.lab.mplc.mask_utils import remove_input_modes, add_phase_input_spots, get_imaging_masks
+from pianoq.lab.mplc.mask_utils import remove_input_modes, add_phase_input_spots, get_imaging_masks, get_masks_matlab, mask_centers_to_mask_slices
 from pianoq.lab.mplc.mplc_device import MPLCDevice
 from pianoq.lab.mplc.discrete_photon_scanner import DiscretePhotonScanner
 from pianoq.lab.mplc.phase_finder_result import PhaseFinderResult
@@ -35,7 +35,7 @@ from pianoq.misc.misc import run_in_thread, run_in_thread_simple
 from pianoq.misc.mplt import mimshow, mplot
 from pianoq.lab.photon_scan import PhotonScanner
 from pianoq.lab.scripts.live_camera import live_cam
-from pianoq.misc.misc import detect_gaussian_spots_subpixel, send_telegram_message, send_telegram_photo, send_telegram_plt_fig
+from pianoq.misc.misc import detect_gaussian_spots_subpixel, send_telegram_message, send_telegram_photo, send_telegram_fig
 
 # Results
 from pianoq_results.scan_result import ScanResult
