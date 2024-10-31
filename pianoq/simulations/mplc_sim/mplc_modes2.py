@@ -59,10 +59,9 @@ def gen_output_modes_Unitary(waist_out, D_between_modes, XX, YY, Matrix_trans, d
                                                                 deltax_in=deltax_out, deltay_in=deltay_out,
                                                                 dead_middle_zone=dead_middle_zone)
 
-    # implicitly assume here dim=5, and carve out the 5 modes of the third column on top and on bottom
-    SPOTS_OUT = np.concatenate([SPOTS_OUT[10:15], SPOTS_OUT[35:40]])
-    x_modes_in = np.concatenate([x_modes_in[10:15], x_modes_in[35:40]])
-    y_modes_in = np.concatenate([y_modes_in[10:15], y_modes_in[35:40]])
+    SPOTS_OUT = SPOTS_OUT[which_modes]
+    x_modes_in = x_modes_in[which_modes]
+    y_modes_in = y_modes_in[which_modes]
 
     MODES = np.zeros((len(which_modes), XX.shape[0], XX.shape[1]), dtype=complex)
     phase_pos_x = np.zeros(len(which_modes))

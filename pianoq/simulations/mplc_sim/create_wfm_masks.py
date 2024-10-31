@@ -86,7 +86,7 @@ def create_WFM_diffuser_masks(same_diffuser=False, out_path=None, name=None, N_i
 
 
 def create_WFM_unitary_masks(U1, U2=None, out_path=None, name=None, N_iterations=None,
-                             dead_middle_zone=0, last_plane_extra_dist=8.4e-3):
+                             dead_middle_zone=0, last_plane_extra_dist=8.4e-3, col_to_row=False):
     """
     Assuming U is a 5X5 unitary, and using the top and bottom third rows of spots for input, and 3rd columns for output
     if U2 is None, so U2 = conj(U)
@@ -118,13 +118,38 @@ def create_WFM_unitary_masks(U1, U2=None, out_path=None, name=None, N_iterations
     D_between_modes_in = 300e-6
     D_between_modes_out = 330e-6
     dim = 5
-    which_modes = np.array([2, 7, 12, 17, 22,
-                            27, 32, 37, 42, 47])
+
     input_spots, x_modes_in, y_modes_in = gen_input_spots_array(waist=waist_in, D_between_modes=D_between_modes_in,
                                                                 XX=mplc.XX, YY=mplc.YY, dim=dim)
-    input_modes = input_spots[which_modes]
+
+    """
+    modes are ordered like this when one indexed:
+    25 20 15 10 5 
+    24 19 14 9  4 
+    23 18 13 8  3 
+    22 17 12 7  2 
+    21 16 11 6  1 
+
+    26 31 36 41 46
+    27 32 37 42 47
+    28 33 35 43 48
+    29 34 39 44 49
+    30 35 40 45 50 
+    """
+    # these are zero indexed
+    which_modes_in = np.array([2, 7, 12, 17, 22,
+                               27, 32, 37, 42, 47])
+
+    which_modes_out = np.array([10, 11, 12, 13, 14,
+                                35, 36, 37, 38, 39])
+
+    if col_to_row:
+        which_modes_in, which_modes_out = which_modes_out, which_modes_in
+        D_between_modes_out = 310e-6
+
+    input_modes = input_spots[which_modes_in]
     output_modes, phase_pos_x, phase_pos_y = gen_output_modes_Unitary(waist_out, D_between_modes_out, mplc.XX, mplc.YY,
-                                                                      full_transformation, dim, which_modes,
+                                                                      full_transformation, dim, which_modes_out,
                                                                       dead_middle_zone=dead_middle_zone)
 
     # run #
