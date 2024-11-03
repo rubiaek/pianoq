@@ -52,6 +52,7 @@ from pianoq.lab.VimbaCamera import VimbaCamera, VimbaImage
 
 
 modes_to_keep = np.array([3, 8, 13, 18, 23, 28, 33, 38, 43, 48])
+modes_to_keep_c2r = np.array([11, 12, 13, 14, 15, 36, 37, 38, 39, 40])
 
 
 def get_hardware(backlash=0, wait_after_move=0.3, coin_window=None, integration_time=1,
