@@ -34,3 +34,6 @@ from pianoq.misc.misc import detect_gaussian_spots_subpixel
 from pianoq_results.scan_result import ScanResult
 from pianoq.lab.mplc.phase_finder_result import PhaseFinderResult
 from pianoq_results.fits_image import FITSImage
+
+def tnow():
+    return datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
