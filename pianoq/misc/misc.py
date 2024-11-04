@@ -162,7 +162,7 @@ def gaussian_2d(xy, amplitude, x0, y0, sigma_x, sigma_y):
     return amplitude * np.exp(-(((x-x0)/sigma_x)**2 + ((y-y0)/sigma_y)**2)/2)
 
 
-def detect_gaussian_spots_subpixel(scan, X, Y, num_spots=5, min_distance=5, window_size=4, sort_top_to_bottom=True):
+def detect_gaussian_spots_subpixel(scan, X, Y, num_spots=5, min_distance=5, window_size=4, sort_top_to_bottom=True, get_amps=False):
     """
     Claude code
     Detect Gaussian spots in a 2D scan and estimate their coordinates with sub-pixel resolution.
@@ -192,6 +192,7 @@ def detect_gaussian_spots_subpixel(scan, X, Y, num_spots=5, min_distance=5, wind
     assert (Y[:-1] < Y[1:]).all(), 'We assume Y to be ascending'
     assert (X[:-1] < X[1:]).all(), 'We assume X to be ascending'
 
+    amps = []
     for y, x in coordinates:
         y_start = max(0, y - half_window)
         y_end = min(scan.shape[0], y + half_window + 1)
@@ -207,6 +208,7 @@ def detect_gaussian_spots_subpixel(scan, X, Y, num_spots=5, min_distance=5, wind
         try:
             popt, _ = curve_fit(gaussian_2d, (x_window.ravel(), y_window.ravel()), window.ravel(), p0=initial_guess)
             ampl, x0, y0, sig_x, sig_y = popt
+            amps.append(ampl)
             refined_x = X[0] + x0 * (X[1] - X[0])
             refined_y = Y[0] + y0 * (Y[1] - Y[0])
             refined_coordinates.append((refined_x, refined_y))
@@ -215,6 +217,9 @@ def detect_gaussian_spots_subpixel(scan, X, Y, num_spots=5, min_distance=5, wind
             refined_coordinates.append((X[x], Y[y]))
 
     sorted_coordinates = sorted(refined_coordinates, key=lambda c: c[1], reverse=not sort_top_to_bottom)
+
+    if get_amps:
+        return np.array(amps)
 
     return np.array(sorted_coordinates)
 
