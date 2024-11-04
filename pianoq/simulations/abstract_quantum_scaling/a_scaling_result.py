@@ -68,7 +68,7 @@ class QScalingSimulationResult(object):
         if show_legend:
             fig.legend(loc='upper left')  # plt.rcParams['legend.loc'] = 'upper left'
         # fig.suptitle(f'incomplete_method: {self.incomplete_control_method}, T_mode: {self.T_mode}')
-        fig.show()
+        # fig.show()
         return fig, ax
 
 

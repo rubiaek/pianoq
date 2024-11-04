@@ -64,8 +64,6 @@ class SLM3Simulation:
 
         elif method == "genetic_algorithm":
             from deap import base, creator, tools, algorithms
-
-            from deap import base, creator, tools, algorithms
             import random
             import numpy as np
 
