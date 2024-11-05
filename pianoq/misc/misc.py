@@ -187,7 +187,7 @@ def detect_gaussian_spots_subpixel(scan, X, Y, num_spots=5, min_distance=5, wind
     # smoothed_scan = scan
 
     # Find local maxima
-    coordinates = peak_local_max(smoothed_scan, num_peaks=num_spots, min_distance=min_distance)
+    coordinates = peak_local_max(smoothed_scan, num_peaks=num_spots, min_distance=min_distance, exclude_border=False)
 
     # Refine coordinates with sub-pixel resolution
     refined_coordinates = []
@@ -212,13 +212,14 @@ def detect_gaussian_spots_subpixel(scan, X, Y, num_spots=5, min_distance=5, wind
         try:
             popt, _ = curve_fit(gaussian_2d, (x_window.ravel(), y_window.ravel()), window.ravel(), p0=initial_guess)
             ampl, x0, y0, sig_x, sig_y = popt
-            amps.append(ampl)
             refined_x = X[0] + x0 * (X[1] - X[0])
             refined_y = Y[0] + y0 * (Y[1] - Y[0])
             refined_coordinates.append((refined_x, refined_y))
         except RuntimeError:
             print(f"Fitting failed for spot at ({x}, {y}). Using original coordinates.")
             refined_coordinates.append((X[x], Y[y]))
+            ampl = window.max()
+        amps.append(ampl)
 
     sorted_coordinates = sorted(refined_coordinates, key=lambda c: c[1], reverse=not sort_top_to_bottom)
 
@@ -235,14 +236,13 @@ def get_locs_from_scan(scan_path, single_num=1, num_spots=5, show=False):
     locs = detect_gaussian_spots_subpixel(s, scan.X, scan.Y[::-1], num_spots=num_spots,
                                           sort_top_to_bottom=True if single_num == 1 else False,
                                           get_amps=False)
-    if not show:
-        return locs
+    if show:
+        fig, ax = plt.subplots()
+        my_mesh(scan.X, scan.Y, s, ax=ax)
+        ax.plot(locs[:, 0], locs[:, 1], marker='+', linestyle='none')
+        fig.show()
 
-    fig, ax = plt.subplots()
-    my_mesh(scan.X, scan.Y, s, ax=ax)
-    ax.plot(locs[:, 0], locs[:, 1], marker='+', linestyle='none')
-    figshow(fig)
-
+    return locs
 
 def figshow(fig):
     try:
