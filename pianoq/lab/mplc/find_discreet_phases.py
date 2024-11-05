@@ -54,26 +54,27 @@ class PhaseFinder(object):
                                         single_channel_delays=TIMETAGGER_DELAYS)
         print("Got TimeTagger!")
 
-    def find_phases(self):
+    def find_phases(self, iterations=2):
         # TODO: add option for several iterations (and the initialize the dimensions of single1s etc. accordingly. (another dimension of dim n_iterations)
-        for i, mode_no in enumerate(self.res.modes_to_keep):
-            for j, phase in enumerate(self.res.phase_vec):
-                # Python 0-based, and modes begin at 1
-                self.res.phases[mode_no-1] = phase
-                masks = add_phase_input_spots(self.orig_masks, self.res.phases)
-                self.mplc.load_masks(masks)
-                time.sleep(0.1)
+        for iter in range(iterations):
+            for i, mode_no in enumerate(self.res.modes_to_keep):
+                for j, phase in enumerate(self.res.phase_vec):
+                    # Python 0-based, and modes begin at 1
+                    self.res.phases[mode_no-1] = phase
+                    masks = add_phase_input_spots(self.orig_masks, self.res.phases)
+                    self.mplc.load_masks(masks)
+                    time.sleep(0.1)
 
-                s1, s2, c = self.time_tagger.read_interesting()
-                self.res.single1s[i, j] = s1
-                self.res.single2s[i, j] = s2
-                self.res.coincidences[i, j] = c
-                print(f'{i},{j}: {s1:.1f}, {s2:.1f}, {c:.1f}')
+                    s1, s2, c = self.time_tagger.read_interesting()
+                    self.res.single1s[i, j] = s1
+                    self.res.single2s[i, j] = s2
+                    self.res.coincidences[i, j] = c
+                    print(f'{i},{j}: {s1:.1f}, {s2:.1f}, {c:.1f}')
 
-            CC = (self.res.coincidences[i, :] * np.exp(1j * self.res.phase_vec)).sum()
-            phi_best = np.mod(np.angle(CC)+2*np.pi, 2*np.pi)
-            self.res.phases[mode_no-1] = phi_best
-            self.res.saveto(self.res.path)
+                CC = (self.res.coincidences[i, :] * np.exp(1j * self.res.phase_vec)).sum()
+                phi_best = np.mod(np.angle(CC)+2*np.pi, 2*np.pi)
+                self.res.phases[mode_no-1] = phi_best
+                self.res.saveto(self.res.path)
 
     def close(self):
         self.zaber_ms.close()
