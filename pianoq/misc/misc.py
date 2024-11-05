@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import requests
 from functools import wraps
@@ -10,6 +11,9 @@ import time
 from scipy import ndimage
 from skimage.feature import peak_local_max
 from scipy.optimize import curve_fit
+
+from pianoq.misc.mplt import my_mesh
+from pianoq_results.scan_result import ScanResult
 
 
 # https://stackoverflow.com/questions/44985966/managing-dynamic-plotting-in-matplotlib-animation-module
@@ -222,6 +226,22 @@ def detect_gaussian_spots_subpixel(scan, X, Y, num_spots=5, min_distance=5, wind
         return np.array(amps)
 
     return np.array(sorted_coordinates)
+
+
+def get_locs_from_scan(scan_path, single_num=1, num_spots=5, show=False):
+    scan = ScanResult(scan_path)
+    assert single_num in [1, 2]
+    s = scan.single1s if single_num == 1 else scan.single2s
+    locs = detect_gaussian_spots_subpixel(s, scan.X, scan.Y[::-1], num_spots=num_spots,
+                                          sort_top_to_bottom=True if single_num == 1 else False,
+                                          get_amps=False)
+    if not show:
+        return locs
+
+    fig, ax = plt.subplots()
+    my_mesh(scan.X, scan.Y, s, ax=ax)
+    ax.plot(locs[:, 0], locs[:, 1], marker='+', linestyle='none')
+    figshow(fig)
 
 
 def figshow(fig):
