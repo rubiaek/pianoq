@@ -3,14 +3,15 @@ import random
 from scipy.stats import unitary_group
 from scipy.optimize import minimize, dual_annealing
 
-class SLM3Simulation:
-    def __init__(self, N=256, T_method='gaus_iid'):
+class QWFSSimulation:
+    def __init__(self, N=256, T_method='gaus_iid', config='SLM3'):
         self.N = N
         self.T_method = T_method
         self.T = self.get_diffuser()
+        self.config = config
 
         self.v_in = 1/np.sqrt(self.N) * np.ones(self.N, dtype=np.complex128)
-        self.slm_phases = np.exp(1j*np.zeros(self.N))
+        self.slm_phases = np.exp(1j*np.zeros(self.N, dtype=np.complex128))
         self.f_calls = 0
 
     def get_diffuser(self):
@@ -25,11 +26,22 @@ class SLM3Simulation:
         self.T = self.get_diffuser()
 
     def propagate(self):
-        # v_in gets slm phases, is scattered by T, and is reflected by the crystal,
-        # then T.T, phases againg, and the FFT for phases to take effect
+        if self.config == 'SLM3':
+            # v_in gets slm phases, is scattered by T, and is reflected by the crystal,
+            # then T.T, phases againg, and the FFT for phases to take effect
+            after_SLM_second_time = self.slm_phases * (self.T.transpose() @ self.T @ (self.slm_phases * self.v_in))
+            v_out = np.fft.fft(after_SLM_second_time) / np.sqrt(self.N)
+        elif self.config == 'SLM1':
+            after_T = self.T.transpose() @ self.T @ (self.slm_phases * self.v_in)
+            v_out = np.fft.fft(after_T) / np.sqrt(self.N)
+            # v_out = after_T
+        elif self.config == 'SLM2':
+            after_T2 = self.T.transpose() @ (self.slm_phases * (self.T @ self.v_in))
+            v_out = np.fft.fft(after_T2) / np.sqrt(self.N)
+            # v_out = after_T2
+        else:
+            raise NotImplementedError('WAT?')
 
-        after_SLM_second_time = self.slm_phases * (self.T.transpose() @ self.T @ (self.slm_phases * self.v_in))
-        v_out = np.fft.fft(after_SLM_second_time) / np.sqrt(self.N)
         return v_out
 
     def get_intensity(self, slm_phases=None, out_mode=None):
@@ -41,28 +53,28 @@ class SLM3Simulation:
         self.f_calls += 1
         return -I
 
-    def optimize(self, method="slsqp"):
+    def optimize(self, algo="slsqp"):
         import numpy as np # really weird, don't understand why I need this
         self.f_calls = 0
         # Define initial phases as the current slm_phases
         initial_phases = np.exp(1j*np.zeros(self.N))
 
-        if method == "slsqp" or method == "L-BFGS-B":
+        if algo == "slsqp" or algo == "L-BFGS-B":
             result = minimize(
-                self.get_intensity, initial_phases, method=method, bounds=[(0, 2 * np.pi)] * self.N
+                self.get_intensity, initial_phases, method=algo, bounds=[(0, 2 * np.pi)] * self.N
             )
             self.slm_phases = result.x
             intensity = self.get_intensity(self.slm_phases)
             return intensity, result
 
-        elif method == "simulated_annealing":
+        elif algo == "simulated_annealing":
             bounds = [(0, 2 * np.pi) for _ in range(self.N)]
             result = dual_annealing(self.get_intensity, bounds=bounds)
             self.slm_phases = result.x
             intensity = self.get_intensity(self.slm_phases)
             return intensity, result
 
-        elif method == "genetic_algorithm":
+        elif algo == "genetic_algorithm":
             from deap import base, creator, tools, algorithms
             import random
             import numpy as np
@@ -95,37 +107,18 @@ class SLM3Simulation:
             intensity = self.get_intensity(self.slm_phases)
             return intensity, population
 
-        elif method == "PSO":
-            try:
-                from pyswarm import pso
-            except ImportError:
-                raise ImportError("pyswarm library not installed. Please install it using 'pip install pyswarm'.")
+        elif algo == "PSO":
+            from pianoq.lab.optimizations.my_pso import MyPSOOptimizer
 
-            lb = [0] * self.N
-            ub = [2 * np.pi] * self.N
-            best_phases, _ = pso(self.get_intensity, lb, ub, maxiter=150000)
-            self.slm_phases = best_phases
+            def cost_func(phases):
+                return self.get_intensity(phases), None, None
+
+            o = MyPSOOptimizer(cost_func, n_pop=80, n_var=self.N, n_iterations=1000, stop_early=True,
+                               stop_after_n_const_iter=100, quiet=True)
+            o.optimize()
+            self.slm_phases = o.best_positions
             intensity = self.get_intensity(self.slm_phases)
-            return intensity, _
+            return intensity, o
 
         else:
             raise ValueError("Unsupported optimization method")
-
-    def statistics(self, N_times, method="gradient_descent"):
-        """
-        Runs the optimization process multiple times to gather statistics.
-        """
-        intensities = []
-
-        for _ in range(N_times):
-            # Reset phases before each optimization
-            self.slm_phases = np.zeros(self.N)
-            self.optimize(method=method)
-            intensity = -self.get_intensity()  # Undo negation to get positive intensity
-            intensities.append(intensity)
-
-        mean_intensity = np.mean(intensities)
-        std_intensity = np.std(intensities)
-        print(f"Optimization Method: {method}")
-        print(f"Mean Intensity: {mean_intensity}")
-        print(f"Standard Deviation of Intensity: {std_intensity}")

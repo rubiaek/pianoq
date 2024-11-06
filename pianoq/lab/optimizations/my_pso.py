@@ -134,8 +134,8 @@ class Particle(object):
 
     def evaluate(self):
         if not (np.all(-0.05 <= self.positions) and np.all(self.positions <= 1.05)):
-            print('percentages must be between 0 and 1!!')
-            print(self.positions)
+            self.log('percentages must be between 0 and 1!!')
+            self.log(self.positions)
         self.positions = np.clip(self.positions, 0, 1)
         cost, cost_std, im = self.swarm.cost_func(self.positions)
         self.cost = cost
@@ -233,7 +233,7 @@ class MyPSOOptimizer(object):
             amps = self.swarm.sample_func(self.swarm.n_var)
             costt, cost_std, im = self.swarm.cost_func(amps)
             cost += costt
-        print('Done initializing random average cost')
+        self.log('Done initializing random average cost')
 
         return cost / self.n_for_average_cost
 
