@@ -4,6 +4,7 @@ from scipy.stats import unitary_group
 from scipy.optimize import minimize, dual_annealing
 import matplotlib.pyplot as plt
 from pianoq.misc.mplc_writeup_imports import tnow
+from functools import partial
 
 
 class QWFSResult:
@@ -59,6 +60,7 @@ class QWFSResult:
 class QWFSSimulation:
     def __init__(self, N=256, T_method='gaus_iid', config='SLM3'):
         self.N = N
+        self.DEFAULT_OUT_MODE = self.N // 2
         self.T_method = T_method
         self.T = self.get_diffuser()
         self.config = config
@@ -101,15 +103,19 @@ class QWFSSimulation:
 
     def get_intensity(self, slm_phases_rad=None, out_mode=None):
         if slm_phases_rad is not None:
-            self.slm_phases = np.exp(1j*slm_phases_rad)
-        out_mode = out_mode or self.N // 2
+            self.slm_phases = np.exp(1j*np.array(slm_phases_rad))
+        out_mode = out_mode or self.DEFAULT_OUT_MODE
         v_out = self.propagate()
         I = np.abs(v_out[out_mode])**2
         self.f_calls += 1
         return -I
 
-    def optimize(self, algo="slsqp"):
+    def optimize(self, algo="slsqp", out_mode=None):
         import numpy as np # really weird, don't understand why I need this
+        out_mode = out_mode or self.DEFAULT_OUT_MODE
+
+        cost_func = partial(self.get_intensity, out_mode=out_mode)
+
         self.f_calls = 0
         # Define initial phases as the current slm_phases
         self.slm_phases = np.exp(1j*np.zeros(self.N))
@@ -117,18 +123,28 @@ class QWFSSimulation:
         if algo == "slsqp" or algo == "L-BFGS-B":
             initial_phases = np.zeros(self.N)
             result = minimize(
-                self.get_intensity, initial_phases, method=algo, bounds=[(0, 2 * np.pi)] * self.N
+                cost_func, initial_phases, method=algo, bounds=[(0, 2 * np.pi)] * self.N
             )
             self.slm_phases = result.x
-            intensity = self.get_intensity(self.slm_phases)
+            intensity = cost_func(self.slm_phases)
             return intensity, result
 
         elif algo == "simulated_annealing":
             bounds = [(0, 2 * np.pi) for _ in range(self.N)]
-            result = dual_annealing(self.get_intensity, bounds=bounds)
+            result = dual_annealing(cost_func, bounds=bounds)
             self.slm_phases = result.x
-            intensity = self.get_intensity(self.slm_phases)
+            intensity = cost_func(self.slm_phases)
             return intensity, result
+
+        elif algo == 'analytic':
+            if self.config == 'SLM1-only-T':
+                desired_out_vec = np.zeros(self.N)
+                desired_out_vec[out_mode] = 1
+                self.slm_phases = -np.angle(self.T.transpose() @ desired_out_vec)
+                intensity = cost_func(self.slm_phases)
+                return intensity, None
+            else:
+                return -0.1, None
 
         elif algo == "genetic_algorithm":
             from deap import base, creator, tools, algorithms
@@ -146,7 +162,7 @@ class QWFSSimulation:
             toolbox.register("attr_phase", random.uniform, 0, 2 * np.pi)
             toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_phase, n=self.N)
             toolbox.register("population", tools.initRepeat, list, toolbox.individual)
-            toolbox.register("evaluate", lambda ind: (self.get_intensity(),))  # Fitness function
+            toolbox.register("evaluate", lambda ind: (cost_func(ind),))  # Fitness function
             toolbox.register("mate", tools.cxBlend, alpha=0.5)
             toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=0.1, indpb=0.2)
             toolbox.register("select", tools.selTournament, tournsize=3)
@@ -160,20 +176,20 @@ class QWFSSimulation:
 
             # Update slm_phases with best individual found
             self.slm_phases = np.array(best_individual)
-            intensity = self.get_intensity(self.slm_phases)
+            intensity = cost_func(self.slm_phases)
             return intensity, population
 
         elif algo == "PSO":
             from pianoq.lab.optimizations.my_pso import MyPSOOptimizer
 
-            def cost_func(phases):
-                return self.get_intensity(phases), None, None
+            def cost_func2(phases):
+                return cost_func(phases), None, None
 
-            o = MyPSOOptimizer(cost_func, n_pop=80, n_var=self.N, n_iterations=1000, stop_early=True,
+            o = MyPSOOptimizer(cost_func2, n_pop=80, n_var=self.N, n_iterations=1000, stop_early=True,
                                stop_after_n_const_iter=100, quiet=True)
             o.optimize()
             self.slm_phases = o.best_positions
-            intensity = self.get_intensity(self.slm_phases)
+            intensity = cost_func(self.slm_phases)
             return intensity, o
 
         else:
@@ -187,7 +203,7 @@ class QWFSSimulation:
         qres.N_tries = N_tries
         qres.algos = algos
 
-        N_algos = len(algos)  #
+        N_algos = len(algos)
         N_configs = len(configs)
         N_T_methods = len(T_methods)
 
