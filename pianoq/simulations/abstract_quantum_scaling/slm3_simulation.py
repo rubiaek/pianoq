@@ -2,6 +2,59 @@ import numpy as np
 import random
 from scipy.stats import unitary_group
 from scipy.optimize import minimize, dual_annealing
+import matplotlib.pyplot as plt
+from pianoq.misc.mplc_writeup_imports import tnow
+
+
+class QWFSResult:
+    def __init__(self, path=None):
+        # results.shape == N_T_methods, N_configs, N_tries, N_algos
+        self.path = path
+        self.T_methods = None
+        self.configs = None
+        self.N_tries = None
+        self.algos = None
+        self.results = None
+        self.Ts = None
+        self.best_phases = None
+
+        if path:
+            self.loadfrom(path)
+
+    def saveto(self, path):
+        np.savez(path, self.__dict__)
+
+    def loadfrom(self, path):
+        data = np.load(path)
+        self.__dict__.update(data)
+
+    def show(self):
+        # all configurations
+        fig, axes = plt.subplots(len(self.configs), len(self.T_methods))
+        for config_no, config in enumerate(self.configs):
+            for T_method_no, T_method in enumerate(self.T_methods):
+                # upper_lim = 1 if T_method == 'unitary' else 2
+                # imm = axes[config_no, T_method_no].imshow(results[T_method_no, config_no], clim=(0, upper_lim))
+                if len(self.configs) > 1:
+                    ax = axes[config_no, T_method_no]
+                else:
+                    ax = axes[T_method_no]
+                imm = ax.imshow(self.results[T_method_no, config_no], aspect='auto')
+                ax.set_title(rf'{config}, {T_method}')
+                fig.colorbar(imm, ax=ax)
+        fig.show()
+
+    def print(self):
+        for config_no, config in enumerate(self.configs):
+            print(f'---- {config} ----')
+            for T_method_no, T_method in enumerate(self.T_methods):
+                print(f'-- {T_method} --')
+                for algo_no, algo in enumerate(self.algos):
+                    avg = self.results[T_method_no, config_no].mean(axis=0)[algo_no]
+                    std = self.results[T_method_no, config_no].std(axis=0)[algo_no]
+
+                    print(f'{algo:<25} {avg:.3f}+-{std:.2f}')
+            print()
 
 class QWFSSimulation:
     def __init__(self, N=256, T_method='gaus_iid', config='SLM3'):
@@ -39,14 +92,16 @@ class QWFSSimulation:
             after_T2 = self.T.transpose() @ (self.slm_phases * (self.T @ self.v_in))
             v_out = np.fft.fft(after_T2) / np.sqrt(self.N)
             # v_out = after_T2
+        elif self.config == 'SLM1-only-T':
+            v_out = self.T @ (self.slm_phases * self.v_in)
         else:
             raise NotImplementedError('WAT?')
 
         return v_out
 
-    def get_intensity(self, slm_phases=None, out_mode=None):
-        if slm_phases is not None:
-            self.slm_phases = np.exp(1j*slm_phases)
+    def get_intensity(self, slm_phases_rad=None, out_mode=None):
+        if slm_phases_rad is not None:
+            self.slm_phases = np.exp(1j*slm_phases_rad)
         out_mode = out_mode or self.N // 2
         v_out = self.propagate()
         I = np.abs(v_out[out_mode])**2
@@ -57,9 +112,10 @@ class QWFSSimulation:
         import numpy as np # really weird, don't understand why I need this
         self.f_calls = 0
         # Define initial phases as the current slm_phases
-        initial_phases = np.exp(1j*np.zeros(self.N))
+        self.slm_phases = np.exp(1j*np.zeros(self.N))
 
         if algo == "slsqp" or algo == "L-BFGS-B":
+            initial_phases = np.zeros(self.N)
             result = minimize(
                 self.get_intensity, initial_phases, method=algo, bounds=[(0, 2 * np.pi)] * self.N
             )
@@ -123,13 +179,20 @@ class QWFSSimulation:
         else:
             raise ValueError("Unsupported optimization method")
 
-    def statistics(self, algos, configs, T_methods, N_tries=1):
+    def statistics(self, algos, configs, T_methods, N_tries=1, saveto_path=None):
+        saveto_path = saveto_path or f"C:\\temp\\{tnow()}_qwfs.npz"
+        qres = QWFSResult()
+        qres.configs = configs
+        qres.T_methods = T_methods
+        qres.N_tries = N_tries
+        qres.algos = algos
+
         N_algos = len(algos)  #
         N_configs = len(configs)
         N_T_methods = len(T_methods)
 
-        results = np.zeros((N_T_methods, N_configs, N_tries, N_algos))
-        best_phases = np.zeros((N_T_methods, N_configs, N_tries, N_algos, self.N))
+        qres.results = np.zeros((N_T_methods, N_configs, N_tries, N_algos))
+        qres.best_phases = np.zeros((N_T_methods, N_configs, N_tries, N_algos, self.N))
         Ts = []
 
         for try_no in range(N_tries):
@@ -144,11 +207,15 @@ class QWFSSimulation:
                         self.slm_phases = np.exp(1j * np.zeros(self.N, dtype=np.complex128))
                         I, res = self.optimize(algo=algo)
                         v_out = self.propagate()
-                        I_tot = (np.abs(v_out) ** 2).sum()
+                        # I_tot = (np.abs(v_out) ** 2).sum()
                         # assert np.abs(I_tot - 1) < 0.05, f'Something weird with normalization! {I_tot=}'
                         I_good = np.abs(v_out[self.N // 2]) ** 2
                         # print(rf'{method=}, {I_tot=:.4f}, {I_good=:.4f}, {s.f_calls=}')
-                        results[T_method_no, config_no, try_no, algo_no] = I_good
-                        best_phases[T_method_no, config_no, try_no, algo_no] = np.angle(self.slm_phases)
+                        qres.results[T_method_no, config_no, try_no, algo_no] = I_good
+                        qres.best_phases[T_method_no, config_no, try_no, algo_no] = np.angle(self.slm_phases)
 
-        return results, Ts, best_phases
+        qres.Ts = np.array(Ts)
+
+        qres.saveto(saveto_path)
+
+        return qres
