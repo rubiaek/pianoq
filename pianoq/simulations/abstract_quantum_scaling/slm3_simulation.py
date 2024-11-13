@@ -122,3 +122,33 @@ class QWFSSimulation:
 
         else:
             raise ValueError("Unsupported optimization method")
+
+    def statistics(self, algos, configs, T_methods, N_tries=1):
+        N_algos = len(algos)  #
+        N_configs = len(configs)
+        N_T_methods = len(T_methods)
+
+        results = np.zeros((N_T_methods, N_configs, N_tries, N_algos))
+        best_phases = np.zeros((N_T_methods, N_configs, N_tries, N_algos, self.N))
+        Ts = []
+
+        for try_no in range(N_tries):
+            print(f'{try_no=}')
+            for T_method_no, T_method in enumerate(T_methods):
+                self.T_method = T_method
+                self.reset_T()
+                Ts.append(self.T)
+                for config_no, config in enumerate(configs):
+                    for algo_no, algo in enumerate(algos):
+                        self.config = config
+                        self.slm_phases = np.exp(1j * np.zeros(self.N, dtype=np.complex128))
+                        I, res = self.optimize(algo=algo)
+                        v_out = self.propagate()
+                        I_tot = (np.abs(v_out) ** 2).sum()
+                        # assert np.abs(I_tot - 1) < 0.05, f'Something weird with normalization! {I_tot=}'
+                        I_good = np.abs(v_out[self.N // 2]) ** 2
+                        # print(rf'{method=}, {I_tot=:.4f}, {I_good=:.4f}, {s.f_calls=}')
+                        results[T_method_no, config_no, try_no, algo_no] = I_good
+                        best_phases[T_method_no, config_no, try_no, algo_no] = np.angle(self.slm_phases)
+
+        return results, Ts, best_phases
