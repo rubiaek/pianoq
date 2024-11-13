@@ -19,7 +19,7 @@ LOGS_DIR = 'C:\\temp'
 class PianoOptimization(object):
 
     def __init__(self, initial_exposure_time=450, saveto_path=None, roi=None, cost_function=None, cam_type='vimba', dac=None, cam=None,
-                 good_piezo_indexes=np.arange(40), is_double_spot=False):
+                 good_piezo_indexes=np.arange(40), is_double_spot=False, around_amps=None, d_around_amps=None):
         ##########   CAREFULL CHANGING THIS VOLTAGE!!! #########
         self.dac = dac or Edac40(max_piezo_voltage=70, ip=Edac40.DEFAULT_IP)
 
@@ -76,6 +76,8 @@ class PianoOptimization(object):
         self.res.max_piezo_voltage = self.dac.max_piezo_voltage
         self.res.roi = self.roi
         self.res.cam_type = self.cam_type
+        self.around_amps = around_amps
+        self.d_around_amps = d_around_amps
 
     def optimize_my_pso(self, n_pop, n_iterations, stop_after_n_const_iters, reduce_at_iterations=(), success_cost=None):
         vary_population = False if reduce_at_iterations == () else True
@@ -133,6 +135,9 @@ class PianoOptimization(object):
         :param amps:
         :return:
         """
+        if self.around_amps is not None:
+            amps = self.around_amps + self.d_around_amps * amps
+
         real_amps = np.ones(40) * self.dac.REST_AMP
         real_amps[self.good_piezo_indexes] = amps
         self.dac.set_amplitudes(real_amps)
