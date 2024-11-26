@@ -23,10 +23,10 @@ class QWFSResult:
             self.loadfrom(path)
 
     def saveto(self, path):
-        np.savez(path, self.__dict__)
+        np.savez(path, **self.__dict__)
 
     def loadfrom(self, path):
-        data = np.load(path)
+        data = np.load(path, allow_pickle=True)
         self.__dict__.update(data)
 
     def show(self):
@@ -61,6 +61,7 @@ class QWFSSimulation:
     def __init__(self, N=256, T_method='gaus_iid', config='SLM3'):
         self.N = N
         self.DEFAULT_OUT_MODE = self.N // 2
+        self.DEFAULT_ONEHOT_INPUT_MODE = 0
         self.T_method = T_method
         self.T = self.get_diffuser()
         self.config = config
@@ -84,16 +85,24 @@ class QWFSSimulation:
         if self.config == 'SLM3':
             # v_in gets slm phases, is scattered by T, and is reflected by the crystal,
             # then T.T, phases againg, and the FFT for phases to take effect
-            after_SLM_second_time = self.slm_phases * (self.T.transpose() @ self.T @ (self.slm_phases * self.v_in))
+            after_SLM_second_time = self.slm_phases * (self.T @ self.T.transpose() @ (self.slm_phases * self.v_in))
             v_out = np.fft.fft(after_SLM_second_time) / np.sqrt(self.N)
         elif self.config == 'SLM1':
-            after_T = self.T.transpose() @ self.T @ (self.slm_phases * self.v_in)
+            after_T = self.T @ self.T.transpose() @ (self.slm_phases * self.v_in)
             v_out = np.fft.fft(after_T) / np.sqrt(self.N)
             # v_out = after_T
         elif self.config == 'SLM2':
-            after_T2 = self.T.transpose() @ (self.slm_phases * (self.T @ self.v_in))
+            after_T2 = self.T @ (self.slm_phases * (self.T.transpose() @ self.v_in))
             v_out = np.fft.fft(after_T2) / np.sqrt(self.N)
             # v_out = after_T2
+        elif self.config == 'SLM2-simple-OPC':
+            v_in_one_hot = np.zeros_like(self.v_in)
+            v_in_one_hot[self.DEFAULT_OUT_MODE] = 1  # TODO: this assumes that we try to optimize the self.DEFAULT_OUT_MODE
+            v_out = self.T @ (self.slm_phases * (self.T.transpose() @ v_in_one_hot))
+        elif self.config == 'SLM2-simple':
+            v_in_one_hot = np.zeros_like(self.v_in)
+            v_in_one_hot[self.DEFAULT_ONEHOT_INPUT_MODE] = 1
+            v_out = self.T @ (self.slm_phases * (self.T.transpose() @ v_in_one_hot))
         elif self.config == 'SLM1-only-T':
             v_out = self.T @ (self.slm_phases * self.v_in)
         else:
@@ -122,8 +131,26 @@ class QWFSSimulation:
 
         if algo == "slsqp" or algo == "L-BFGS-B":
             initial_phases = np.zeros(self.N)
+
+            if algo == "L-BFGS-B":
+                # defaults are:
+                # ftol = 2.2204460492503131e-09,
+                # gtol = 1e-5,
+                # eps = 1e-8,
+                # maxiter = 15000,
+                # Configure L-BFGS-B to "try harder"
+                options = {
+                    'maxiter': 30000,  # default: 15000. Increase the maximum number of iterations
+                    'ftol': 1e-12,  # default: 2.22e-9. Tighter function tolerance
+                    'gtol': 1e-8, # default: 1e-5 Tighter gradient norm tolerance
+                    'eps': 1e-8,  # default: 1e-8. Smaller step size for gradient estimation
+                    # 'disp': True  # Display convergence messages
+                }
+            else:
+                options = {}
+
             result = minimize(
-                cost_func, initial_phases, method=algo, bounds=[(0, 2 * np.pi)] * self.N
+                cost_func, initial_phases, method=algo, bounds=[(0, 2 * np.pi)] * self.N, options=options
             )
             self.slm_phases = result.x
             intensity = cost_func(self.slm_phases)
@@ -141,6 +168,14 @@ class QWFSSimulation:
                 desired_out_vec = np.zeros(self.N)
                 desired_out_vec[out_mode] = 1
                 self.slm_phases = -np.angle(self.T.transpose() @ desired_out_vec)
+                intensity = cost_func(self.slm_phases)
+                return intensity, None
+            elif self.config == 'SLM2-simple-OPC' or self.config == 'SLM2-simple':
+                # TODO: nicer code
+                O1 = self.DEFAULT_OUT_MODE if self.config == 'SLM2-simple-OPC' else self.DEFAULT_ONEHOT_INPUT_MODE
+                O2 = self.DEFAULT_OUT_MODE
+                at_slm = (self.T[O1, :] * self.T[O2, :])
+                self.slm_phases = -np.angle(at_slm)
                 intensity = cost_func(self.slm_phases)
                 return intensity, None
             else:
