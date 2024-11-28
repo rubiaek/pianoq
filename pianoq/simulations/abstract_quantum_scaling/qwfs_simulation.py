@@ -156,13 +156,10 @@ class QWFSSimulation:
                     for algo_no, algo in enumerate(algos):
                         self.slm_phases = np.exp(1j * np.zeros(self.N, dtype=np.complex128))
                         I, res = self.optimize(algo=algo)
-                        self.slm_phases = res.x
                         v_out = self.propagate()
                         I_good = np.abs(v_out[self.DEFAULT_OUT_MODE]) ** 2
                         qres.results[T_method_no, config_no, try_no, algo_no] = I_good
                         qres.best_phases[T_method_no, config_no, try_no, algo_no] = np.angle(self.slm_phases)
-                        # I_tot = (np.abs(v_out) ** 2).sum()
-                        # assert np.abs(I_tot - 1) < 0.05, f'Something weird with normalization! {I_tot=}'
                         # print(rf'{method=}, {I_tot=:.4f}, {I_good=:.4f}, {s.f_calls=}')
 
             qres.Ts = np.array(Ts)

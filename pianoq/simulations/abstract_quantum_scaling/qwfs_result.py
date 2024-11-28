@@ -29,6 +29,10 @@ class QWFSResult:
     def N_T_methods(self):
         return len(self.T_methods)
 
+    @property
+    def N_modes(self):
+        return self.best_phases.shape[-1]
+
     def saveto(self, path):
         np.savez(path, **self.__dict__)
 
@@ -115,15 +119,9 @@ class QWFSResult:
                 ax.set_xticks(range(len(self.algos)))
                 ax.set_xticklabels(self.algos, rotation=45, ha='right')
 
-                # Add y-label and T-method label only to leftmost column
+                if config_idx == 0:
+                    ax.set_ylabel(t_method, fontweight='bold',fontsize=12)
                 if config_idx == self.N_configs - 1:
-                    ax.set_ylabel(
-                        t_method,
-                        fontweight='bold',  # Makes the label bold
-                        fontsize=12  # Increases the font size (default is usually around 10)
-                    )
-
-                    # Add legend to first subplot of each row
                     ax.legend(loc='best', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
 
         # Adjust layout
@@ -132,8 +130,10 @@ class QWFSResult:
         # Add an overall title
         fig.suptitle('Performance Across T-Methods and Configurations', y=1.02)
 
-    def print(self):
+    def print(self, only_slm3=False):
         for config_no, config in enumerate(self.configs):
+            if only_slm3 and config != 'SLM3':
+                continue
             print(f'---- {config} ----')
             for T_method_no, T_method in enumerate(self.T_methods):
                 print(f'-- {T_method} --')
