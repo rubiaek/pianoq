@@ -13,6 +13,7 @@ class QWFSResult:
         self.Ts = None
         # best_phases.shape == N_T_methods, N_configs, N_tries, N_algos, self.N
         self.best_phases = None
+        self.sig_for_gauss_iid = np.sqrt(2)/2
 
         if path:
             self.loadfrom(path)

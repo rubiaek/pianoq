@@ -13,16 +13,18 @@ class QWFSSimulation:
         self.DEFAULT_OUT_MODE = self.N // 2
         self.DEFAULT_ONEHOT_INPUT_MODE = 0
         self.T_method = T_method
-        self.T = self.get_diffuser()
         self.config = config
+        self.sig_for_gauss_iid = np.sqrt(2)/2
+        self.T = self.get_diffuser()
 
         self.v_in = 1/np.sqrt(self.N) * np.ones(self.N, dtype=np.complex128)
         self.slm_phases = np.exp(1j*np.zeros(self.N, dtype=np.complex128))
         self.f_calls = 0
 
+
     def get_diffuser(self):
         if self.T_method == 'gaus_iid':
-            return 1/np.sqrt(self.N) * np.random.normal(loc=0, scale=np.sqrt(2)/2, size=(self.N, self.N, 2)).view(np.complex128)[:, :, 0]
+            return 1/np.sqrt(self.N) * np.random.normal(loc=0, scale=self.sig_for_gauss_iid, size=(self.N, self.N, 2)).view(np.complex128)[:, :, 0]
         elif self.T_method == 'unitary':
             return unitary_group.rvs(self.N)
         elif self.T_method == 'cue':
@@ -136,6 +138,7 @@ class QWFSSimulation:
         qres.T_methods = T_methods
         qres.N_tries = N_tries
         qres.algos = algos
+        qres.sig_for_gauss_iid = self.sig_for_gauss_iid
 
         N_algos = len(algos)
         N_configs = len(configs)
