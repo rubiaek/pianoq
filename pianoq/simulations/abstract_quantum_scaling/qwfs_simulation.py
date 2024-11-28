@@ -25,6 +25,12 @@ class QWFSSimulation:
             return 1/np.sqrt(self.N) * np.random.normal(loc=0, scale=np.sqrt(2)/2, size=(self.N, self.N, 2)).view(np.complex128)[:, :, 0]
         elif self.T_method == 'unitary':
             return unitary_group.rvs(self.N)
+        elif self.T_method == 'cue':
+            # More sophisticated random unitary generation
+            Z = np.random.normal(0, 1, (self.N, self.N)) + 1j * np.random.normal(0, 1, (self.N, self.N))
+            Q, R = np.linalg.qr(Z)
+            D = np.diag(np.diag(R) / np.abs(np.diag(R)))
+            return Q @ D
         else:
             raise NotImplementedError()
 
