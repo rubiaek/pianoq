@@ -15,6 +15,7 @@ class QWFSSimulation:
         self.T_method = T_method
         self.config = config
         self.sig_for_gauss_iid = np.sqrt(2)/2
+        self.cost_function = 'energy'
         self.T = self.get_diffuser()
 
         self.v_in = 1/np.sqrt(self.N) * np.ones(self.N, dtype=np.complex128)
@@ -69,9 +70,18 @@ class QWFSSimulation:
             self.slm_phases = np.exp(1j*np.array(slm_phases_rad))
         out_mode = out_mode or self.DEFAULT_OUT_MODE
         v_out = self.propagate()
-        I = np.abs(v_out[out_mode])**2
+        I_out = np.abs(v_out)**2
+        I = I_out[out_mode]
         self.f_calls += 1
-        return -I
+
+        if self.cost_function == 'energy':
+            return -I
+        elif self.cost_function == 'contrast':
+            return -I / I_out.sum()
+        elif self.cost_function == 'total_energy':
+            return -I_out.sum()
+        else:
+            raise NotImplementedError()
 
     def optimize(self, algo="slsqp", out_mode=None):
         # import numpy as np # really weird, don't understand why I need this
