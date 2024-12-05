@@ -11,7 +11,7 @@ def mimshow(im, title=None, aspect=None, **args):
     return fig, ax
 
 
-def mplot(X, Y=None, title=None):
+def mplot(X, Y=None, title=None, figshow=True):
     fig, ax = plt.subplots()
     if Y is not None:
         ax.plot(X, Y)
@@ -20,7 +20,8 @@ def mplot(X, Y=None, title=None):
 
     if title:
         ax.set_title(title)
-    fig.show()
+    if figshow:
+        fig.show()
     return fig, ax
 
 
