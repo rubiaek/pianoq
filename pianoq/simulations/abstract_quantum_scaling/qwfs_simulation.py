@@ -68,7 +68,8 @@ class QWFSSimulation:
     def get_intensity(self, slm_phases_rad=None, out_mode=None):
         if slm_phases_rad is not None:
             self.slm_phases = np.exp(1j*np.array(slm_phases_rad))
-        out_mode = out_mode or self.DEFAULT_OUT_MODE
+        if out_mode is None:
+            out_mode = self.DEFAULT_OUT_MODE
         v_out = self.propagate()
         I_out = np.abs(v_out)**2
         I = I_out[out_mode]
@@ -85,7 +86,8 @@ class QWFSSimulation:
 
     def optimize(self, algo="slsqp", out_mode=None):
         # import numpy as np # really weird, don't understand why I need this
-        out_mode = out_mode or self.DEFAULT_OUT_MODE
+        if out_mode is None:
+            out_mode = self.DEFAULT_OUT_MODE
 
         cost_func = partial(self.get_intensity, out_mode=out_mode)
 
@@ -175,7 +177,7 @@ class QWFSSimulation:
                             out_mode = self.DEFAULT_OUT_MODE
                         I, res = self.optimize(algo=algo, out_mode=out_mode)
                         v_out = self.propagate()
-                        I_good = np.abs(v_out[self.DEFAULT_OUT_MODE]) ** 2
+                        I_good = np.abs(v_out[out_mode]) ** 2
                         qres.results[T_method_no, config_no, try_no, algo_no] = I_good
                         qres.best_phases[T_method_no, config_no, try_no, algo_no] = np.angle(self.slm_phases)
                         # print(rf'{method=}, {I_tot=:.4f}, {I_good=:.4f}, {s.f_calls=}')

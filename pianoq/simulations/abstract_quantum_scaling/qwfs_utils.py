@@ -325,11 +325,12 @@ def show_max_SVD_N_dependance_numeric(max_power=8, num_sample=100, show_histogra
     for N in N_values:
         # Simulate largest singular values
         largest_singular_values = largest_singular_value_distribution(N, num_samples=num_sample, TT=TT)
-        mu = np.mean(largest_singular_values) ** 2
-        st = np.std(largest_singular_values) ** 2
+        mu = (largest_singular_values**2).mean()
+        st = (largest_singular_values**2).std()
+        mx = (largest_singular_values**2).max()
         means.append(mu)
         stds.append(st)
-        print(f"N={N}, mean={mu}")
+        print(f"N={N}, sqr_mean={mu:.3f}, sqr_std={st:.3f}, sqr_max={mx:.3f}")
         # Plot histogram of normalized singular values
         if show_histogram:
             ax.hist(largest_singular_values, bins=50, density=True, alpha=0.5, label=f'N={N}')
