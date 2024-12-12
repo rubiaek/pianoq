@@ -73,6 +73,19 @@ def get_slm1_intensities(res, config='SLM1-only-T', T_method='gaus_iid', alg='L-
     return I_outs, I_focuss
 
 
+def get_res_phases(res, config='SLM1-only-T', T_method='gaus_iid', alg='L-BFGS-B'):
+    try_nos = range(res.N_tries)
+    phases = []
+    for try_no in try_nos:
+        alg_ind = np.where(res.algos == alg)[0]
+        conf_ind = np.where(res.configs == config)[0]
+        T_method_ind = np.where(res.T_methods == T_method)[0]
+
+        slm_phases = res.best_phases[T_method_ind, conf_ind, try_no, alg_ind].squeeze()
+        phases.append(slm_phases)
+    return np.array(phases).squeeze()
+
+
 def show_tot_energy_at_planes(I_middles, I_outs):
     fig, axes = plt.subplots(1, 3, figsize=(10, 6))
 
@@ -214,3 +227,117 @@ def show_effics(effics):
 
     # Adjust layout and display
     plt.tight_layout()
+
+
+def show_max_SVD_N_dependance_pseudo_analytic(max_power=12):
+    import numpy as np
+    from scipy.integrate import quad
+    import matplotlib.pyplot as plt
+
+    def marchenko_pastur_pdf(x, q):
+        """
+        PDF of the Marchenko-Pastur distribution.
+        """
+        a = (1 - np.sqrt(q)) ** 2
+        b = (1 + np.sqrt(q)) ** 2
+        if a <= x <= b:
+            return np.sqrt((b - x) * (x - a)) / (2 * np.pi * q * x)
+        else:
+            return 0
+
+    def marchenko_pastur_cdf(x, q):
+        """
+        CDF of the Marchenko-Pastur distribution, computed by integrating the PDF.
+        """
+        a = (1 - np.sqrt(q)) ** 2
+        if x < a:
+            return 0
+        b = (1 + np.sqrt(q)) ** 2
+        if x > b:
+            return 1
+        result, _ = quad(lambda t: marchenko_pastur_pdf(t, q), a, x)
+        return result
+
+    def expected_maximum(N, q):
+        """
+        Compute the expected maximum for N samples from the Marchenko-Pastur distribution.
+        """
+        a = (1 - np.sqrt(q)) ** 2
+        b = (1 + np.sqrt(q)) ** 2
+
+        def integrand(x):
+            f_x = marchenko_pastur_pdf(x, q)
+            F_x = marchenko_pastur_cdf(x, q)
+            return x * N * (F_x ** (N - 1)) * f_x
+
+        result, _ = quad(integrand, a, b)
+        return result
+
+    # Parameters
+    q = 1  # Ratio M/N
+    N_values = 2 ** np.linspace(1, max_power, max_power)
+
+    # Compute E[max_s] for each N
+    expected_max_values = [expected_maximum(N, q) for N in N_values]
+
+    # Plot
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax.plot(N_values, expected_max_values, marker="o", label=f"Marchenko-Pastur (q={q})", color="blue")
+    # ax.set_xscale("log")
+    ax.set_xlabel("Number of Samples (N) [log scale]")
+    ax.set_ylabel("Expected Maximum (E[max_s])")
+    ax.set_title("Expected Maximum vs. Number of Samples for Marchenko-Pastur")
+    ax.grid(visible=True, which="both", linestyle="--", linewidth=0.5)
+    ax.legend()
+
+    # Print results for reference
+    for N, value in zip(N_values, expected_max_values):
+        print(f"N={N}, E[max_s]={value:.6f}")
+
+
+
+
+
+def show_max_SVD_N_dependance_numeric(max_power=8, num_sample=100, show_histogram=False, show_means=True):
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from scipy.stats import norm
+    from scipy.linalg import svd
+
+    def largest_singular_value_distribution(N, num_samples=1000):
+        sig_for_gauss_iid = np.sqrt(2) / 2
+        largest_singular_values = np.zeros(num_samples)
+
+        for i in range(num_samples):
+            T = 1 / np.sqrt(N) * np.random.normal(loc=0, scale=sig_for_gauss_iid, size=(N, N, 2)).view(np.complex128)[:,
+                                 :, 0]
+            s = svd(T, compute_uv=False)
+            largest_singular_values[i] = s[0]
+
+        return largest_singular_values
+
+    N_values = 2 ** np.linspace(1, max_power, max_power, dtype=int)
+
+    fig, ax = plt.subplots(figsize=(12, 8))
+
+    means = []
+    stds = []
+    for N in N_values:
+        # Simulate largest singular values
+        largest_singular_values = largest_singular_value_distribution(N, num_samples=num_sample)
+        mu = np.mean(largest_singular_values) ** 2
+        st = np.std(largest_singular_values) ** 2
+        means.append(mu)
+        stds.append(st)
+        print(f"N={N}, mean={mu}")
+        # Plot histogram of normalized singular values
+        if show_histogram:
+            ax.hist(largest_singular_values, bins=50, density=True, alpha=0.5, label=f'N={N}')
+
+    if show_means:
+        ax.errorbar(N_values, means, yerr=stds, marker="o", label=f"mean largest singular value")
+    ax.set_xlabel('Largest singular value')
+    ax.set_ylabel('Probability density')
+    ax.set_title('Largest singular value distribution')
+    ax.legend()
+    ax.grid(True)
