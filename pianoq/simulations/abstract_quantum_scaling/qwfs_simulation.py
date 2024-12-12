@@ -57,7 +57,7 @@ class QWFSSimulation:
             v_in_one_hot = np.zeros_like(self.v_in)
             v_in_one_hot[self.DEFAULT_ONEHOT_INPUT_MODE] = 1
             v_out = self.T @ (self.slm_phases * (self.T.transpose() @ v_in_one_hot))
-        elif self.config == 'SLM3':
+        elif self.config == 'SLM3' or self.config == 'SLM3-same-mode':
             after_SLM_second_time = self.slm_phases * (self.T @ self.T.transpose() @ (self.slm_phases * self.v_in))
             v_out = np.fft.fft(after_SLM_second_time) / np.sqrt(self.N)
         else:
@@ -168,7 +168,12 @@ class QWFSSimulation:
                     self.config = config
                     for algo_no, algo in enumerate(algos):
                         self.slm_phases = np.exp(1j * np.zeros(self.N, dtype=np.complex128))
-                        I, res = self.optimize(algo=algo)
+                        if config == 'SLM3-same-mode':
+                            # this is the equivalent output mode after fourier to the default input of flat phase ones
+                            out_mode = 0
+                        else:
+                            out_mode = self.DEFAULT_OUT_MODE
+                        I, res = self.optimize(algo=algo, out_mode=out_mode)
                         v_out = self.propagate()
                         I_good = np.abs(v_out[self.DEFAULT_OUT_MODE]) ** 2
                         qres.results[T_method_no, config_no, try_no, algo_no] = I_good

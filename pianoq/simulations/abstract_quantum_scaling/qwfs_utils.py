@@ -295,23 +295,23 @@ def show_max_SVD_N_dependance_pseudo_analytic(max_power=12):
         print(f"N={N}, E[max_s]={value:.6f}")
 
 
-
-
-
-def show_max_SVD_N_dependance_numeric(max_power=8, num_sample=100, show_histogram=False, show_means=True):
+def show_max_SVD_N_dependance_numeric(max_power=8, num_sample=100, show_histogram=False, show_means=True, TT=True):
     import numpy as np
     import matplotlib.pyplot as plt
     from scipy.stats import norm
     from scipy.linalg import svd
 
-    def largest_singular_value_distribution(N, num_samples=1000):
-        sig_for_gauss_iid = np.sqrt(2) / 2
+    def largest_singular_value_distribution(N, num_samples=1000, TT=True):
         largest_singular_values = np.zeros(num_samples)
 
         for i in range(num_samples):
-            T = 1 / np.sqrt(N) * np.random.normal(loc=0, scale=sig_for_gauss_iid, size=(N, N, 2)).view(np.complex128)[:,
-                                 :, 0]
-            s = svd(T, compute_uv=False)
+            T = 1 / np.sqrt(N) * np.random.normal(loc=0, scale=np.sqrt(2) / 2, size=(N, N, 2)).view(np.complex128)[:,:, 0]
+
+            if TT:
+                s = svd(T@T.T, compute_uv=False)
+            else:
+                s = svd(T, compute_uv=False)
+
             largest_singular_values[i] = s[0]
 
         return largest_singular_values
@@ -324,7 +324,7 @@ def show_max_SVD_N_dependance_numeric(max_power=8, num_sample=100, show_histogra
     stds = []
     for N in N_values:
         # Simulate largest singular values
-        largest_singular_values = largest_singular_value_distribution(N, num_samples=num_sample)
+        largest_singular_values = largest_singular_value_distribution(N, num_samples=num_sample, TT=TT)
         mu = np.mean(largest_singular_values) ** 2
         st = np.std(largest_singular_values) ** 2
         means.append(mu)
@@ -335,7 +335,7 @@ def show_max_SVD_N_dependance_numeric(max_power=8, num_sample=100, show_histogra
             ax.hist(largest_singular_values, bins=50, density=True, alpha=0.5, label=f'N={N}')
 
     if show_means:
-        ax.errorbar(N_values, means, yerr=stds, marker="o", label=f"mean largest singular value")
+        ax.errorbar(N_values, means, yerr=stds, marker="o", label=f"mean largest singular value, TT={TT}")
     ax.set_xlabel('Largest singular value')
     ax.set_ylabel('Probability density')
     ax.set_title('Largest singular value distribution')
