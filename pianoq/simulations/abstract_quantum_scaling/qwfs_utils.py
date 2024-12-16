@@ -337,8 +337,11 @@ def show_max_SVD_N_dependance_numeric(max_power=8, num_sample=100, show_histogra
 
     if show_means:
         ax.errorbar(N_values, means, yerr=stds, marker="o", label=f"mean largest singular value, TT={TT}")
-    ax.set_xlabel('Largest singular value')
-    ax.set_ylabel('Probability density')
+        ax.set_xlabel('N_modes')
+        ax.set_ylabel('Largest singular value')
+    else:
+        ax.set_xlabel('Largest singular value')
+        ax.set_ylabel('Probability density')
     ax.set_title('Largest singular value distribution')
     ax.legend()
     ax.grid(True)
