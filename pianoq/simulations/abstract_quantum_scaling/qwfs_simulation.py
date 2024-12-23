@@ -5,6 +5,10 @@ from scipy.optimize import minimize, dual_annealing
 from pianoq.misc.mplc_writeup_imports import tnow
 from functools import partial
 from pianoq.simulations.abstract_quantum_scaling.qwfs_result import QWFSResult
+try:
+    import torch
+except ImportError:
+    pass
 
 
 class QWFSSimulation:
@@ -42,21 +46,24 @@ class QWFSSimulation:
         self.T = self.get_diffuser()
         self.M = self.get_diffuser()
 
-    def propagate(self):
+    def propagate(self, use_torch=False):
+
+        fft = torch.fft.fft if use_torch else np.fft.fft
+
         if self.config == 'SLM1' or self.config == 'SLM1-same-mode':
             after_T = self.T @ self.T.transpose() @ (self.slm_phases * self.v_in)
-            v_out = np.fft.fft(after_T) / np.sqrt(self.N)
+            v_out = fft(after_T) / np.sqrt(self.N)
         elif self.config == 'SLM1-after':
             after_T = self.slm_phases * (self.T @ self.T.transpose() @ self.v_in)
-            v_out = np.fft.fft(after_T) / np.sqrt(self.N)
+            v_out = fft(after_T) / np.sqrt(self.N)
         elif self.config == 'SLM1-only-T':
             v_out = self.T @ (self.slm_phases * self.v_in)
         elif self.config == 'SLM1-only-T-after':
             after_T = self.slm_phases * (self.T @ self.v_in)
-            v_out = np.fft.fft(after_T) / np.sqrt(self.N)
+            v_out = fft(after_T) / np.sqrt(self.N)
         elif self.config == 'SLM2':
             after_T2 = self.T @ (self.slm_phases * (self.T.transpose() @ self.v_in))
-            v_out = np.fft.fft(after_T2) / np.sqrt(self.N)
+            v_out = fft(after_T2) / np.sqrt(self.N)
         elif self.config == 'SLM2-simple-OPC':
             v_in_one_hot = np.zeros_like(self.v_in)
             v_in_one_hot[self.DEFAULT_OUT_MODE] = 1  # TODO: this assumes that we try to optimize the self.DEFAULT_OUT_MODE
@@ -67,7 +74,7 @@ class QWFSSimulation:
             v_out = self.T @ (self.slm_phases * (self.T.transpose() @ v_in_one_hot))
         elif self.config == 'SLM3' or self.config == 'SLM3-same-mode':
             after_SLM_second_time = self.slm_phases * (self.T @ self.T.transpose() @ (self.slm_phases * self.v_in))
-            v_out = np.fft.fft(after_SLM_second_time) / np.sqrt(self.N)
+            v_out = fft(after_SLM_second_time) / np.sqrt(self.N)
         else:
             raise NotImplementedError('WAT?')
 
@@ -148,8 +155,55 @@ class QWFSSimulation:
                 return intensity, None
             else:
                 return -0.1, None
+        elif algo == 'autograd':
+            return self._autograd(out_mode=out_mode)
         else:
             raise ValueError("Unsupported optimization method")
+
+    def _autograd(self, out_mode=None):
+        """ Note that this doesn't work for cost functions other than `energy` """
+        # param init
+        phase = torch.zeros(self.N, requires_grad=True, dtype=torch.float64)
+        optimizer = torch.optim.Adam([phase], lr=0.01)
+        N_iters = 10000
+        prev_cost = float('inf')
+        patience = 50  # Number of iterations to wait for improvement
+        patience_counter = 0
+        eps_stop = 1e-9
+
+        self.T = torch.from_numpy(self.T)
+        self.M = torch.from_numpy(self.M)
+        self.v_in = torch.from_numpy(self.v_in)
+
+        for i in range(N_iters):
+            optimizer.zero_grad()
+
+            slm_phases = torch.exp(1j * phase)
+            self.slm_phases = slm_phases
+
+            v_out = self.propagate(use_torch=True)
+            cost = -torch.abs(v_out[out_mode]) ** 2
+            cost.backward()
+            optimizer.step()
+            with torch.no_grad():
+                phase = phase % (2 * torch.pi)
+
+            current_cost = cost.item()
+            if abs(prev_cost - current_cost) < eps_stop:
+                patience_counter += 1
+                if patience_counter >= patience:
+                    break
+            else:
+                patience_counter = 0
+            prev_cost = current_cost
+
+            # phase.requires_grad = True  # is this needed?
+
+        self.slm_phases = torch.exp(1j * phase).detach().numpy()
+        self.v_in = self.v_in.numpy()  # restore to np
+
+        return -prev_cost, None
+
 
     def statistics(self, algos, configs, T_methods, N_tries=1, saveto_path=None):
         saveto_path = saveto_path or f"C:\\temp\\{tnow()}_qwfs.npz"
