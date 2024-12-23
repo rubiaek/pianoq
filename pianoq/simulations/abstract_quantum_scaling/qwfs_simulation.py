@@ -46,8 +46,14 @@ class QWFSSimulation:
         if self.config == 'SLM1' or self.config == 'SLM1-same-mode':
             after_T = self.T @ self.T.transpose() @ (self.slm_phases * self.v_in)
             v_out = np.fft.fft(after_T) / np.sqrt(self.N)
+        elif self.config == 'SLM1-after':
+            after_T = self.slm_phases * (self.T @ self.T.transpose() @ self.v_in)
+            v_out = np.fft.fft(after_T) / np.sqrt(self.N)
         elif self.config == 'SLM1-only-T':
             v_out = self.T @ (self.slm_phases * self.v_in)
+        elif self.config == 'SLM1-only-T-after':
+            after_T = self.slm_phases * (self.T @ self.v_in)
+            v_out = np.fft.fft(after_T) / np.sqrt(self.N)
         elif self.config == 'SLM2':
             after_T2 = self.T @ (self.slm_phases * (self.T.transpose() @ self.v_in))
             v_out = np.fft.fft(after_T2) / np.sqrt(self.N)
