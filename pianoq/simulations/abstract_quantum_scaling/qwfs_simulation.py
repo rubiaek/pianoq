@@ -7,6 +7,13 @@ from functools import partial
 from pianoq.simulations.abstract_quantum_scaling.qwfs_result import QWFSResult
 try:
     import torch
+    # so we can do T.transpose() on torch and np arrays similarly
+    def _tensor_transpose(self, *args):
+        if len(args) == 0:
+            return self.t()
+        return self.transpose(*args)
+
+    torch.Tensor.transpose = _tensor_transpose
 except ImportError:
     pass
 
@@ -163,17 +170,17 @@ class QWFSSimulation:
     def _autograd(self, out_mode=None):
         """ Note that this doesn't work for cost functions other than `energy` """
         # param init
-        phase = torch.zeros(self.N, requires_grad=True, dtype=torch.float64)
-        optimizer = torch.optim.Adam([phase], lr=0.01)
+        phase = torch.ones(self.N, requires_grad=True, dtype=torch.float64)
+        optimizer = torch.optim.Adam([phase], lr=0.001)
         N_iters = 10000
         prev_cost = float('inf')
-        patience = 50  # Number of iterations to wait for improvement
+        patience = 5000  # Number of iterations to wait for improvement
         patience_counter = 0
         eps_stop = 1e-9
 
-        self.T = torch.from_numpy(self.T)
-        self.M = torch.from_numpy(self.M)
-        self.v_in = torch.from_numpy(self.v_in)
+        self.T = torch.tensor(self.T, dtype=torch.complex128, requires_grad=True)
+        self.M = torch.tensor(self.M, dtype=torch.complex128, requires_grad=True)
+        self.v_in = torch.tensor(self.v_in, dtype=torch.complex128, requires_grad=True)
 
         for i in range(N_iters):
             optimizer.zero_grad()
@@ -200,10 +207,17 @@ class QWFSSimulation:
             # phase.requires_grad = True  # is this needed?
 
         self.slm_phases = torch.exp(1j * phase).detach().numpy()
-        self.v_in = self.v_in.numpy()  # restore to np
+        self.reset_to_numpy()
 
         return -prev_cost, None
 
+    def reset_to_numpy(self):
+        """Ensure all attributes are reset to NumPy arrays."""
+        self.T = self.T.detach().numpy() if isinstance(self.T, torch.Tensor) else self.T
+        self.M = self.M.detach().numpy() if isinstance(self.M, torch.Tensor) else self.M
+        self.v_in = self.v_in.detach().numpy() if isinstance(self.v_in, torch.Tensor) else self.v_in
+        self.slm_phases = self.slm_phases.detach().numpy() if isinstance(self.slm_phases,
+                                                                         torch.Tensor) else self.slm_phases
 
     def statistics(self, algos, configs, T_methods, N_tries=1, saveto_path=None):
         saveto_path = saveto_path or f"C:\\temp\\{tnow()}_qwfs.npz"
