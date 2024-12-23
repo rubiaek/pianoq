@@ -17,6 +17,7 @@ class QWFSSimulation:
         self.sig_for_gauss_iid = np.sqrt(2)/2
         self.cost_function = 'energy'
         self.T = self.get_diffuser()
+        self.M = self.get_diffuser()
 
         self.v_in = 1/np.sqrt(self.N) * np.ones(self.N, dtype=np.complex128)
         self.slm_phases = np.exp(1j*np.zeros(self.N, dtype=np.complex128))
@@ -39,9 +40,10 @@ class QWFSSimulation:
 
     def reset_T(self):
         self.T = self.get_diffuser()
+        self.M = self.get_diffuser()
 
     def propagate(self):
-        if self.config == 'SLM1':
+        if self.config == 'SLM1' or self.config == 'SLM1-same-mode':
             after_T = self.T @ self.T.transpose() @ (self.slm_phases * self.v_in)
             v_out = np.fft.fft(after_T) / np.sqrt(self.N)
         elif self.config == 'SLM1-only-T':
@@ -170,7 +172,7 @@ class QWFSSimulation:
                     self.config = config
                     for algo_no, algo in enumerate(algos):
                         self.slm_phases = np.exp(1j * np.zeros(self.N, dtype=np.complex128))
-                        if config == 'SLM3-same-mode':
+                        if config == 'SLM3-same-mode' or config == 'SLM1-same-mode':
                             # this is the equivalent output mode after fourier to the default input of flat phase ones
                             out_mode = 0
                         else:
