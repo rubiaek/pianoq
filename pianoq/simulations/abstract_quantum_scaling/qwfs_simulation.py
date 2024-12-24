@@ -190,10 +190,6 @@ class QWFSSimulation:
 
         for i in range(N_iters):
             optimizer.zero_grad()
-            # slm_phases = torch.exp(1j * phases)
-            # self.slm_phases = slm_phases
-            # v_out = self.propagate(use_torch=True)
-            # cost = -torch.abs(v_out[out_mode]) ** 2
             cost = self.get_intensity(phases, out_mode=out_mode, use_torch=True)
             cost.backward()
             optimizer.step()
@@ -271,3 +267,49 @@ class QWFSSimulation:
             qres.saveto(saveto_path)
 
         return qres
+
+
+# thanks gpt-4o
+def resize_array(arr, desired_size, use_torch=False):
+    """
+    Resizes (stretches) an array/tensor to a new size deterministically, evenly distributing
+    repetitions of elements to achieve the desired size.
+
+    Parameters:
+        arr (numpy.ndarray or torch.Tensor): Input array or tensor of size N.
+        desired_size (int): Desired size of the output array/tensor (must be >= len(arr)).
+        use_torch (bool): Whether to use PyTorch (True) or NumPy (False) operations.
+
+    Returns:
+        numpy.ndarray or torch.Tensor: Resized array/tensor of the specified size.
+    """
+    N = len(arr)
+    assert desired_size >= N, "Desired size must be greater than or equal to the input size."
+
+    # If sizes are equal, return the input array as is
+    if desired_size == N:
+        return arr
+
+    # Determine repetitions
+    factor = desired_size / N
+    floor = int(factor)  # Most elements repeat this many times
+    ceil = floor + 1  # Some elements repeat this many times
+    extra_count = desired_size - floor * N  # Number of elements needing extra repetition
+
+    # Create a deterministic repetition pattern
+    if use_torch:
+        repeat_func = torch.repeat_interleave
+        tensor = torch.tensor
+    else:
+        repeat_func = np.repeat
+        tensor = np.array
+
+    repeats = tensor([floor] * N)
+    for i in range(extra_count):
+        repeats[i] += 1  # Assign extra repetitions deterministically from the start
+
+    # Perform the stretching
+    repeats = tensor(repeats, dtype=torch.long if use_torch else int)
+    stretched_array = repeat_func(arr, repeats)
+
+    return stretched_array
