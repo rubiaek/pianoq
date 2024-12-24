@@ -172,16 +172,24 @@ class QWFSSimulation:
                 return intensity, None
             else:
                 return -0.1, None
-        elif algo == 'autograd':
-            return self._autograd(out_mode=out_mode)
+        elif algo == 'autograd-adam' or algo == 'autograd-lbfgs':
+            return self._autograd(out_mode=out_mode, optimizer_name=algo)
         else:
             raise ValueError("Unsupported optimization method")
 
-    def _autograd(self, out_mode=None):
+    def _autograd(self, out_mode=None, optimizer_name='autograd-adam', lr=0.01):
         """ Note that this doesn't work for cost functions other than `energy` """
         # param init
         phases = torch.zeros(self.N_pixels, requires_grad=True, dtype=torch.float64)
-        optimizer = torch.optim.Adam([phases], lr=0.01)
+
+        if optimizer_name.lower() == 'autograd-adam':
+            optimizer = torch.optim.Adam([phases], lr=lr)
+        elif optimizer_name.lower() == 'autograd-lbfgs':
+            # This is much slower, and average over 10 gives very sligthly better results (0.875->0.877; 1.861->1.883)
+            optimizer = torch.optim.LBFGS([phases], lr=lr, max_iter=20, line_search_fn="strong_wolfe")
+        else:
+            raise ValueError(f"Unsupported optimizer: {optimizer_name}")
+
         N_iters = 10000
         prev_cost = float('inf')
         patience = 10  # Number of iterations to wait for improvement
@@ -193,11 +201,19 @@ class QWFSSimulation:
         self.M = torch.tensor(self.M, dtype=dtype, requires_grad=False)
         self.v_in = torch.tensor(self.v_in, dtype=dtype, requires_grad=False)
 
-        for i in range(N_iters):
+        def closure():
             optimizer.zero_grad()
             cost = self.get_intensity(phases, out_mode=out_mode, use_torch=True)
             cost.backward()
-            optimizer.step()
+            return cost
+
+        for i in range(N_iters):
+            if optimizer_name.lower() == 'autograd-lbfgs':
+                cost = optimizer.step(closure)
+            else:
+                cost = closure()
+                optimizer.step()
+
             with torch.no_grad():
                 # important to update the data and not create a new tensor that will be detached from the graph
                 phases.data = phases.data % (2 * torch.pi)
