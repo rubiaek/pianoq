@@ -87,20 +87,24 @@ class QWFSSimulation:
 
         return v_out
 
-    def get_intensity(self, slm_phases_rad=None, out_mode=None):
+    def get_intensity(self, slm_phases_rad=None, out_mode=None, use_torch=False):
+        exp = torch.exp if use_torch else np.exp
+        abs = torch.abs if use_torch else np.abs
+        slm_phases_rad = slm_phases_rad if use_torch else np.array(slm_phases_rad)
+
         if slm_phases_rad is not None:
-            self.slm_phases = np.exp(1j*np.array(slm_phases_rad))
+            self.slm_phases = exp(1j*slm_phases_rad)
         if out_mode is None:
             out_mode = self.DEFAULT_OUT_MODE
-        v_out = self.propagate()
-        I_out = np.abs(v_out)**2
-        I = I_out[out_mode]
+        v_out = self.propagate(use_torch=use_torch)
+        I_out = abs(v_out)**2
+        I_focus = I_out[out_mode]
         self.f_calls += 1
 
         if self.cost_function == 'energy':
-            return -I
+            return -I_focus
         elif self.cost_function == 'contrast':
-            return -I / I_out.sum()
+            return -I_focus / I_out.sum()
         elif self.cost_function == 'total_energy':
             return -I_out.sum()
         else:
@@ -170,30 +174,31 @@ class QWFSSimulation:
     def _autograd(self, out_mode=None):
         """ Note that this doesn't work for cost functions other than `energy` """
         # param init
-        phase = torch.ones(self.N, requires_grad=True, dtype=torch.float64)
-        optimizer = torch.optim.Adam([phase], lr=0.001)
+        phases = torch.zeros(self.N, requires_grad=True, dtype=torch.float64)
+        optimizer = torch.optim.Adam([phases], lr=0.01)
         N_iters = 10000
         prev_cost = float('inf')
-        patience = 5000  # Number of iterations to wait for improvement
+        patience = 10  # Number of iterations to wait for improvement
         patience_counter = 0
-        eps_stop = 1e-9
+        eps_stop = 1e-6
 
-        self.T = torch.tensor(self.T, dtype=torch.complex128, requires_grad=True)
-        self.M = torch.tensor(self.M, dtype=torch.complex128, requires_grad=True)
-        self.v_in = torch.tensor(self.v_in, dtype=torch.complex128, requires_grad=True)
+        dtype = torch.complex128
+        self.T = torch.tensor(self.T, dtype=dtype, requires_grad=False)
+        self.M = torch.tensor(self.M, dtype=dtype, requires_grad=False)
+        self.v_in = torch.tensor(self.v_in, dtype=dtype, requires_grad=False)
 
         for i in range(N_iters):
             optimizer.zero_grad()
-
-            slm_phases = torch.exp(1j * phase)
-            self.slm_phases = slm_phases
-
-            v_out = self.propagate(use_torch=True)
-            cost = -torch.abs(v_out[out_mode]) ** 2
+            # slm_phases = torch.exp(1j * phases)
+            # self.slm_phases = slm_phases
+            # v_out = self.propagate(use_torch=True)
+            # cost = -torch.abs(v_out[out_mode]) ** 2
+            cost = self.get_intensity(phases, out_mode=out_mode, use_torch=True)
             cost.backward()
             optimizer.step()
             with torch.no_grad():
-                phase = phase % (2 * torch.pi)
+                # important to update the data and not create a new tensor that will be detached from the graph
+                phases.data = phases.data % (2 * torch.pi)
 
             current_cost = cost.item()
             if abs(prev_cost - current_cost) < eps_stop:
@@ -204,9 +209,7 @@ class QWFSSimulation:
                 patience_counter = 0
             prev_cost = current_cost
 
-            # phase.requires_grad = True  # is this needed?
-
-        self.slm_phases = torch.exp(1j * phase).detach().numpy()
+        self.slm_phases = torch.exp(1j * phases).detach().numpy()
         self.reset_to_numpy()
 
         return -prev_cost, None
