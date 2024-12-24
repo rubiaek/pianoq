@@ -22,6 +22,7 @@ except ImportError:
 class QWFSSimulation:
     def __init__(self, N=256, T_method='gaus_iid', config='SLM3'):
         self.N = N
+        self.N_pixels = self.N
         self.DEFAULT_OUT_MODE = self.N // 2
         self.DEFAULT_ONEHOT_INPUT_MODE = 0
         self.T_method = T_method
@@ -93,6 +94,8 @@ class QWFSSimulation:
         abs = torch.abs if use_torch else np.abs
         slm_phases_rad = slm_phases_rad if use_torch else np.array(slm_phases_rad)
 
+        slm_phases_rad = resize_array(slm_phases_rad, self.N, use_torch=use_torch)
+
         if slm_phases_rad is not None:
             self.slm_phases = exp(1j*slm_phases_rad)
         if out_mode is None:
@@ -123,7 +126,7 @@ class QWFSSimulation:
         self.slm_phases = np.exp(1j*np.zeros(self.N))
 
         if algo == "slsqp" or algo == "L-BFGS-B":
-            initial_phases = np.zeros(self.N)
+            initial_phases = np.zeros(self.N_pixels)
 
             if algo == "L-BFGS-B":
                 # Configure L-BFGS-B to "try harder"
@@ -138,16 +141,16 @@ class QWFSSimulation:
                 options = {}
 
             result = minimize(
-                cost_func, initial_phases, method=algo, bounds=[(0, 2 * np.pi)] * self.N, options=options
+                cost_func, initial_phases, method=algo, bounds=[(0, 2 * np.pi)] * self.N_pixels, options=options
             )
-            self.slm_phases = result.x
+            self.slm_phases = resize_array(result.x, self.N, use_torch=False)
             intensity = cost_func(self.slm_phases)
             return intensity, result
 
         elif algo == "simulated_annealing":
-            bounds = [(0, 2 * np.pi) for _ in range(self.N)]
+            bounds = [(0, 2 * np.pi) for _ in range(self.N_pixels)]
             result = dual_annealing(cost_func, bounds=bounds)
-            self.slm_phases = result.x
+            self.slm_phases = resize_array(result.x, self.N, use_torch=False)
             intensity = cost_func(self.slm_phases)
             return intensity, result
 
@@ -156,10 +159,12 @@ class QWFSSimulation:
                 desired_out_vec = np.zeros(self.N)
                 desired_out_vec[out_mode] = 1
                 self.slm_phases = -np.angle(self.T.transpose() @ desired_out_vec)
+                # TODO: something with incomplete control, similar to what we do in `abstract_quantum_scaling.py:191`
                 intensity = cost_func(self.slm_phases)
                 return intensity, None
             elif self.config == 'SLM2-simple-OPC' or self.config == 'SLM2-simple':
                 # TODO: nicer code
+                # TODO: something with incomplete control, similar to what we do in `abstract_quantum_scaling.py:140`
                 O1 = self.DEFAULT_OUT_MODE if self.config == 'SLM2-simple-OPC' else self.DEFAULT_ONEHOT_INPUT_MODE
                 at_slm = (self.T[O1, :] * self.T[self.DEFAULT_OUT_MODE, :])
                 self.slm_phases = -np.angle(at_slm)
@@ -175,7 +180,7 @@ class QWFSSimulation:
     def _autograd(self, out_mode=None):
         """ Note that this doesn't work for cost functions other than `energy` """
         # param init
-        phases = torch.zeros(self.N, requires_grad=True, dtype=torch.float64)
+        phases = torch.zeros(self.N_pixels, requires_grad=True, dtype=torch.float64)
         optimizer = torch.optim.Adam([phases], lr=0.01)
         N_iters = 10000
         prev_cost = float('inf')
@@ -206,7 +211,7 @@ class QWFSSimulation:
                 patience_counter = 0
             prev_cost = current_cost
 
-        self.slm_phases = torch.exp(1j * phases).detach().numpy()
+        self.slm_phases = resize_array(torch.exp(1j * phases), self.N, use_torch=True).detach().numpy()
         self.reset_to_numpy()
 
         return -prev_cost, None
@@ -227,6 +232,7 @@ class QWFSSimulation:
         qres.N_tries = N_tries
         qres.algos = algos
         qres.sig_for_gauss_iid = self.sig_for_gauss_iid
+        qres.N_pixels = self.N_pixels
 
         N_algos = len(algos)
         N_configs = len(configs)
@@ -299,17 +305,15 @@ def resize_array(arr, desired_size, use_torch=False):
     # Create a deterministic repetition pattern
     if use_torch:
         repeat_func = torch.repeat_interleave
-        tensor = torch.tensor
+        repeats = torch.full((N,), floor, dtype=torch.long, device=arr.device)
     else:
         repeat_func = np.repeat
-        tensor = np.array
+        repeats = np.full((N,), floor, dtype=int)
 
-    repeats = tensor([floor] * N)
     for i in range(extra_count):
         repeats[i] += 1  # Assign extra repetitions deterministically from the start
 
     # Perform the stretching
-    repeats = tensor(repeats, dtype=torch.long if use_torch else int)
     stretched_array = repeat_func(arr, repeats)
 
     return stretched_array

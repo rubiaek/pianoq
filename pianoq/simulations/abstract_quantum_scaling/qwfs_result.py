@@ -8,6 +8,7 @@ class QWFSResult:
         self.configs = None
         self.N_tries = None
         self.algos = None
+        self.N_pixels = None
         # results.shape == N_T_methods, N_configs, N_tries, N_algos
         self.results = None
         self.Ts = None
