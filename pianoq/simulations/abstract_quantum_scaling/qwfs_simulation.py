@@ -1,5 +1,6 @@
-import numpy as np
+import time
 import random
+import numpy as np
 from scipy.stats import unitary_group
 from scipy.optimize import minimize, dual_annealing
 from pianoq.misc.mplc_writeup_imports import tnow
@@ -222,7 +223,7 @@ class QWFSSimulation:
         self.slm_phases = self.slm_phases.detach().numpy() if isinstance(self.slm_phases,
                                                                          torch.Tensor) else self.slm_phases
 
-    def statistics(self, algos, configs, T_methods, N_tries=1, saveto_path=None):
+    def statistics(self, algos, configs, T_methods, N_tries=1, saveto_path=None, verbose=False):
         saveto_path = saveto_path or f"C:\\temp\\{tnow()}_qwfs.npz"
         qres = QWFSResult()
         qres.configs = configs
@@ -248,6 +249,7 @@ class QWFSSimulation:
                 for config_no, config in enumerate(configs):
                     self.config = config
                     for algo_no, algo in enumerate(algos):
+                        start_t = time.time()
                         self.slm_phases = np.exp(1j * np.zeros(self.N, dtype=np.complex128))
                         if config == 'SLM3-same-mode' or config == 'SLM1-same-mode':
                             # this is the equivalent output mode after fourier to the default input of flat phase ones
@@ -257,9 +259,12 @@ class QWFSSimulation:
                         I, res = self.optimize(algo=algo, out_mode=out_mode)
                         v_out = self.propagate()
                         I_good = np.abs(v_out[out_mode]) ** 2
+                        I_tot = (np.abs(v_out) ** 2).sum()
                         qres.results[T_method_no, config_no, try_no, algo_no] = I_good
                         qres.best_phases[T_method_no, config_no, try_no, algo_no] = np.angle(self.slm_phases)
-                        # print(rf'{method=}, {I_tot=:.4f}, {I_good=:.4f}, {s.f_calls=}')
+                        T = time.time()-start_t
+                        if verbose:
+                            print(rf'{algo=}, {I_tot=:.4f}, {I_good=:.4f}, {self.f_calls=}, {T=:.2f}')
 
             qres.Ts = np.array(Ts)
 
