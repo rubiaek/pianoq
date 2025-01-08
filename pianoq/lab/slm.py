@@ -31,7 +31,9 @@ configs = {
         'active_mask_slice': np.index_exp[240:510, 630:780]
     },
     2: {  # SLM no. 2 with 404nm
-        'correction_path': r'F:\SLM-x13138-01\deformation_correction_pattern\CAL_LSH0801676_400nm.bmp',
+        # 'correction_path': r'F:\SLM-x13138-01\deformation_correction_pattern\CAL_LSH0801676_400nm.bmp',
+        'correction_path': r'G:\My Drive\Equipment (Specs, Drivers, Manuals)\SLM HAMAMATSU\X13138-01\deformation_correction_pattern\CAL_LSH0801676_400nm.bmp',
+        
         'alpha': 95,  # for 404nm, taken from the data sheet
         'geometry': '1272x1024+3193+-30',
         'monitor': 2,  # If using slmpy

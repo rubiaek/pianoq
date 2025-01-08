@@ -1,4 +1,4 @@
-import pyMMF
+# import pyMMF
 
 
 def get_modes_FG010LDA(npoints=2**7):
