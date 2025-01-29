@@ -27,7 +27,7 @@ def cost_function(centers_x, centers_y, cam, roi, mimshow=False):
 
 
 def local_discrete_search(cost_func, cam, roi, init_guess, step_range=5, max_iters=100,
-                          verbose=False, dir_path="C:\\temp"):
+                          verbose=False, dir_path="C:\\temp", optimize_x=True):
     """
     Perform a simple local integer search:
       - Start at init_guess (list of ints)
@@ -40,7 +40,10 @@ def local_discrete_search(cost_func, cam, roi, init_guess, step_range=5, max_ite
     best_params_path = os.path.join(dir_path, 'best_params.npz')
 
     best_params = list(init_guess)
-    best_cost, im = cost_func(best_params)
+    if optimize_x:
+        best_cost, im = cost_func(centers_x=best_params)
+    else:
+        best_cost, im = cost_func(centers_y=best_params)
     cam.save_image(os.path.join(dir_path, '10_spots_new_best.fits'), im, comment=f'{best_params=}')
     print(f'{best_cost=}')
     np.savez(best_params_path, all_best_costs=all_best_costs, all_best_params=all_best_params)
@@ -53,7 +56,10 @@ def local_discrete_search(cost_func, cam, roi, init_guess, step_range=5, max_ite
             for step in range(-step_range, step_range + 1):
                 candidate = best_params.copy()
                 candidate[i] = current_val + step
-                c_cost, im = cost_func(candidate)
+                if optimize_x:
+                    c_cost, im = cost_func(centers_x=best_params)
+                else:
+                    c_cost, im = cost_func(centers_y=best_params)
                 if verbose:
                     print(f'{c_cost=}, {candidate=}')
                 if c_cost < 1.002 * best_cost:  # improve only if mote than 0.2 percent difference
@@ -93,7 +99,8 @@ def optimize(init_guess, optimize_x=True, step_range=3, exp_time=2, roi=(700, 30
             step_range=step_range,  # check ±1..±3 for each parameter
             max_iters=50,  # up to 50 iterations
             verbose=True,
-            dir_path=dir_path
+            dir_path=dir_path,
+            optimize_x=optimize_x
         )
 
         cam.close()
