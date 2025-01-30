@@ -166,7 +166,8 @@ def create_WFM_unitary_masks(U1, U2=None, out_path=None, name=None, N_iterations
     return mplc
 
 
-def create_WFM_QKD_masks(out_path=None, name='MUB2_QKD', N_iterations=None):
+def create_WFM_QKD_masks(out_path=None, name='MUB2_QKD', N_iterations=None,
+                             dead_middle_zone=0, last_plane_extra_dist=8.4e-3, col_to_row=False):
     #  Based on "All Mutually Unbiased Bases in Dimensions Two to Five" (2018)
     #  The columns in the matrix are the basis elements
     q = np.exp(2j * np.pi / 5)  # Complex fifth root of unity
@@ -179,4 +180,6 @@ def create_WFM_QKD_masks(out_path=None, name='MUB2_QKD', N_iterations=None):
     ]) / np.sqrt(5)  # eq. 33
 
     U = MUB.conj().T  # To measure in X basis, we need to act with X^dag on the state
-    return create_WFM_unitary_masks(U1=U, out_path=out_path, name=name, N_iterations=N_iterations)
+    return create_WFM_unitary_masks(U1=U, out_path=out_path, name=name, N_iterations=N_iterations,
+                                    dead_middle_zone=dead_middle_zone, last_plane_extra_dist=last_plane_extra_dist,
+                                    col_to_row=col_to_row)
