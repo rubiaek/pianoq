@@ -53,7 +53,23 @@ configs = {
         'monitor': 2,  # If using slmpy
         'active_mask_slice': np.index_exp[0:1024, 0:1272]
         # 'active_mask_slice': np.index_exp[312:582, 323:473]
-    }
+    },
+
+    10: {  # FF SLM no. 01 400-700nm 
+        'correction_path': r"G:\My Drive\Equipment (Specs, Drivers, Manuals)\SLM HAMAMATSU\X13138-01\deformation_correction_pattern\CAL_LSH0801676_400nm.bmp",
+        'alpha': 96,
+        'geometry': '1272x1024+1685+0',
+        'monitor': 0,  # If using slmpy
+        'active_mask_slice': np.index_exp[0:1024, 0:1272]
+    },
+
+    11: {  # image SLM no. 05 400nm
+        'correction_path': r"G:\My Drive\Equipment (Specs, Drivers, Manuals)\SLM HAMAMATSU\X13138-05\deformation_correction_pattern\CAL_LSH0801946_400nm.bmp",
+        'alpha': 214,
+        'geometry': '1272x1024+2963+0',
+        'monitor': 0,  # If using slmpy
+        'active_mask_slice': np.index_exp[0:1024, 0:1272]
+    },
 }
 
 
@@ -93,17 +109,24 @@ class SLMDevice(object):
 
         if not self.use_slmpy:
             self.fig = plt.figure(f'SLM{self.config_num}-Figure', frameon=False)
-            self.axes = self.fig.add_axes([0., 0., 1., 1., ])
+            self.ax = self.fig.add_axes([0., 0., 1., 1., ])
+            self.restore_position()
             self.fig.canvas.toolbar.pack_forget()
             # This pause is necessary to make sure the location of the windows is actually changed when using TeamViewer
             plt.pause(0.1)
-            self.fig.canvas.manager.window.geometry(self.config['geometry'])
-            self.axes.set_axis_off()
-            self.image = self.axes.imshow(self.phase_grid, cmap='gray', vmin=0, vmax=255)
+            self.ax.set_axis_off()
+            self.ax.set_xticks([])
+            self.ax.set_yticks([])
+            self.ax.set_aspect('equal', adjustable='box')
+            # Removes menu bar
+            self.fig.canvas.manager.window.overrideredirect(True)
+
+            self.image = self.ax.imshow(self.phase_grid, cmap='gray', vmin=0, vmax=255)
             self.fig.canvas.draw()
             self.fig.show()
+            self.restore_position()
 
-            self.background = self.fig.canvas.copy_from_bbox(self.axes.bbox)
+            self.background = self.fig.canvas.copy_from_bbox(self.ax.bbox)
         else:
             self.slm = slmpy.SLMdisplay(monitor=self.config['monitor'])
 
@@ -128,8 +151,7 @@ class SLMDevice(object):
         return self.active_mask_slice[0].stop - self.active_mask_slice[0].start
 
     def restore_position(self):
-        if matplotlib.get_backend() == 'TkAgg':
-            self.fig.canvas.manager.window.geometry(self.config['geometry'])
+        self.fig.canvas.manager.window.geometry(self.config['geometry'])
 
     def save_phase(self, path):
         """ takes whole phase and saves it as is """
@@ -212,10 +234,10 @@ class SLMDevice(object):
             self.image.set_data(phase)
 
             # redraw just the points
-            self.axes.draw_artist(self.image)
+            self.ax.draw_artist(self.image)
 
             # fill in the axes rectangle
-            self.fig.canvas.blit(self.axes.bbox)
+            self.fig.canvas.blit(self.ax.bbox)
 
         plt.pause(0.001)
 
