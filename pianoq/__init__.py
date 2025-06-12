@@ -10,4 +10,4 @@ from pianoq.analysis.spdc_walkoff import BowtieImage
 
 
 
-# pip install ipython numpy matplotlib scipy astropy opencv-python pyperclip SLMlayout uncertainties zwoasi serial ipympl pyqt5 jupyter-console
+# pip install ipython numpy matplotlib scipy astropy opencv-python pyperclip SLMlayout uncertainties zwoasi pyserial ipympl pyqt5 jupyter-console

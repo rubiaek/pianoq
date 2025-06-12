@@ -34,9 +34,10 @@ class PhotonCounter(object):
                 success = True
                 break
             except Exception:
+                raise
                 print(f'not able to open port {self.serial_port}, trying again...')
                 time.sleep(1)
-                if i == 6:
+                if i == 3:
                     raise
         return ser
 
