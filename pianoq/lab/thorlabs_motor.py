@@ -113,6 +113,18 @@ class ThorlabsKcubeDC(KCubeDCServo):
         self.disconnect()
 
 
+""" 
+# Paste this in motor.py 
+class KCubeStepper(KCubeMotor):
+
+    def create(self):
+        clr.AddReference("ThorLabs.MotionControl.KCube.StepperMotorCLI")
+        from Thorlabs.MotionControl.KCube.StepperMotorCLI import KCubeStepper
+        
+        DeviceManagerCLI.BuildDeviceList()
+        self.device = KCubeStepper.CreateKCubeStepper(self.serial_number)
+
+"""
 class ThorlabsKcubeStepper(KCubeStepper):
     SERIAL_1 = 26001271
 
