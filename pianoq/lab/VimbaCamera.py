@@ -1,5 +1,7 @@
 import numpy as np
 import time
+import os
+import datetime
 from pianoq.misc.borders import Borders
 from pianoq_results.image_result import VimbaImage
 
@@ -72,7 +74,10 @@ class VimbaCamera(object):
         fig.show()
         return fig, axes
 
-    def save_image(self, path):
+    def save_image(self, path, add_timestamp_to_name=True):
+        if add_timestamp_to_name:
+            path = os.path.join(os.path.dirname(path), f'{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}_{os.path.basename(path)}')
+
         im = self.get_image()
         vim = VimbaImage()
         vim.image = im
