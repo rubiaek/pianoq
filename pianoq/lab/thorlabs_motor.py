@@ -63,11 +63,12 @@ class ThorlabsRotatingServoMotor(KCubeDCServo):
 class ThorlabsKcubeDC(KCubeDCServo):
     SERIAL_1 = 27253522
 
-    def __init__(self, serial_number=None, backlash=0., wait_after_move=0.1):
+    def __init__(self, serial_number=None, backlash=0., wait_after_move=0.1, timeout=50000):
         serial_number = serial_number or self.SERIAL_1
         super().__init__(serial_number=serial_number)
         self.backlash = backlash
         self.wait_after_move = wait_after_move
+        self.timeout = timeout
 
         success = False
         for i in range(7):
@@ -83,8 +84,9 @@ class ThorlabsKcubeDC(KCubeDCServo):
                 if i == 6:
                     raise
 
-    def move_relative(self, mm, timeout=30000):
+    def move_relative(self, mm, timeout=None):
         """ timeout in ms. send 0 for non-blocking. It is important to send float, and not some other np type..."""
+        timeout = timeout or self.timeout
         device = self.get_device()
         if not device.IsEnabled:
             self.create()
@@ -94,8 +96,9 @@ class ThorlabsKcubeDC(KCubeDCServo):
         device.MoveRelative(timeout)
         time.sleep(self.wait_after_move)
 
-    def move_absolute(self, mm, timeout=30000):
+    def move_absolute(self, mm, timeout=None):
         """ timeout in ms. send 0 for non-blocking. It is important to send float, and not some other np type..."""
+        timeout = timeout or self.timeout
         device = self.get_device()
         if not device.IsEnabled:
             self.create()
@@ -128,11 +131,12 @@ class KCubeStepper(KCubeMotor):
 class ThorlabsKcubeStepper(KCubeStepper):
     SERIAL_1 = 26001271
 
-    def __init__(self, serial_number=None, backlash=0., wait_after_move=0.1):
+    def __init__(self, serial_number=None, backlash=0., wait_after_move=0.1, timeout=50000):
         serial_number = serial_number or self.SERIAL_1
         super().__init__(serial_number=serial_number)
         self.backlash = backlash
         self.wait_after_move = wait_after_move
+        self.timeout = timeout
 
         success = False
         for i in range(7):
@@ -148,8 +152,9 @@ class ThorlabsKcubeStepper(KCubeStepper):
                    raise
 
 
-    def move_relative(self, mm, timeout=30000):
+    def move_relative(self, mm, timeout=None):
         """ timeout in ms. send 0 for non-blocking. It is important to send float, and not some other np type..."""
+        timeout = timeout or self.timeout
         device = self.get_device()
         if not device.IsEnabled:
             self.create()
@@ -159,8 +164,9 @@ class ThorlabsKcubeStepper(KCubeStepper):
         device.MoveRelative(timeout)
         time.sleep(self.wait_after_move)
 
-    def move_absolute(self, mm, timeout=30000):
+    def move_absolute(self, mm, timeout=None):
         """ timeout in ms. send 0 for non-blocking. It is important to send float, and not some other np type..."""
+        timeout = timeout or self.timeout
         device = self.get_device()
         if not device.IsEnabled:
             self.create()
