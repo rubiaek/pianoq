@@ -91,10 +91,10 @@ def fourier_filter(mask, carrier_f, aperture_radius):
     return shaped, FT, aperture
 
 
-def main():
+def main(grating_period=8):
     N                 = 512          # simulation grid
     ELL               = 1            # OAM charge
-    GRATING_PERIOD_PX = 8            # p (pixels)  ⇒ ν = 1/p cycles/pixel
+    GRATING_PERIOD_PX = grating_period  # p (pixels)  ⇒ ν = 1/p cycles/pixel
     CARRIER_F         = (1/GRATING_PERIOD_PX, 0)  # along +x by default
     APERTURE_RADIUS   = 0.04         # fraction of freq. space to keep
 
