@@ -44,10 +44,9 @@ class DMD:
         self.comp_idx = self._find_dmd_component()
         comp        = self.hs.GetProject().Components()[self.comp_idx]
         self.hwtype = comp.DeviceType().HardwareType()
-        try:                              # Ajile v1.5+
-            self.shape = (comp.Rows(), comp.Columns())
-        except AttributeError:            # fallback: common 4500 size
-            self.shape = (1140, 912)      # (rows, cols)
+
+        self.shape = (comp.NumRows(), comp.NumColumns())
+        # self.shape = (1140, 912)      # (rows, cols) # Typical 
         
         # For convenience 
         self.Ny, self.Nx = self.shape
@@ -110,6 +109,12 @@ class DMD:
             self._update_image(bitmap)
         else:
             raise TypeError("bitmap must be numpy array or aj.Image")
+
+    def set_white(self):
+        self.set_image(np.ones(self.shape, dtype=np.uint8))
+
+    def set_black(self):
+        self.set_image(np.zeros(self.shape, dtype=np.uint8))
 
     # --- one-liner helper --------------------------------------------------
     def set_grating(self, m, phase=0):
