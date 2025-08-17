@@ -53,6 +53,7 @@ class DMD:
         self.X = np.arange(-self.Nx//2, self.Nx//2)
         self.Y = np.arange(-self.Ny//2, self.Ny//2)
         self.XX, self.YY = np.meshgrid(self.X, self.Y)
+        self.R = np.sqrt(self.XX**2 + self.YY**2)
 
         # --- build once-off project ---------------------------------------
         self._build_static_project(frame_time_ms)
@@ -116,6 +117,18 @@ class DMD:
     def set_black(self):
         self.set_image(np.zeros(self.shape, dtype=np.uint8))
 
+    def set_pinhole(self, r=100, X0=0, Y0=0):
+        """r in pixels"""
+        mask = np.zeros(self.shape, dtype=np.uint8)
+        mask[np.sqrt((self.XX-X0)**2+(self.YY-Y0)**2) < r] = 1 
+        self.set_image(mask)
+
+    def get_grating(self, m, phase=0):
+        rows, cols = self.shape
+        col_vec = ((np.arange(cols) + phase) // m) & 1
+        bitmap = np.broadcast_to(col_vec, (rows, cols)).astype(np.uint8)
+        return bitmap
+
     # --- one-liner helper --------------------------------------------------
     def set_grating(self, m, phase=0):
         """
@@ -126,16 +139,7 @@ class DMD:
         m     : int   – grating period in pixels
         phase : int   – shift (0…m-1) in pixels
         """
-        rows, cols = self.shape
-        col_vec = ((np.arange(cols) + phase) // m) & 1
-        bitmap = np.broadcast_to(col_vec, (rows, cols)).astype(np.uint8)
-
-        # debug: ensure both 0s and 1s are present
-        if self.verbose:
-            u = np.unique(bitmap)
-            print(f"set_grating({m}): unique →", u)
-
-        self.set_image(bitmap)
+        self.set_image(self.get_grating(m ,phase))
 
     # ---------------------------------------- context / clean-up
     def close(self):
