@@ -138,8 +138,10 @@ class PhotonScanner(object):
 
                 if not self.is_double_spot:
                     self.single1s[i, j], self.single2s[i, j], self.coincidences[i, j] = ph.read_interesting()
+                    real_coin = self.coincidences[i, j] - 2 * self.coin_window * self.single1s[i, j] * self.single2s[i, j]
                     print(f'dur: {int(duration_till_now)}. pix: {i}, {j}. Singles1: {self.single1s[i, j]:.0f}. '
-                          f'Singles2: {self.single2s[i, j]:.0f}. Coincidence: {self.coincidences[i, j]:.2f}.')
+                          f'Singles2: {self.single2s[i, j]:.0f}. Coincidence: {self.coincidences[i, j]:.2f}. '
+                          f'real_coin: {real_coin:.1f}.')
                 else:
                     self.single1s[i, j], self.single2s[i, j], self.single3s[i, j], \
                         self.coincidences[i, j], self.coincidences2[i, j] = ph.read_double_spot()
@@ -158,6 +160,7 @@ class PhotonScanner(object):
         self.result.single1s = self.single1s
         self.result.single2s = self.single2s
         self.result.single3s = self.single3s
+        self.result.accidentals = self.result.single1s * self.result.single2s * 2 * self.result.coin_window
         saveto_path = self.saveto_path or f"{LOGS_DIR}\\{self.timestamp}_scan_{self.run_name}.scan"
         self.result.saveto(saveto_path)
 
