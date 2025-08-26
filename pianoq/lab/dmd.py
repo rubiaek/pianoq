@@ -125,11 +125,17 @@ class DMD:
 
     def get_grating(self, m, phase=0):
         rows, cols = self.shape
-        col_vec = ((np.arange(cols) + phase) // m) & 1
+        col_vec = ((np.arange(cols) + phase) // m) % 2  # [1,2,3,4...] -> [000,111,222,333] -> [000,111,000,111]
         bitmap = np.broadcast_to(col_vec, (rows, cols)).astype(np.uint8)
         return bitmap
+    
+    def get_checkerboard(self, period, phase_row=0, phase_col=0):
+        rows, cols = self.shape
+        row_idx = (np.arange(rows)[:, None] + phase_row) // period
+        col_idx = (np.arange(cols)[None, :] + phase_col) // period
+        bitmap = ((row_idx + col_idx) % 2).astype(np.uint8)
+        return bitmap
 
-    # --- one-liner helper --------------------------------------------------
     def set_grating(self, m, phase=0):
         """
         Show a binary grating with period *m* pixels (along columns).
@@ -140,8 +146,10 @@ class DMD:
         phase : int   – shift (0…m-1) in pixels
         """
         self.set_image(self.get_grating(m ,phase))
+    
+    def set_checkerboard(self, period, phase_row=0, phase_col=0):
+        self.set_image(self.get_checkerboard(period, phase_row, phase_col))
 
-    # ---------------------------------------- context / clean-up
     def close(self):
         try:
             self.hs.GetDriver().StopSequence(self.comp_idx)
