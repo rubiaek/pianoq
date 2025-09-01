@@ -103,6 +103,10 @@ class QPTimeTagger(object):
         import time
 
         import matplotlib
+        fig_name = '4chan'
+        if fig_name in plt.get_figlabels():
+            print('It is already running!')
+            return
         matplotlib.rcParams['keymap.fullscreen'] = []
 
         # Number formatting function
@@ -127,7 +131,8 @@ class QPTimeTagger(object):
         br = deque([real_init]*pts, maxlen=pts)
 
         # Setup figure
-        fig, axs = plt.subplots(2, 2, figsize=(12, 8))
+        plt.figure(fig_name)      # create or activate named figure
+        fig, axs = plt.subplots(2, 2, figsize=(12, 8), num=fig_name)
         fig.patch.set_facecolor('black')
         axs = axs.ravel()
         
