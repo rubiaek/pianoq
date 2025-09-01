@@ -172,7 +172,8 @@ class QPTimeTagger(object):
                     print(f"Read error: {e}")
                 time.sleep(max(0.05, self.integration_time))
         
-        Thread(target=reader, daemon=True).start()
+        reader_thread = Thread(target=reader, daemon=True)
+        reader_thread.start()
 
         # Display update
         def update_display():
@@ -200,6 +201,10 @@ class QPTimeTagger(object):
         def on_close(_):
             stop_event.set()
             timer.stop()
+            try:
+                reader_thread.join(timeout=1.1)
+            except Exception:
+                pass
         fig.canvas.mpl_connect('close_event', on_close)
 
         # Fullscreen on 'f' key
