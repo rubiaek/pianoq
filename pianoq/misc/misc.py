@@ -286,3 +286,29 @@ def send_telegram_fig(fig, caption=None, bot_token=BOT_TOKEN, chat_id=CHAT_ID):
     fig.savefig(buf, format='png')
     buf.seek(0)
     return send_telegram_photo(('figure.png', buf, 'image/png'), caption)
+
+
+import inspect
+from functools import wraps
+
+def set_last_called_str(func):
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        # call first; record only on success
+        result = func(self, *args, **kwargs)
+
+        sig   = inspect.signature(func)
+        bound = sig.bind(self, *args, **kwargs)
+        bound.apply_defaults()
+        parts = [f"{k}={v!r}" for k, v in bound.arguments.items() if k != "self"]
+
+        self.last_called_setter = f"{self.__class__.__name__}.{func.__name__}({', '.join(parts)})"
+        return result
+    return wrapper
+
+
+def track_setters(cls):
+    for name, attr in list(cls.__dict__.items()):
+        if name.startswith("set_") and not name.startswith("set_image") and callable(attr):
+            setattr(cls, name, set_last_called_str(attr))
+    return cls

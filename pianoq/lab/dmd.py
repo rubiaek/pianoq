@@ -5,8 +5,10 @@ import numpy as np
 import ajiledriver as aj
 from PIL import Image
 import cv2
+from pianoq.misc.misc import track_setters
 
 
+@track_setters
 class DMD:
     """
     Minimal DMD driver for interactive work.
@@ -55,6 +57,9 @@ class DMD:
         self.XX, self.YY = np.meshgrid(self.X, self.Y)
         self.R = np.sqrt(self.XX**2 + self.YY**2)
 
+        self.cur_image = np.zeros(self.shape, np.uint8)
+        self.last_called_setter = ''
+
         # --- build once-off project ---------------------------------------
         self._build_static_project(frame_time_ms)
         self.log('Built project!')
@@ -65,38 +70,21 @@ class DMD:
                     getattr(aj, "LOAD_OPT_UPDATE_IMAGES", 2))
         )
 
-    # ---------------------------------------- public API
     def set_image_from_path(self, path):
         img = self._read_image(path)
         self._update_image(img)
         """
         Load any image from disk, threshold it to a 0/1 mask, resize
-        to the DMD’s resolution, and display it.
+        to the DMD's resolution, and display it.
         """
-
-        # load as 8-bit grayscale
-        # pil = Image.open(path).convert("L")
-        # rows, cols = self.shape
-        # pil = pil.resize((cols, rows), resample=Image.NEAREST)
-
-        # # convert to array [0..255]
-        # gray = np.array(pil, dtype=np.uint8)
-        # # threshold at midpoint → mask of 0|1
-        # mask = (gray >= 128).astype(np.uint8)
-
-        # # debug: make sure we actually got both 0s and 1s
-        # if self.verbose:
-        #     u = np.unique(mask)
-        #     print("set_image_from_path: unique values →", u)
-        # rows, cols = self.shape
-        # mask = np.zeros((rows, cols), np.uint8)
-        # self.set_image(mask)
 
     def set_image(self, bitmap):
         """
         Display a NumPy array (dtype uint8/bool, values 0 | 1) **or**
         an `aj.Image` already matching the DMD geometry.
         """
+        self.cur_image = bitmap
+        
         if isinstance(bitmap, np.ndarray):
             if bitmap.shape != self.shape:
                 raise ValueError(f"bitmap shape {bitmap.shape} "
@@ -135,20 +123,35 @@ class DMD:
         col_idx = (np.arange(cols)[None, :] + phase_col) // period
         bitmap = ((row_idx + col_idx) % 2).astype(np.uint8)
         return bitmap
+    
+    def get_1d_macrosteps(self, amplitudes, step_w=100, tile=8):
+        rows, cols = self.shape
+        assert all(amplitudes < 1.001) and all(amplitudes > -0.001), "amplitudes must be between 0 and 1"
+
+        # Build Bayer tiles recursively (2X2 -> 4X4 -> 8X8)
+        B = np.array([[0,2],[3,1]], int)
+        while B.shape[0] < tile:
+            B = np.block([[4*B+0, 4*B+2],
+                        [4*B+3, 4*B+1]])
+        T = (B[:tile, :tile] + 0.5) / (tile*tile)
+
+        bitmap = np.zeros((rows, cols), np.uint8)
+        for x0 in range(0, cols, step_w):
+            a = amplitudes[(x0 // step_w) % len(amplitudes)]  # a is the Desired amplitude for this macro-step, cyclicly 
+            w = min(step_w, cols - x0)  # For last column, which may be shorter than step_w 
+            # Repeat tile until size rowsXw. "+tile-1//tile" is integer ceiling, which may overshoot, fixed with exact croping
+            Th = np.tile(T, ((rows + tile - 1)//tile, (w + tile - 1)//tile))[:rows, :w]  
+            bitmap[:, x0:x0+w] = (Th < a).astype(np.uint8)
+        return bitmap
 
     def set_grating(self, m, phase=0):
-        """
-        Show a binary grating with period *m* pixels (along columns).
-
-        Parameters
-        ----------
-        m     : int   – grating period in pixels
-        phase : int   – shift (0…m-1) in pixels
-        """
         self.set_image(self.get_grating(m ,phase))
     
     def set_checkerboard(self, period, phase_row=0, phase_col=0):
         self.set_image(self.get_checkerboard(period, phase_row, phase_col))
+    
+    def set_1d_macrosteps(self, amplitudes, step_w=100, tile=8):
+        self.set_image(self.get_1d_macrosteps(amplitudes, step_w, tile))
 
     def close(self):
         try:
@@ -233,7 +236,7 @@ class DMD:
     def _np_to_aj_image(self, arr2d, img):
         """
         Overwrite an aj.Image in place from a numpy 0/1 array,
-        ensuring it’s C-contiguous and shaped (rows, cols, channels).
+        ensuring it's C-contiguous and shaped (rows, cols, channels).
         """
         # 1) scale 0/1 → 0/255 so we can use an 8-bit load
         gray = (arr2d * 255).astype(np.uint8)
