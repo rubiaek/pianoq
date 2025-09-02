@@ -102,6 +102,12 @@ class DMD:
     def set_white(self):
         self.set_image(np.ones(self.shape, dtype=np.uint8))
 
+    def set_white_between(self, x0, x1, y0=None, y1=None):
+        self.set_image(self.get_white_between(x0, x1, y0, y1))
+
+    def set_black_between(self, x0, x1, y0=None, y1=None):
+        self.set_image(self.get_black_between(x0, x1, y0, y1))
+
     def set_black(self):
         self.set_image(np.zeros(self.shape, dtype=np.uint8))
 
@@ -110,6 +116,19 @@ class DMD:
         mask = np.zeros(self.shape, dtype=np.uint8)
         mask[np.sqrt((self.XX-X0)**2+(self.YY-Y0)**2) < r] = 1 
         self.set_image(mask)
+
+    def get_white_between(self, x0, x1, y0=None, y1=None):
+        if y0 is None:
+            y0 = 0
+        if y1 is None:
+            y1 = self.Ny
+        mask = np.zeros(self.shape, dtype=np.uint8)
+        mask[y0:y1, x0:x1] = 1
+        return mask 
+    
+    def get_black_between(self, x0, x1, y0=None, y1=None):
+        mask = self.get_white_between(x0, x1, y0, y1)
+        return 1 - mask
 
     def get_grating(self, m, phase=0):
         rows, cols = self.shape
