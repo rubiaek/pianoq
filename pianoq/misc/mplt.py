@@ -1,13 +1,14 @@
 import matplotlib.pyplot as plt
 
 
-def mimshow(im, title=None, aspect=None, **args):
+def mimshow(im, title=None, aspect=None, figshow=True, **args):
     fig, ax = plt.subplots()
     imm = ax.imshow(im, aspect=aspect, **args)
     fig.colorbar(imm, ax=ax)
     if title:
         ax.set_title(title)
-    fig.show()
+    if figshow:
+        fig.show()
     return fig, ax
 
 

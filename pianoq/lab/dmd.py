@@ -23,12 +23,13 @@ class DMD:
     """
 
     # ---------------------------------------- setup
-    def __init__(self, serial=None, frame_time_ms=1,              # 1 ms -> 1 kHz max if the board allows it
+    def __init__(self, serial=None, frame_time_ms=1,
         ip="192.168.200.1", subnet="255.255.255.0", gateway="0.0.0.0", port=5005,
-        interface=aj.USB3_INTERFACE_TYPE, timeout_ms=5_000, verbose=False):
+        interface=aj.USB3_INTERFACE_TYPE, timeout_ms=5_000, verbose=False, other_pos=False):
         self.timeout_ms = timeout_ms
         self.seq_id = 1               # fixed, never recreated
         self.verbose = verbose 
+        self.other_pos = other_pos       # If True, show the negative of the image
 
         # --- open link -----------------------------------------------------
         self.hs = aj.HostSystem()
@@ -83,6 +84,8 @@ class DMD:
         Display a NumPy array (dtype uint8/bool, values 0 | 1) **or**
         an `aj.Image` already matching the DMD geometry.
         """
+        if self.other_pos:
+            bitmap = 1 - bitmap
         self.cur_image = bitmap
         
         if isinstance(bitmap, np.ndarray):
