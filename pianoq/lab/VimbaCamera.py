@@ -2,7 +2,6 @@ import numpy as np
 import time
 import os
 import datetime
-from pianoq.misc.borders import Borders
 from pianoq_results.image_result import VimbaImage
 
 try:
@@ -17,7 +16,7 @@ import matplotlib.pyplot as plt
 class VimbaCamera(object):
     PIXEL_SIZE = 4.8e-6
 
-    def __init__(self, camera_num, exposure_time=None, borders: Borders = None):
+    def __init__(self, camera_num, exposure_time=None):
         """
             You can check camera_num using vimb.get_all_cameras()[0].get_model()
             exposure_time in us (micro seconds)
@@ -33,8 +32,6 @@ class VimbaCamera(object):
 
         if exposure_time:
             self.set_exposure_time(exposure_time)
-        if borders:
-            self.set_borders(borders)
         else:
             pass
 
@@ -94,23 +91,22 @@ class VimbaCamera(object):
     def set_exposure_time(self, exposure_time):
         return self._cam.ExposureTime.set(exposure_time)
 
-    def set_borders(self, borders: Borders):
+    def set_roi(self, offset_x, offset_y, width, height):
         pixel_step = 8  # Only multiples of this are accepted
         # Setting offset to (0,0) to make sure we are able to resize the ROI according the required values
         self._cam.OffsetX.set(0)
         self._cam.OffsetY.set(0)
-        self._cam.Width.set(borders.width // pixel_step * pixel_step)
-        self._cam.Height.set(borders.height // pixel_step * pixel_step)
-        self._cam.OffsetX.set(borders.min_x // pixel_step * pixel_step)
-        self._cam.OffsetY.set(borders.min_y // pixel_step * pixel_step)
+        self._cam.Width.set(width // pixel_step * pixel_step)
+        self._cam.Height.set(height // pixel_step * pixel_step)
+        self._cam.OffsetX.set(offset_x // pixel_step * pixel_step)
+        self._cam.OffsetY.set(offset_y // pixel_step * pixel_step)
 
-    def get_borders(self) -> Borders:
-        borders = Borders(0, 0, 0, 0)
-        borders.min_x = self._cam.OffsetX.get()
-        borders.min_y = self._cam.OffsetY.get()
-        borders.max_x = borders.min_x + self._cam.Width.get()
-        borders.max_y = borders.min_y + self._cam.Height.get()
-        return borders
+    def get_roi(self):
+        offset_x = self._cam.OffsetX.get()
+        offset_y = self._cam.OffsetY.get()
+        width = self._cam.Width.get()
+        height = self._cam.Height.get()
+        return offset_x, offset_y, width, height
 
     def close(self):
         self._cam.__exit__(0, 0, 0)
