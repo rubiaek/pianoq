@@ -133,12 +133,20 @@ class DMD:
         mask = self.get_white_between(x0, x1, y0, y1)
         return 1 - mask
 
-    def get_grating(self, m, phase=0):
+    def get_grating(self, m, phase=0, in_y=False):
         rows, cols = self.shape
-        col_vec = ((np.arange(cols) + phase) // m) % 2  # [1,2,3,4...] -> [000,111,222,333] -> [000,111,000,111]
-        bitmap = np.broadcast_to(col_vec, (rows, cols)).astype(np.uint8)
-        return bitmap
-    
+
+        if in_y:
+            # Grating varies along Y → build over rows
+            vec = ((np.arange(rows) + phase) // m) % 2 # [1,2,3,4...] -> [000,111,222,333] -> [000,111,000,111]
+            bitmap = np.broadcast_to(vec[:, None], (rows, cols))
+        else:
+            # Grating varies along X → build over cols
+            vec = ((np.arange(cols) + phase) // m) % 2
+            bitmap = np.broadcast_to(vec[None, :], (rows, cols))
+        
+        return bitmap.astype(np.uint8)
+
     def get_checkerboard(self, period, phase_row=0, phase_col=0):
         rows, cols = self.shape
         row_idx = (np.arange(rows)[:, None] + phase_row) // period
@@ -166,8 +174,8 @@ class DMD:
             bitmap[:, x0:x0+w] = (Th < a).astype(np.uint8)
         return bitmap
 
-    def set_grating(self, m, phase=0):
-        self.set_image(self.get_grating(m ,phase))
+    def set_grating(self, m, phase=0, in_y=False):
+        self.set_image(self.get_grating(m ,phase, in_y=in_y))
     
     def set_checkerboard(self, period, phase_row=0, phase_col=0):
         self.set_image(self.get_checkerboard(period, phase_row, phase_col))
